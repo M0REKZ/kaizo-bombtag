@@ -80,7 +80,7 @@ void CGameControllerBomb::OnPlayerConnect(CPlayer *pPlayer)
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()));
 		GameServer()->SendChat(-1, TEAM_ALL, aBuf);
-		GameServer()->SendChatTarget(ClientId, "BOMB Mod. Source code: https://github.com/furo321/ddnet-bombtag");
+		GameServer()->SendChatTarget(ClientId, "BOMB Mod. Source code: https://git.ddstats.tw/furo/ddnet-bombtag");
 	}
 	if(m_RoundActive && m_aPlayers[ClientId].m_State != STATE_SPECTATING)
 	{
