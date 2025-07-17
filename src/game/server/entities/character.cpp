@@ -10,6 +10,8 @@
 #include <engine/antibot.h>
 #include <engine/shared/config.h>
 
+#include <engine/server/server.h>
+
 #include <game/generated/protocol.h>
 #include <game/generated/server_data.h>
 #include <game/mapitems.h>
@@ -24,6 +26,8 @@
 #include <game/server/entities/kz/portal_projectile.h>
 #include <game/server/entities/kz/portal_laser.h>
 #include <game/server/entities/kz/portal.h>
+#include "kz/kz_bot_ai/kz_ai.h"
+#include "kz/kz_bot_ai/pointer_ai.h"
 
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
@@ -71,6 +75,15 @@ CCharacter::~CCharacter()
 	if(m_PortalKindId != -1)
 	{
 		Server()->SnapFreeId(m_PortalKindId);
+	}
+}
+
+CCharacter::~CCharacter()
+{
+	if(m_pKZBotAI)
+	{
+		delete m_pKZBotAI;
+		m_pKZBotAI = nullptr;
 	}
 }
 
@@ -1224,7 +1237,7 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 		AmmoCount = (m_FreezeTime == 0) ? (m_Core.m_ActiveWeapon < NUM_WEAPONS ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Ammo) : 0;
 	}
 
-	if(GetPlayer()->IsAfk() || GetPlayer()->IsPaused() || (m_pPlayer->m_PlayerFlags & PLAYERFLAG_IN_MENU)) // +KZ added in menu
+	if(!(((CServer*)Server())->m_aClients[m_pPlayer->GetCid()].m_KZBot) && (GetPlayer()->IsAfk() || GetPlayer()->IsPaused() || (m_pPlayer->m_PlayerFlags & PLAYERFLAG_IN_MENU))) // +KZ added in menu
 	{
 		if(m_FreezeTime > 0 || m_Core.m_DeepFrozen || m_Core.m_LiveFrozen)
 			Emote = EMOTE_NORMAL;
@@ -3086,4 +3099,35 @@ bool CCharacter::TakeDamageVanilla(vec2 Force, int Dmg, int From, int Weapon)
 	SetEmote(EMOTE_PAIN, Server()->Tick() + 500 * Server()->TickSpeed() / 1000);
 
 	return true;
+}
+//+KZ
+
+void CCharacter::HandleKZBot(CNetObj_PlayerInput &Input)
+{
+	if(!(GameServer()->CountPlayersKZ()))
+		return;
+	
+	if(m_pKZBotAI && g_Config.m_SvKZBotsAI != m_pKZBotAI->GetAIType())
+	{
+		delete m_pKZBotAI;
+		m_pKZBotAI = nullptr;
+	}
+	
+	if(!m_pKZBotAI)
+	{
+		switch(g_Config.m_SvKZBotsAI)
+		{
+			case 0: //+KZ's IA
+				m_pKZBotAI = new CKZBotAI(this);
+				break;
+			case 1: //Pointer's hardest IA
+				m_pKZBotAI = new CPointerBotAI(this);
+				break;
+		}
+	}
+
+	if(m_pKZBotAI)
+	{
+		m_pKZBotAI->HandleInput(Input);
+	}
 }

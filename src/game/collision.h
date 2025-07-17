@@ -225,6 +225,8 @@ public:
 
 	CWorldCore *m_pWorldCore;
 	CTeamsCore *m_pTeamsCore;
+
+	int UnIntersectLineKZ(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) const;
 };
 
 void ThroughOffset(vec2 Pos0, vec2 Pos1, int *pOffsetX, int *pOffsetY);

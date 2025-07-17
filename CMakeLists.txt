@@ -2744,6 +2744,12 @@ if(SERVER)
     entities/dragger_beam.h
     entities/gun.cpp
     entities/gun.h
+    entities/kz/kz_bot_ai/base_ai.cpp
+    entities/kz/kz_bot_ai/base_ai.h
+    entities/kz/kz_bot_ai/kz_ai.cpp
+    entities/kz/kz_bot_ai/kz_ai.h
+    entities/kz/kz_bot_ai/pointer_ai.cpp
+    entities/kz/kz_bot_ai/pointer_ai.h
     entities/laser.cpp
     entities/laser.h
     entities/light.cpp

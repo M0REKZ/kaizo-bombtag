@@ -9,10 +9,13 @@
 #include <game/server/save.h>
 #include <game/mapitems.h>
 
+#include <game/server/entities/kz/kz_bot_ai/base_ai.h>
+
 class CGameTeams;
 class CGameWorld;
 class IAntibot;
 struct CAntibotCharacterData;
+class CBaseKZBotAI;
 
 enum
 {
@@ -35,7 +38,7 @@ class CCharacter : public CEntity
 
 public:
 	CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput);
-	~CCharacter();
+	~CCharacter(); // +KZ
 
 	void Reset() override;
 	void Destroy() override;
@@ -300,6 +303,20 @@ public:
 		int m_Snap = 0;
 		int m_Ammo = -1;
 	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
+	CCharacterCore &GetCoreKZ() { return m_Core; }
+	int &GetHealthKZ() { return m_Health; }
+	int &GetDamageTakenKZ() { return m_DamageTaken; }
+	int &GetDamageTakenTickKZ() { return m_DamageTakenTick; }
+	int &GetReloadTimerKZ() { return m_ReloadTimer; }
+	CNetObj_PlayerInput &GetLatestInputKZ() { return m_LatestInput; }
+	CNetObj_PlayerInput &GetLatestPrevInputKZ() { return m_LatestPrevInput; }
+	int &GetLastNoAmmoSoundKZ() { return m_LastNoAmmoSound; }
+	int &GetAttackTickKZ() { return m_AttackTick; }
+	int &GetNumObjectsHitKZ() { return m_NumObjectsHit; }
+
+	//+KZ for bot AI:
+	void HandleKZBot(CNetObj_PlayerInput &Input);
+	CBaseKZBotAI* m_pKZBotAI = nullptr;
 };
 
 #endif

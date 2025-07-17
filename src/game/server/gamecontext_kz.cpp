@@ -45,6 +45,8 @@ void CGameContext::RegisterKZCommands()
 	Console()->Register("blueportal", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConBluePortal, this, "Use Blue Portal");
 	Console()->Register("resetportals", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConResetPortals, this, "Reset both Portals");
 	Console()->Register("showcrowns", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConShowCrowns, this, "Toggle crowns");
+
+	Console()->Register("move_kzbot", "s[blue/red]", CFGFLAG_SERVER, ConMoveKZBot, this, "Move KZBot to blue or red team");
 }
 
 void CGameContext::SendGameMsg(int GameMsgId, int ClientId) const

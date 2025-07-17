@@ -4677,7 +4677,10 @@ bool CGameContext::IsClientPlayer(int ClientId) const
 	}
 	else
 	{
-		return m_apPlayers[ClientId] && m_apPlayers[ClientId]->GetTeam() != TEAM_SPECTATORS;
+		if(((CServer*)Server())->m_aClients[ClientId].m_KZBot)
+			return false;
+		else
+			return m_apPlayers[ClientId] && m_apPlayers[ClientId]->GetTeam() != TEAM_SPECTATORS;
 	}
 }
 
@@ -5285,7 +5288,7 @@ void CGameContext::OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int 
 	pJSonWriter->EndObject();
 
 	pJSonWriter->WriteAttribute("afk");
-	pJSonWriter->WriteBoolValue(m_apPlayers[Id]->IsAfk());
+	pJSonWriter->WriteBoolValue(m_apPlayers[Id]->IsAfk() && !((CServer*)Server())->m_aClients[Id].m_KZBot);
 
 	const int Team = m_pController->IsTeamPlay() ? m_apPlayers[Id]->GetTeam() : m_apPlayers[Id]->GetTeam() == TEAM_SPECTATORS ? -1 : GetDDRaceTeam(Id);
 
@@ -5314,4 +5317,60 @@ void CGameContext::ReadCensorList()
 bool CGameContext::PracticeByDefault() const
 {
 	return g_Config.m_SvPracticeByDefault && g_Config.m_SvTestingCommands;
+}
+
+void CGameContext::HandleKZBot(int CID, CNetObj_PlayerInput &Input)
+{
+	if(m_apPlayers[CID])
+		m_apPlayers[CID]->HandleKZBot(Input);
+}
+
+int CGameContext::CountPlayersKZ()
+{
+	int count = 0;
+	for(int i=0;i<MAX_CLIENTS;i++)
+	{
+		if(!(((CServer*)Server())->m_aClients[i].m_KZBot) && m_apPlayers[i] && !(m_apPlayers[i]->IsAfk()) && (m_apPlayers[i]->m_IsDead ? true : (m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)))
+			count++;
+	}
+	return count;
+}
+
+void CGameContext::ConMoveKZBot(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!(pResult->NumArguments()))
+	{
+		pSelf->SendChatTarget(pResult->m_ClientId, "Please specify a team");
+		return;
+	}
+	else
+	{
+		int team;
+		if(pResult->GetString(0)[0] == 'r' || pResult->GetString(0)[0] == 'R')
+		{
+			team = TEAM_RED;
+		}
+		else if(pResult->GetString(0)[0] == 'b' || pResult->GetString(0)[0] == 'B')
+		{
+			team = TEAM_BLUE;
+		}
+		else
+		{
+			pSelf->SendChatTarget(pResult->m_ClientId, "Invalid team");
+			return;
+		}
+
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(((CServer*)(pSelf->Server()))->m_aClients[i].m_KZBot && pSelf->m_apPlayers[i] && pSelf->m_apPlayers[i]->GetTeam() != team)
+			{
+				pSelf->m_apPlayers[i]->SetTeam(team);
+				break;
+			}
+		}
+
+	}
+
+    return;
 }

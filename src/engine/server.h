@@ -399,6 +399,9 @@ public:
 	 * @param i The client id.
 	 */
 	virtual void OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int Id) = 0;
+
+	//+KZ
+	virtual void HandleKZBot(int CID, CNetObj_PlayerInput &Input) {}; //+KZ
 };
 
 extern IGameServer *CreateGameServer();

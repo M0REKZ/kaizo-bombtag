@@ -97,6 +97,8 @@ class CServer : public IServer
 	virtual bool IsAllTheHaxxClient(int ClientId) override { return m_aClients[ClientId].m_IsAllTheHaxxClient; }
 	virtual bool IsPulseClient(int ClientId) override { return m_aClients[ClientId].m_IsPulseClient; }
 
+	int m_PreviousKZBots = 0;
+	void UpdateKZBots(bool ForceDisconnect); //+KZ
 public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class CConfig *Config() { return m_pConfig; }
@@ -184,6 +186,10 @@ public:
 		bool m_IsStAClient; // to identify StA clients
 		bool m_IsAllTheHaxxClient; // to identify allthehaxx clients
 		bool m_IsPulseClient; // to identify pulse clients
+		bool m_KZBot; //+KZ
+		NETADDR m_KZBotAddr;
+		std::array<char, NETADDR_MAXSTRSIZE> m_aKZBotAddrString;
+		std::array<char, NETADDR_MAXSTRSIZE> m_aKZBotAddrStringNoPort;
 
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 		enum
