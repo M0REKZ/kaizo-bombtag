@@ -642,7 +642,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				m_DontDoSmartTargetChase--;
 		}
 
-		if(m_DoGrenadeJump && ((GetCharacter()->GetWeaponGot(WEAPON_GRENADE) && GetCharacter()->GetWeaponAmmo(WEAPON_GRENADE)) || (/*g_Config.m_SvLaserJump && */GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))))
+		if(m_DoGrenadeJump && ((GetCharacter()->GetWeaponGot(WEAPON_GRENADE) && GetCharacter()->GetWeaponAmmo(WEAPON_GRENADE)) || (/*g_Config.m_SvLaserJump && */false && GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))))
 		{
 			if(GetCharacter()->GetWeaponGot(WEAPON_GRENADE) && GetCharacter()->GetWeaponAmmo(WEAPON_GRENADE))
 				GetCharacter()->SetActiveWeapon(WEAPON_GRENADE);
@@ -655,7 +655,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 
 		m_DoGrenadeJump = false;
 
-		if(((GetCharacter()->GetWeaponGot(WEAPON_GRENADE) && GetCharacter()->GetWeaponAmmo(WEAPON_GRENADE)) || (/*g_Config.m_SvLaserJump && */GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))) && (/*GameServer()->m_pController->m_IsInstagibKZ || */GetCharacter()->GetHealthKZ() >= 10 || (GetCharacter()->GetHealthKZ() >= 5 && GetCharacter()->GetArmor() >= 5)))
+		if(((GetCharacter()->GetWeaponGot(WEAPON_GRENADE) && GetCharacter()->GetWeaponAmmo(WEAPON_GRENADE)) || (/*g_Config.m_SvLaserJump && */false && GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))) && (/*GameServer()->m_pController->m_IsInstagibKZ || */GetCharacter()->GetHealthKZ() >= 10 || (GetCharacter()->GetHealthKZ() >= 5 && GetCharacter()->GetArmor() >= 5)))
 		{
 			if(m_pCore->m_Jumps > 0 && TargetPos.x > m_pPos->x - 300.f && TargetPos.x < m_pPos->x + 300.f && TargetPos.y < m_pPos->y - 150.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,-300.f),nullptr,nullptr))
 			{
