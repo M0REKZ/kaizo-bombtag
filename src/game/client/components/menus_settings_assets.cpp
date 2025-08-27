@@ -243,11 +243,11 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 	else if(CurTab == ASSETS_TAB_EXTRAS)
 		return gs_vpSearchExtrasList[Index];
 
-	return NULL;
+	return nullptr;
 }
 
 template<typename TName>
-void ClearAssetList(std::vector<TName> &vList, IGraphics *pGraphics)
+static void ClearAssetList(std::vector<TName> &vList, IGraphics *pGraphics)
 {
 	for(TName &Asset : vList)
 	{
@@ -270,7 +270,7 @@ void CMenus::ClearCustomItems(int CurTab)
 		m_vEntitiesList.clear();
 
 		// reload current entities
-		m_pClient->m_MapImages.ChangeEntitiesPath(g_Config.m_ClAssetsEntities);
+		GameClient()->m_MapImages.ChangeEntitiesPath(g_Config.m_ClAssetsEntities);
 	}
 	else if(CurTab == ASSETS_TAB_GAME)
 	{
@@ -311,7 +311,7 @@ void CMenus::ClearCustomItems(int CurTab)
 }
 
 template<typename TName, typename TCaller>
-void InitAssetList(std::vector<TName> &vAssetList, const char *pAssetPath, const char *pAssetName, FS_LISTDIR_CALLBACK pfnCallback, IGraphics *pGraphics, IStorage *pStorage, TCaller Caller)
+static void InitAssetList(std::vector<TName> &vAssetList, const char *pAssetPath, const char *pAssetName, FS_LISTDIR_CALLBACK pfnCallback, IGraphics *pGraphics, IStorage *pStorage, TCaller Caller)
 {
 	if(vAssetList.empty())
 	{
@@ -329,7 +329,7 @@ void InitAssetList(std::vector<TName> &vAssetList, const char *pAssetPath, const
 }
 
 template<typename TName>
-int InitSearchList(std::vector<const TName *> &vpSearchList, std::vector<TName> &vAssetList)
+static int InitSearchList(std::vector<const TName *> &vpSearchList, std::vector<TName> &vAssetList)
 {
 	vpSearchList.clear();
 	int ListSize = vAssetList.size();
@@ -377,7 +377,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	User.m_pUser = this;
 	User.m_LoadedFunc = [&]() {
 		if(time_get_nanoseconds() - LoadStartTime > 500ms)
-			RenderLoading(Localize("Loading assets"), "", 0, false);
+			RenderLoading(Localize("Loading assets"), "", 0);
 	};
 	if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
 	{
@@ -416,7 +416,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
 	}
 
-	MainView.HSplitTop(10.0f, 0, &MainView);
+	MainView.HSplitTop(10.0f, nullptr, &MainView);
 
 	// skin selector
 	MainView.HSplitTop(MainView.h - 10.0f - ms_ButtonHeight, &CustomList, &MainView);
@@ -500,7 +500,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	for(size_t i = 0; i < SearchListSize; ++i)
 	{
 		const SCustomItem *pItem = GetCustomItem(s_CurCustomTab, i);
-		if(pItem == NULL)
+		if(pItem == nullptr)
 			continue;
 
 		if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
@@ -542,7 +542,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 
 		CUIRect TextureRect;
 		ItemRect.HSplitTop(15, &ItemRect, &TextureRect);
-		TextureRect.HSplitTop(10, NULL, &TextureRect);
+		TextureRect.HSplitTop(10, nullptr, &TextureRect);
 		Ui()->DoLabel(&ItemRect, pItem->m_aName, ItemRect.h - 2, TEXTALIGN_MC);
 		if(pItem->m_RenderTexture.IsValid())
 		{
@@ -565,7 +565,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
 			{
 				str_copy(g_Config.m_ClAssetsEntities, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				m_pClient->m_MapImages.ChangeEntitiesPath(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+				GameClient()->m_MapImages.ChangeEntitiesPath(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
 			}
 			else if(s_CurCustomTab == ASSETS_TAB_GAME)
 			{
@@ -599,15 +599,15 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
 	QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
 	QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
-	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && m_pClient->m_GameConsole.IsClosed()))
+	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !GameClient()->m_GameConsole.IsActive()))
 	{
 		gs_aInitCustomList[s_CurCustomTab] = true;
 	}
 
-	DirectoryButton.HSplitTop(5.0f, 0, &DirectoryButton);
-	DirectoryButton.VSplitRight(175.0f, 0, &DirectoryButton);
+	DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
+	DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
 	DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
-	DirectoryButton.VSplitRight(10.0f, &DirectoryButton, 0);
+	DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
 	static CButtonContainer s_AssetsDirId;
 	if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
 	{
@@ -633,7 +633,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	GameClient()->m_Tooltips.DoToolTip(&s_AssetsDirId, &DirectoryButton, Localize("Open the directory to add custom assets"));
 
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 	static CButtonContainer s_AssetsReloadBtnId;
 	if(DoButton_Menu(&s_AssetsReloadBtnId, FONT_ICON_ARROW_ROTATE_RIGHT, 0, &ReloadButton) || Input()->KeyPress(KEY_F5) || (Input()->KeyPress(KEY_R) && Input()->ModifierIsPressed()))
 	{
@@ -651,7 +651,7 @@ void CMenus::ConchainAssetsEntities(IConsole::IResult *pResult, void *pUserData,
 		const char *pArg = pResult->GetString(0);
 		if(str_comp(pArg, g_Config.m_ClAssetsEntities) != 0)
 		{
-			pThis->m_pClient->m_MapImages.ChangeEntitiesPath(pArg);
+			pThis->GameClient()->m_MapImages.ChangeEntitiesPath(pArg);
 		}
 	}
 

@@ -31,7 +31,7 @@ private:
 	CCollision *m_pCCollision;
 
 	int m_Id;
-	int m_ObjType;
+	//int m_ObjType;
 
 	/*
 		Variable: m_ProximityRadius
@@ -42,6 +42,7 @@ private:
 protected:
 	/* State */
 	bool m_MarkedForDestroy;
+	int m_ObjType; // +KZ moved this here
 
 public: // TODO: Maybe make protected
 	/*
@@ -124,12 +125,6 @@ public: // TODO: Maybe make protected
 	virtual void Snap(int SnappingClient) {}
 
 	/*
-		Function: PostSnap
-			Called after all clients received their snapshot.
-	*/
-	virtual void PostSnap() {}
-
-	/*
 		Function: SwapClients
 			Called when two players have swapped their client ids.
 
@@ -177,6 +172,7 @@ public: // TODO: Maybe make protected
 	bool NetworkClippedLine(int SnappingClient, vec2 StartPos, vec2 EndPos) const;
 
 	bool GameLayerClipped(vec2 CheckPos);
+	virtual bool CanCollide(int ClientId) { return true; };
 
 	// DDRace
 

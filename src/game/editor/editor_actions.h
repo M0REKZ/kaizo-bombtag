@@ -9,8 +9,8 @@ class CEditorActionLayerBase : public IEditorAction
 public:
 	CEditorActionLayerBase(CEditor *pEditor, int GroupIndex, int LayerIndex);
 
-	virtual void Undo() override {}
-	virtual void Redo() override {}
+	void Undo() override {}
+	void Redo() override {}
 
 protected:
 	int m_GroupIndex;
@@ -37,6 +37,8 @@ private:
 	EditorTileStateChangeHistory<SSpeedupTileStateChange> m_SpeedupTileChanges;
 	EditorTileStateChangeHistory<SSwitchTileStateChange> m_SwitchTileChanges;
 	EditorTileStateChangeHistory<STuneTileStateChange> m_TuneTileChanges;
+	EditorTileStateChangeHistory<SKZTileStateChange> m_KZGameTileChanges;
+	EditorTileStateChangeHistory<SKZTileStateChange> m_KZFrontTileChanges;
 
 	int m_TotalTilesDrawn;
 	int m_TotalLayers;
@@ -231,8 +233,8 @@ class CEditorActionEditLayerPropBase : public CEditorActionLayerBase
 public:
 	CEditorActionEditLayerPropBase(CEditor *pEditor, int GroupIndex, int LayerIndex, E Prop, int Previous, int Current);
 
-	virtual void Undo() override {}
-	virtual void Redo() override {}
+	void Undo() override {}
+	void Redo() override {}
 
 protected:
 	E m_Prop;
@@ -334,6 +336,20 @@ private:
 	int m_PreviousImageCount;
 	char m_aTileArtFile[IO_MAX_PATH_LENGTH];
 	std::vector<int> m_vImageIndexMap;
+};
+
+// --------------
+
+class CEditorActionQuadArt : public IEditorAction
+{
+public:
+	CEditorActionQuadArt(CEditor *pEditor, CQuadArtParameters Parameters);
+
+	void Undo() override;
+	void Redo() override;
+
+private:
+	CQuadArtParameters m_Parameters;
 };
 
 // ----------------------

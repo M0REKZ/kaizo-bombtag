@@ -2,9 +2,13 @@
 #define GAME_SERVER_SAVE_H
 
 #include <base/vmath.h>
-
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
+#include <game/team_state.h>
+
+#include <optional>
+
+#include <game/mapitems.h>
 
 class IGameController;
 class CGameContext;
@@ -70,8 +74,9 @@ private:
 	int m_TeeFinished;
 	int m_IsSolo;
 
-	struct WeaponStat
+	class CWeaponStat
 	{
+	public:
 		int m_AmmoRegenStart;
 		int m_Ammo;
 		int m_Ammocost;
@@ -146,6 +151,39 @@ private:
 	int m_ReloadTimer;
 
 	char m_aGameUuid[UUID_MAXSTRSIZE];
+
+
+	//+KZ
+
+	void SaveKZ(CCharacter *pchr, bool AddPenalty = true);
+	bool LoadKZ(CCharacter *pchr, int Team, bool IsSwap = false);
+
+	int m_Health = 10;
+	int m_CustomWeapon = 0;
+	bool m_BluePortal = true;
+	int m_TuneZoneOverrideKZ = -1; //+KZ
+	struct
+	{
+		bool m_Got = false;
+		//int m_Snap = 0; not needed for save
+		int m_Ammo = -1;
+	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
+};
+
+class CSaveHotReloadTee
+{
+public:
+	CSaveHotReloadTee() = default;
+	~CSaveHotReloadTee() = default;
+	void Save(CCharacter *pChr, bool AddPenalty = true);
+	bool Load(CCharacter *pChr, int Team, bool IsSwap = false);
+
+private:
+	CSaveTee m_SaveTee;
+	bool m_Super;
+	bool m_Invincible;
+	CSaveTee m_SavedTeleTee;
+	std::optional<CSaveTee> m_LastDeath;
 };
 
 class CSaveTeam
@@ -180,7 +218,7 @@ private:
 	};
 	SSimpleSwitchers *m_pSwitchers = nullptr;
 
-	int m_TeamState = 0;
+	ETeamState m_TeamState = ETeamState::EMPTY;
 	int m_MembersCount = 0;
 	int m_HighestSwitchNumber = 0;
 	int m_TeamLocked = 0;

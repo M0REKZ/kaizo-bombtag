@@ -2,10 +2,13 @@
 #define ENGINE_CLIENT_GRAPHICS_THREADED_H
 
 #include <base/system.h>
+
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 
+#include <atomic>
 #include <cstddef>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -31,7 +34,7 @@ class CCommandBuffer
 		~CBuffer()
 		{
 			delete[] m_pData;
-			m_pData = 0x0;
+			m_pData = nullptr;
 			m_Used = 0;
 			m_Size = 0;
 		}
@@ -48,7 +51,7 @@ class CCommandBuffer
 				Offset = Alignment - Offset;
 
 			if(Requested + Offset + m_Used > m_Size)
-				return 0;
+				return nullptr;
 
 			void *pPtr = &m_pData[m_Used + Offset];
 			m_Used += Requested + Offset;
@@ -80,15 +83,10 @@ public:
 		CMDGROUP_PLATFORM_GL = 10000, // commands specific to a platform
 		CMDGROUP_PLATFORM_SDL = 20000,
 
-		//
 		CMD_FIRST = CMDGROUP_CORE,
-		CMD_NOP = CMD_FIRST,
-
-		//
-		CMD_RUNBUFFER,
 
 		// synchronization
-		CMD_SIGNAL,
+		CMD_SIGNAL = CMD_FIRST,
 
 		// texture commands
 		CMD_TEXTURE_CREATE,
@@ -118,6 +116,7 @@ public:
 		CMD_RENDER_TILE_LAYER, // render a tilelayer
 		CMD_RENDER_BORDER_TILE, // render one tile multiple times
 		CMD_RENDER_QUAD_LAYER, // render a quad layer
+		CMD_RENDER_QUAD_LAYER_GROUPED, // render a quad layer in groups meaning they all share the same envelope and offset (which can be none)
 		CMD_RENDER_TEXT, // render text
 		CMD_RENDER_QUAD_CONTAINER, // render a quad buffer container
 		CMD_RENDER_QUAD_CONTAINER_EX, // render a quad buffer container with extended parameters
@@ -221,13 +220,6 @@ public:
 		SCommand_Signal() :
 			SCommand(CMD_SIGNAL) {}
 		CSemaphore *m_pSemaphore;
-	};
-
-	struct SCommand_RunBuffer : public SCommand
-	{
-		SCommand_RunBuffer() :
-			SCommand(CMD_RUNBUFFER) {}
-		CCommandBuffer *m_pOtherBuffer;
 	};
 
 	struct SCommand_Render : public SCommand
@@ -388,8 +380,8 @@ public:
 
 	struct SCommand_RenderQuadLayer : public SCommand
 	{
-		SCommand_RenderQuadLayer() :
-			SCommand(CMD_RENDER_QUAD_LAYER) {}
+		SCommand_RenderQuadLayer(bool Grouped) :
+			SCommand(Grouped ? CMD_RENDER_QUAD_LAYER_GROUPED : CMD_RENDER_QUAD_LAYER) {}
 		SState m_State;
 
 		int m_BufferContainerIndex;
@@ -677,8 +669,7 @@ public:
 		INITFLAG_VSYNC = 1 << 1,
 		INITFLAG_RESIZABLE = 1 << 2,
 		INITFLAG_BORDERLESS = 1 << 3,
-		INITFLAG_HIGHDPI = 1 << 4,
-		INITFLAG_DESKTOP_FULLSCREEN = 1 << 5,
+		INITFLAG_DESKTOP_FULLSCREEN = 1 << 4,
 	};
 
 	virtual ~IGraphicsBackend() = default;
@@ -693,8 +684,8 @@ public:
 
 	virtual const TTwGraphicsGpuList &GetGpus() const = 0;
 
-	virtual void GetVideoModes(CVideoMode *pModes, int MaxModes, int *pNumModes, int HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int Screen) = 0;
-	virtual void GetCurrentVideoMode(CVideoMode &CurMode, int HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int Screen) = 0;
+	virtual void GetVideoModes(CVideoMode *pModes, int MaxModes, int *pNumModes, float HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int Screen) = 0;
+	virtual void GetCurrentVideoMode(CVideoMode &CurMode, float HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int Screen) = 0;
 
 	virtual int GetNumScreens() const = 0;
 	virtual const char *GetScreenName(int Screen) const = 0;
@@ -712,6 +703,7 @@ public:
 	virtual bool ResizeWindow(int w, int h, int RefreshRate) = 0;
 	virtual void GetViewportSize(int &w, int &h) = 0;
 	virtual void NotifyWindow() = 0;
+	virtual bool IsScreenKeyboardShown() = 0;
 
 	virtual void WindowDestroyNtf(uint32_t WindowId) = 0;
 	virtual void WindowCreateNtf(uint32_t WindowId) = 0;
@@ -731,7 +723,7 @@ public:
 	virtual bool HasQuadContainerBuffering() { return false; }
 	virtual bool Uses2DTextureArrays() { return false; }
 	virtual bool HasTextureArraysSupport() { return false; }
-	virtual const char *GetErrorString() { return NULL; }
+	virtual const char *GetErrorString() { return nullptr; }
 
 	virtual const char *GetVendorString() = 0;
 	virtual const char *GetVersionString() = 0;
@@ -742,8 +734,10 @@ public:
 
 	virtual bool GetWarning(std::vector<std::string> &WarningStrings) = 0;
 
-	// returns true if the error msg was shown
-	virtual bool ShowMessageBox(unsigned Type, const char *pTitle, const char *pMsg) = 0;
+	/**
+	 * @see IGraphics::ShowMessageBox
+	 */
+	virtual std::optional<int> ShowMessageBox(const IGraphics::CMessageBox &MessageBox) = 0;
 };
 
 class CGraphics_Threaded : public IEngineGraphics
@@ -798,8 +792,9 @@ class CGraphics_Threaded : public IEngineGraphics
 	size_t m_FirstFreeTexture;
 	int m_TextureMemoryUsage;
 
-	bool m_WarnPngliteIncompatibleImages = false;
+	std::atomic<bool> m_WarnPngliteIncompatibleImages = false;
 
+	std::mutex m_WarningsMutex;
 	std::vector<SWarning> m_vWarnings;
 
 	// is a non full windowed (in a sense that the viewport won't include the whole window),
@@ -886,19 +881,8 @@ class CGraphics_Threaded : public IEngineGraphics
 		// kick command buffer and try again
 		KickCommandBuffer();
 
-		if(!FailFunc())
-		{
-			char aError[256];
-			str_format(aError, sizeof(aError), "graphics: failed to run fail handler for command '%s'", typeid(TName).name());
-			dbg_assert(false, aError);
-		}
-
-		if(!m_pCommandBuffer->AddCommandUnsafe(Cmd))
-		{
-			char aError[256];
-			str_format(aError, sizeof(aError), "graphics: failed to add command '%s' to command buffer", typeid(TName).name());
-			dbg_assert(false, aError);
-		}
+		dbg_assert(FailFunc(), "graphics: failed to run fail handler for command '%s'", typeid(TName).name());
+		dbg_assert(m_pCommandBuffer->AddCommandUnsafe(Cmd), "graphics: failed to add command '%s' to command buffer", typeid(TName).name());
 	}
 
 	void KickCommandBuffer();
@@ -940,11 +924,16 @@ public:
 
 	void LinesBegin() override;
 	void LinesEnd() override;
-	void LinesDraw(const CLineItem *pArray, int Num) override;
+	void LinesDraw(const CLineItem *pArray, size_t Num) override;
+
+	void LinesBatchBegin(CLineItemBatch *pBatch) override;
+	void LinesBatchEnd(CLineItemBatch *pBatch) override;
+	void LinesBatchDraw(CLineItemBatch *pBatch, const CLineItem *pArray, size_t Num) override;
 
 	IGraphics::CTextureHandle FindFreeTextureIndex();
 	void FreeTextureIndex(CTextureHandle *pIndex);
 	void UnloadTexture(IGraphics::CTextureHandle *pIndex) override;
+	void LoadTextureAddWarning(size_t Width, size_t Height, int Flags, const char *pTexName);
 	IGraphics::CTextureHandle LoadTextureRaw(const CImageInfo &Image, int Flags, const char *pTexName = nullptr) override;
 	IGraphics::CTextureHandle LoadTextureRawMove(CImageInfo &Image, int Flags, const char *pTexName = nullptr) override;
 
@@ -1176,8 +1165,8 @@ public:
 	void FlushVerticesTex3D() override;
 
 	void RenderTileLayer(int BufferContainerIndex, const ColorRGBA &Color, char **pOffsets, unsigned int *pIndicedVertexDrawNum, size_t NumIndicesOffset) override;
-	virtual void RenderBorderTiles(int BufferContainerIndex, const ColorRGBA &Color, char *pIndexBufferOffset, const vec2 &Offset, const vec2 &Scale, uint32_t DrawNum) override;
-	void RenderQuadLayer(int BufferContainerIndex, SQuadRenderInfo *pQuadInfo, size_t QuadNum, int QuadOffset) override;
+	void RenderBorderTiles(int BufferContainerIndex, const ColorRGBA &Color, char *pIndexBufferOffset, const vec2 &Offset, const vec2 &Scale, uint32_t DrawNum) override;
+	void RenderQuadLayer(int BufferContainerIndex, SQuadRenderInfo *pQuadInfo, size_t QuadNum, int QuadOffset, bool Grouped = false) override;
 	void RenderText(int BufferContainerIndex, int TextQuadNum, int TextureSize, int TextureTextIndex, int TextureTextOutlineIndex, const ColorRGBA &TextColor, const ColorRGBA &TextOutlineColor) override;
 
 	// modern GL functions
@@ -1201,11 +1190,14 @@ public:
 	void WarnPngliteIncompatibleImages(bool Warn) override;
 	void SetWindowParams(int FullscreenMode, bool IsBorderless) override;
 	bool SetWindowScreen(int Index) override;
+	bool SwitchWindowScreen(int Index) override;
 	void Move(int x, int y) override;
 	bool Resize(int w, int h, int RefreshRate) override;
 	void ResizeToScreen() override;
 	void GotResized(int w, int h, int RefreshRate) override;
 	void UpdateViewport(int X, int Y, int W, int H, bool ByResize) override;
+	bool IsScreenKeyboardShown() override;
+
 	void AddWindowResizeListener(WINDOW_RESIZE_FUNC pFunc) override;
 	void AddWindowPropChangeListener(WINDOW_PROPS_CHANGED_FUNC pFunc) override;
 	int GetWindowScreen() override;
@@ -1240,8 +1232,11 @@ public:
 	bool IsIdle() const override;
 	void WaitForIdle() override;
 
-	SWarning *GetCurWarning() override;
-	bool ShowMessageBox(unsigned Type, const char *pTitle, const char *pMsg) override;
+	void AddWarning(const SWarning &Warning);
+	std::optional<SWarning> CurrentWarning() override;
+
+	std::optional<int> ShowMessageBox(const CMessageBox &MessageBox) override;
+
 	bool IsBackendInitialized() override;
 
 	bool GetDriverVersion(EGraphicsDriverAgeType DriverAgeType, int &Major, int &Minor, int &Patch, const char *&pName, EBackendType BackendType) override { return m_pBackend->GetDriverVersion(DriverAgeType, Major, Minor, Patch, pName, BackendType); }

@@ -10,9 +10,11 @@
 #include <engine/graphics.h>
 
 #include <game/client/component.h>
+#include <game/client/render.h>
 #include <game/generated/protocol.h>
 #include <game/generated/protocol7.h>
 
+#include <chrono>
 #include <vector>
 
 class CSkins7 : public CComponent
@@ -29,16 +31,21 @@ public:
 		HAT_OFFSET_SIDE = 2,
 	};
 
+	typedef std::function<void()> TSkinLoadedCallback;
+
 	class CSkinPart
 	{
 	public:
+		int m_Type;
 		int m_Flags;
 		char m_aName[24];
-		IGraphics::CTextureHandle m_OrgTexture;
-		IGraphics::CTextureHandle m_ColorTexture;
+		IGraphics::CTextureHandle m_OriginalTexture;
+		IGraphics::CTextureHandle m_ColorableTexture;
 		ColorRGBA m_BloodColor;
 
-		bool operator<(const CSkinPart &Other) { return str_comp_nocase(m_aName, Other.m_aName) < 0; }
+		void ApplyTo(CTeeRenderInfo::CSixup &SixupRenderInfo) const;
+
+		bool operator<(const CSkinPart &Other) const;
 	};
 
 	class CSkin
@@ -50,8 +57,8 @@ public:
 		int m_aUseCustomColors[protocol7::NUM_SKINPARTS];
 		unsigned m_aPartColors[protocol7::NUM_SKINPARTS];
 
-		bool operator<(const CSkin &Other) const { return str_comp_nocase(m_aName, Other.m_aName) < 0; }
-		bool operator==(const CSkin &Other) const { return !str_comp(m_aName, Other.m_aName); }
+		bool operator<(const CSkin &Other) const;
+		bool operator==(const CSkin &Other) const;
 	};
 
 	static const char *const ms_apSkinPartNames[protocol7::NUM_SKINPARTS];
@@ -66,6 +73,9 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnInit() override;
 
+	void Refresh(TSkinLoadedCallback &&SkinLoadedCallback);
+	std::chrono::nanoseconds LastRefreshTime() const { return m_LastRefreshTime; }
+
 	const std::vector<CSkin> &GetSkins() const;
 	const std::vector<CSkinPart> &GetSkinParts(int Part) const;
 	const CSkinPart *FindSkinPartOrNullptr(int Part, const char *pName, bool AllowSpecialPart) const;
@@ -74,6 +84,7 @@ public:
 	void RandomizeSkin(int Dummy) const;
 
 	ColorRGBA GetColor(int Value, bool UseAlpha) const;
+	void ApplyColorTo(CTeeRenderInfo::CSixup &SixupRenderInfo, bool UseCustomColors, int Value, int Part) const;
 	ColorRGBA GetTeamColor(int UseCustomColors, int PartColor, int Team, int Part) const;
 
 	// returns true if everything was valid and nothing changed
@@ -85,8 +96,10 @@ public:
 	IGraphics::CTextureHandle XmasHatTexture() const { return m_XmasHatTexture; }
 	IGraphics::CTextureHandle BotDecorationTexture() const { return m_BotTexture; }
 
+	static bool IsSpecialSkin(const char *pName);
+
 private:
-	int m_ScanningPart;
+	std::chrono::nanoseconds m_LastRefreshTime;
 
 	std::vector<CSkinPart> m_avSkinParts[protocol7::NUM_SKINPARTS];
 	CSkinPart m_aPlaceholderSkinParts[protocol7::NUM_SKINPARTS];
@@ -96,7 +109,9 @@ private:
 	IGraphics::CTextureHandle m_BotTexture;
 
 	static int SkinPartScan(const char *pName, int IsDir, int DirType, void *pUser);
+	bool LoadSkinPart(int PartType, const char *pName, int DirType);
 	static int SkinScan(const char *pName, int IsDir, int DirType, void *pUser);
+	bool LoadSkin(const char *pName, int DirType);
 
 	void InitPlaceholderSkinParts();
 	void LoadXmasHat();

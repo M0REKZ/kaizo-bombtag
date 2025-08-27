@@ -5,17 +5,21 @@
 
 #include <base/vmath.h>
 
-#include <map>
 #include <set>
 #include <vector>
 
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
+#include <game/teamscore.h>
+#include <game/mapitems.h>
+
+#include "params_kz.h"
 
 #include "prng.h"
 
 class CCollision;
 class CTeamsCore;
+class CPortalCore; //+KZ
 
 class CTuneParam
 {
@@ -63,6 +67,8 @@ public:
 	bool Get(const char *pName, float *pValue) const;
 	static const char *Name(int Index) { return ms_apNames[Index]; }
 	float GetWeaponFireDelay(int Weapon) const;
+
+	static const CTuningParams DEFAULT;
 };
 
 // Do not use these function unless for legacy code!
@@ -110,8 +116,8 @@ enum
 	HOOK_IDLE = 0,
 	HOOK_RETRACT_START = 1,
 	HOOK_RETRACT_END = 3,
-	HOOK_FLYING,
-	HOOK_GRABBED,
+	HOOK_FLYING = 4,
+	HOOK_GRABBED = 5,
 
 	COREEVENT_GROUND_JUMP = 0x01,
 	COREEVENT_AIR_JUMP = 0x02,
@@ -133,11 +139,11 @@ enum
 
 struct SSwitchers
 {
-	bool m_aStatus[MAX_CLIENTS];
+	bool m_aStatus[NUM_DDRACE_TEAMS];
 	bool m_Initial;
-	int m_aEndTick[MAX_CLIENTS];
-	int m_aType[MAX_CLIENTS];
-	int m_aLastUpdateTick[MAX_CLIENTS];
+	int m_aEndTick[NUM_DDRACE_TEAMS];
+	int m_aType[NUM_DDRACE_TEAMS];
+	int m_aLastUpdateTick[NUM_DDRACE_TEAMS];
 };
 
 class CWorldCore
@@ -150,6 +156,14 @@ public:
 			pCharacter = nullptr;
 		}
 		m_pPrng = nullptr;
+
+		for(int i = 0; i < MAX_CLIENTS;i++) //+KZ
+		{
+			for(int j = 0; j < 2; j++)
+			{
+				m_apPortals[i][j] = nullptr;
+			}
+		}
 	}
 
 	int RandomOr0(int BelowThis)
@@ -170,14 +184,22 @@ public:
 
 	void InitSwitchers(int HighestSwitchNumber);
 	std::vector<SSwitchers> m_vSwitchers;
+
+	//+KZ
+	class CPortalCore *m_apPortals[MAX_CLIENTS][2];
+	class CPortalCore *SetPortalKZ(class CPortalCore *pPortal);
+	class CPortalCore *GetPortalKZ(int OwnerId, bool IsBlue);
+	void DeletePortalKZ(int OwnerId, bool IsBlue);
+	int m_WorldTickKZ = -1; // +KZ
 };
 
 class CCharacterCore
 {
+public: // KZ
 	CWorldCore *m_pWorld = nullptr;
 	CCollision *m_pCollision;
 
-public:
+//public: // KZ
 	static constexpr float PhysicalSize() { return 28.0f; };
 	static constexpr vec2 PhysicalSizeVec2() { return vec2(28.0f, 28.0f); };
 	vec2 m_Pos;
@@ -193,8 +215,9 @@ public:
 	void SetHookedPlayer(int HookedPlayer);
 
 	int m_ActiveWeapon;
-	struct WeaponStat
+	class CWeaponStat
 	{
+	public:
 		int m_AmmoRegenStart;
 		int m_Ammo;
 		int m_Ammocost;
@@ -267,11 +290,18 @@ public:
 	bool m_LiveFrozen;
 	CTuningParams m_Tuning;
 
-private:
+//private: // +KZ made public
 	CTeamsCore *m_pTeams;
 	int m_MoveRestrictions;
 	int m_HookedPlayer;
 	static bool IsSwitchActiveCb(int Number, void *pUser);
+
+	// +KZ
+	bool m_SendCoreThisTick = false;
+	bool HandleKZTileOnMoveBox(vec2 *pMoveBoxPos, vec2 *pMoveBoxVel, vec2 MoveBoxSize, vec2 MoveBoxElasticity);
+	CKZTile *pTouchingKZTiles[4] = {nullptr, nullptr, nullptr, nullptr};
+	SKZColCharCoreParams m_CharCoreParams;
+	SKZColGenericParams m_GenericParams;
 };
 
 // input count
@@ -298,6 +328,19 @@ inline CInputCount CountInput(int Prev, int Cur)
 	}
 
 	return c;
-}
+};
+
+//+KZ
+class CPortalCore
+{
+	public:
+		int m_OwnerId;
+		vec2 m_Pos;
+		vec2 m_Pos2;
+		bool m_IsBlue;
+		int m_Team;
+
+		CPortalCore(int OwnerId, vec2 Pos, vec2 Pos2, bool IsBlue, int Team);
+};
 
 #endif

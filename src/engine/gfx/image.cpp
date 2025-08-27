@@ -2,6 +2,24 @@
 
 #include <engine/image.h>
 
+CImageInfo::CImageInfo(CImageInfo &&Other)
+{
+	*this = std::move(Other);
+}
+
+CImageInfo &CImageInfo::operator=(CImageInfo &&Other)
+{
+	m_Width = Other.m_Width;
+	m_Height = Other.m_Height;
+	m_Format = Other.m_Format;
+	m_pData = Other.m_pData;
+	Other.m_Width = 0;
+	Other.m_Height = 0;
+	Other.m_Format = FORMAT_UNDEFINED;
+	Other.m_pData = nullptr;
+	return *this;
+}
+
 void CImageInfo::Free()
 {
 	m_Width = 0;
@@ -117,4 +135,17 @@ void CImageInfo::CopyRectFrom(const CImageInfo &SrcImage, size_t SrcX, size_t Sr
 		const size_t DestOffset = ((DestY + Y) * m_Width + DestX) * PixelSize;
 		mem_copy(&m_pData[DestOffset], &SrcImage.m_pData[SrcOffset], CopySize);
 	}
+}
+
+CImageInfo CImageInfo::DeepCopy() const
+{
+	const size_t Size = DataSize();
+
+	CImageInfo Copy;
+	Copy.m_Width = m_Width;
+	Copy.m_Height = m_Height;
+	Copy.m_Format = m_Format;
+	Copy.m_pData = static_cast<uint8_t *>(malloc(Size));
+	mem_copy(Copy.m_pData, m_pData, Size);
+	return Copy;
 }

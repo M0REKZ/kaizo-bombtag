@@ -41,7 +41,7 @@ void CVoting::Callvote(const char *pType, const char *pValue, const char *pReaso
 		Client()->SendPackMsgActive(&Msg, MSGFLAG_VITAL, true);
 		return;
 	}
-	CNetMsg_Cl_CallVote Msg = {0};
+	CNetMsg_Cl_CallVote Msg = {nullptr};
 	Msg.m_pType = pType;
 	Msg.m_pValue = pValue;
 	Msg.m_pReason = pReason;
@@ -173,14 +173,14 @@ void CVoting::AddOption(const char *pDescription)
 		pOption = m_pRecycleFirst;
 		m_pRecycleFirst = m_pRecycleFirst->m_pNext;
 		if(m_pRecycleFirst)
-			m_pRecycleFirst->m_pPrev = 0;
+			m_pRecycleFirst->m_pPrev = nullptr;
 		else
-			m_pRecycleLast = 0;
+			m_pRecycleLast = nullptr;
 	}
 	else
 		pOption = m_Heap.Allocate<CVoteOptionClient>();
 
-	pOption->m_pNext = 0;
+	pOption->m_pNext = nullptr;
 	pOption->m_pPrev = m_pLast;
 	if(pOption->m_pPrev)
 		pOption->m_pPrev->m_pNext = pOption;
@@ -210,7 +210,7 @@ void CVoting::RemoveOption(const char *pDescription)
 			--m_NumVoteOptions;
 
 			// add it to recycle list
-			pOption->m_pNext = 0;
+			pOption->m_pNext = nullptr;
 			pOption->m_pPrev = m_pRecycleLast;
 			if(pOption->m_pPrev)
 				pOption->m_pPrev->m_pNext = pOption;
@@ -228,11 +228,11 @@ void CVoting::ClearOptions()
 	m_Heap.Reset();
 
 	m_NumVoteOptions = 0;
-	m_pFirst = 0;
-	m_pLast = 0;
+	m_pFirst = nullptr;
+	m_pLast = nullptr;
 
-	m_pRecycleFirst = 0;
-	m_pRecycleLast = 0;
+	m_pRecycleFirst = nullptr;
+	m_pRecycleLast = nullptr;
 }
 
 void CVoting::OnReset()
@@ -269,7 +269,7 @@ void CVoting::OnMessage(int MsgType, void *pRawMsg)
 				char aBuf[512];
 				str_format(aBuf, sizeof(aBuf), "%s (%s)", m_aDescription, m_aReason);
 				Client()->Notify("DDNet Vote", aBuf);
-				m_pClient->m_Sounds.Play(CSounds::CHN_GUI, SOUND_CHAT_HIGHLIGHT, 1.0f);
+				GameClient()->m_Sounds.Play(CSounds::CHN_GUI, SOUND_CHAT_HIGHLIGHT, 1.0f);
 			}
 		}
 	}
@@ -338,7 +338,7 @@ void CVoting::OnMessage(int MsgType, void *pRawMsg)
 
 void CVoting::Render()
 {
-	if((!g_Config.m_ClShowVotesAfterVoting && !m_pClient->m_Scoreboard.Active() && TakenChoice()) || !IsVoting() || Client()->State() == IClient::STATE_DEMOPLAYBACK)
+	if((!g_Config.m_ClShowVotesAfterVoting && !GameClient()->m_Scoreboard.IsActive() && TakenChoice()) || !IsVoting() || Client()->State() == IClient::STATE_DEMOPLAYBACK)
 		return;
 	const int Seconds = SecondsLeft();
 	if(Seconds < 0)
@@ -365,7 +365,7 @@ void CVoting::Render()
 	LeftColumn.VSplitRight(2.0f, &LeftColumn, nullptr);
 
 	SProgressSpinnerProperties ProgressProps;
-	ProgressProps.m_Progress = clamp((time() - m_Opentime) / (float)(m_Closetime - m_Opentime), 0.0f, 1.0f);
+	ProgressProps.m_Progress = std::clamp((time() - m_Opentime) / (float)(m_Closetime - m_Opentime), 0.0f, 1.0f);
 	Ui()->RenderProgressSpinner(ProgressSpinner.Center(), ProgressSpinner.h / 2.0f, ProgressProps);
 
 	Ui()->DoLabel(&RightColumn, aBuf, 6.0f, TEXTALIGN_MR);
@@ -388,12 +388,12 @@ void CVoting::Render()
 	Row.VSplitMid(&LeftColumn, &RightColumn, 4.0f);
 
 	char aKey[64];
-	m_pClient->m_Binds.GetKey("vote yes", aKey, sizeof(aKey));
+	GameClient()->m_Binds.GetKey("vote yes", aKey, sizeof(aKey));
 	str_format(aBuf, sizeof(aBuf), "%s - %s", aKey, Localize("Vote yes"));
 	TextRender()->TextColor(TakenChoice() == 1 ? ColorRGBA(0.2f, 0.9f, 0.2f, 0.85f) : TextRender()->DefaultTextColor());
 	Ui()->DoLabel(&LeftColumn, aBuf, 6.0f, TEXTALIGN_ML);
 
-	m_pClient->m_Binds.GetKey("vote no", aKey, sizeof(aKey));
+	GameClient()->m_Binds.GetKey("vote no", aKey, sizeof(aKey));
 	str_format(aBuf, sizeof(aBuf), "%s - %s", Localize("Vote no"), aKey);
 	TextRender()->TextColor(TakenChoice() == -1 ? ColorRGBA(0.95f, 0.25f, 0.25f, 0.85f) : TextRender()->DefaultTextColor());
 	Ui()->DoLabel(&RightColumn, aBuf, 6.0f, TEXTALIGN_MR);

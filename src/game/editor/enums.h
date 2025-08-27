@@ -1,7 +1,7 @@
 #ifndef GAME_EDITOR_ENUMS_H
 #define GAME_EDITOR_ENUMS_H
 
-constexpr const char *g_apGametileOpNames[] = {
+constexpr const char *GAME_TILE_OP_NAMES[] = {
 	"Air",
 	"Hookable",
 	"Death",
@@ -31,6 +31,19 @@ enum class EGameTileOp
 	RED_CHECK_TELE,
 	LIVE_FREEZE,
 	LIVE_UNFREEZE,
+};
+
+constexpr const char *AUTOMAP_REFERENCE_NAMES[] = {
+	"Game Layer",
+	"Hookable",
+	"Death",
+	"Unhookable",
+	"Freeze",
+	"Unfreeze",
+	"Deep Freeze",
+	"Deep Unfreeze",
+	"Live Freeze",
+	"Live Unfreeze",
 };
 
 #endif

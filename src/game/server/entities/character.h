@@ -4,7 +4,10 @@
 #define GAME_SERVER_ENTITIES_CHARACTER_H
 
 #include <game/server/entity.h>
+
+#include <game/race_state.h>
 #include <game/server/save.h>
+#include <game/mapitems.h>
 
 class CGameTeams;
 class CGameWorld;
@@ -13,23 +16,26 @@ struct CAntibotCharacterData;
 
 enum
 {
-	FAKETUNE_FREEZE = 1,
-	FAKETUNE_SOLO = 2,
-	FAKETUNE_NOJUMP = 4,
-	FAKETUNE_NOCOLL = 8,
-	FAKETUNE_NOHOOK = 16,
-	FAKETUNE_JETPACK = 32,
-	FAKETUNE_NOHAMMER = 64,
+	FAKETUNE_FREEZE = 1 << 0,
+	FAKETUNE_SOLO = 1 << 1,
+	FAKETUNE_NOJUMP = 1 << 2,
+	FAKETUNE_NOCOLL = 1 << 3,
+	FAKETUNE_NOHOOK = 1 << 4,
+	FAKETUNE_JETPACK = 1 << 5,
+	FAKETUNE_NOHAMMER = 1 << 6,
 };
 
 class CCharacter : public CEntity
 {
 	MACRO_ALLOC_POOL_ID()
 
-	friend class CSaveTee; // need to use core
+	// need to use core
+	friend class CSaveTee;
+	friend class CSaveHotReloadTee;
 
 public:
 	CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput);
+	~CCharacter();
 
 	void Reset() override;
 	void Destroy() override;
@@ -38,8 +44,9 @@ public:
 	void TickDeferred() override;
 	void TickPaused() override;
 	void Snap(int SnappingClient) override;
-	void PostSnap() override;
 	void SwapClients(int Client1, int Client2) override;
+
+	void PostGlobalSnap();
 
 	bool CanSnapCharacter(int SnappingClient);
 	bool IsSnappingCharacterInView(int SnappingClientId);
@@ -62,8 +69,8 @@ public:
 	void HandleNinja();
 	void HandleJetpack();
 
-	void OnPredictedInput(CNetObj_PlayerInput *pNewInput);
-	void OnDirectInput(CNetObj_PlayerInput *pNewInput);
+	void OnPredictedInput(const CNetObj_PlayerInput *pNewInput);
+	void OnDirectInput(const CNetObj_PlayerInput *pNewInput);
 	void ReleaseHook();
 	void ResetHook();
 	void ResetInput();
@@ -147,7 +154,6 @@ private:
 
 	int m_Health;
 	int m_Armor;
-
 	int m_TriggeredEvents7;
 
 	// the player core for the physics
@@ -193,16 +199,15 @@ public:
 	void GiveAllWeapons();
 	void ResetPickups();
 	void ResetJumps();
-	int m_DDRaceState;
+	ERaceState m_DDRaceState;
 	int Team();
-	bool CanCollide(int ClientId);
+	bool CanCollide(int ClientId) override;
 	bool SameTeam(int ClientId);
 	void StopRecording();
 	bool m_NinjaJetpack;
 	int m_TeamBeforeSuper;
 	int m_FreezeTime;
 	bool m_FrozenLastTick;
-	bool m_FreezeHammer;
 	int m_TuneZone;
 	int m_TuneZoneOld;
 	int m_PainSoundTimer;
@@ -243,10 +248,10 @@ public:
 	CCharacterCore GetCore() { return m_Core; }
 	void SetCore(CCharacterCore Core) { m_Core = Core; }
 	const CCharacterCore *Core() const { return &m_Core; }
-	bool GetWeaponGot(int Type) { return m_Core.m_aWeapons[Type].m_Got; }
-	void SetWeaponGot(int Type, bool Value) { m_Core.m_aWeapons[Type].m_Got = Value; }
-	int GetWeaponAmmo(int Type) { return m_Core.m_aWeapons[Type].m_Ammo; }
-	void SetWeaponAmmo(int Type, int Value) { m_Core.m_aWeapons[Type].m_Ammo = Value; }
+	bool GetWeaponGot(int Type) { return (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Got : m_Core.m_aWeapons[Type].m_Got); } //modified for custom weapons +KZ
+	void SetWeaponGot(int Type, bool Value) { (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Got = Value : m_Core.m_aWeapons[Type].m_Got = Value); } //modified for custom weapons +KZ
+	int GetWeaponAmmo(int Type) { return (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Ammo : m_Core.m_aWeapons[Type].m_Ammo); } //modified for custom weapons +KZ
+	void SetWeaponAmmo(int Type, int Value) { (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Ammo = Value : m_Core.m_aWeapons[Type].m_Ammo = Value); } //modified for custom weapons +KZ
 	void SetNinjaActivationDir(vec2 ActivationDir) { m_Core.m_Ninja.m_ActivationDir = ActivationDir; }
 	void SetNinjaActivationTick(int ActivationTick) { m_Core.m_Ninja.m_ActivationTick = ActivationTick; }
 	void SetNinjaCurrentMoveTime(int CurrentMoveTime) { m_Core.m_Ninja.m_CurrentMoveTime = CurrentMoveTime; }
@@ -266,14 +271,35 @@ public:
 
 	CSaveTee &GetLastRescueTeeRef(int Mode = RESCUEMODE_AUTO) { return m_RescueTee[Mode]; }
 	CTuningParams *GetTuning(int Zone) { return Zone ? &TuningList()[Zone] : Tuning(); }
-};
 
-enum
-{
-	DDRACE_NONE = 0,
-	DDRACE_STARTED,
-	DDRACE_CHEAT, // no time and won't start again unless ordered by a mod or death
-	DDRACE_FINISHED
+	//+KZ
+	void HandleKZTiles();
+	bool TakeDamageVanilla(vec2 Force, int Dmg, int From, int Weapon);
+	int GetOverriddenTuneZoneKZ() const { return ((m_TuneZoneOverrideKZ >= 0 && !m_TuneZone) || m_ForcedTuneKZ) ? m_TuneZoneOverrideKZ : m_TuneZone; }
+	int m_TuneZoneOverrideKZ = -1;
+	bool m_ForcedTuneKZ = false;
+	int m_aCrown[7];
+	bool m_EnableCrown = false;
+	bool m_SnapCustomWeapon = false;
+	int m_CustomWeapon = 0;
+	bool m_BluePortal = true;
+	int m_PortalKindId = -1;
+	bool m_AimPressed = false;
+	bool m_Waitingforreleaseaim = false;
+	int64_t m_LastSoundPlayed = -1;
+	int64_t m_LastLocalSoundPlayed = -1;
+	int64_t m_LastLocalInPosSoundPlayed = -1;
+	bool m_NODAMAGE = false;
+	bool m_StillPressingFire = false;
+	bool m_SpecTile = false;
+	vec2 m_SpecTilePos = vec2(0,0);
+
+	struct
+	{
+		bool m_Got = false;
+		int m_Snap = 0;
+		int m_Ammo = -1;
+	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
 };
 
 #endif

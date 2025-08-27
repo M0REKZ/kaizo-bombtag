@@ -35,7 +35,7 @@ CPlayer::~CPlayer()
 	GameServer()->Antibot()->OnPlayerDestroy(m_ClientId);
 	delete m_pLastTarget;
 	delete m_pCharacter;
-	m_pCharacter = 0;
+	m_pCharacter = nullptr;
 }
 
 void CPlayer::Reset()
@@ -44,8 +44,8 @@ void CPlayer::Reset()
 	m_PreviousDieTick = m_DieTick;
 	m_JoinTick = Server()->Tick();
 	delete m_pCharacter;
-	m_pCharacter = 0;
-	m_SpectatorId = SPEC_FREEVIEW;
+	m_pCharacter = nullptr;
+	SetSpectatorId(SPEC_FREEVIEW);
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
 	m_LastSetTeam = 0;
@@ -108,7 +108,7 @@ void CPlayer::Reset()
 	GameServer()->Score()->PlayerData(m_ClientId)->Reset();
 
 	m_Last_KickVote = 0;
-	m_Last_Team = 0;
+	m_LastDDRaceTeamChange = 0;
 	m_ShowOthers = g_Config.m_SvShowOthersDefault;
 	m_ShowAll = g_Config.m_SvShowAllDefault;
 	m_ShowDistance = vec2(1200, 800);
@@ -123,7 +123,6 @@ void CPlayer::Reset()
 	m_Score.reset();
 
 	// Variable initialized:
-	m_Last_Team = 0;
 	m_LastSqlQuery = 0;
 	m_ScoreQueryResult = nullptr;
 	m_ScoreFinishResult = nullptr;
@@ -146,6 +145,8 @@ void CPlayer::Reset()
 	m_SwapTargetsClientId = -1;
 	m_BirthdayAnnounced = false;
 	m_RescueMode = RESCUEMODE_AUTO;
+
+	m_CameraInfo.Reset();
 }
 
 static int PlayerFlags_SixToSeven(int Flags)
@@ -238,7 +239,7 @@ void CPlayer::Tick()
 			else if(!m_pCharacter->IsPaused())
 			{
 				delete m_pCharacter;
-				m_pCharacter = 0;
+				m_pCharacter = nullptr;
 			}
 		}
 		else if(m_Spawning && !m_WeakHookSpawn)
@@ -255,7 +256,10 @@ void CPlayer::Tick()
 
 	m_TuneZoneOld = m_TuneZone; // determine needed tunings with viewpos
 	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_ViewPos);
-	m_TuneZone = GameServer()->Collision()->IsTune(CurrentIndex);
+	if(m_pCharacter) //+KZ
+		m_TuneZone = m_pCharacter->GetOverriddenTuneZoneKZ();
+	else
+		m_TuneZone = GameServer()->Collision()->IsTune(CurrentIndex);
 
 	if(m_TuneZone != m_TuneZoneOld) // don't send tunings all the time
 	{
@@ -273,6 +277,11 @@ void CPlayer::Tick()
 		{
 			GameServer()->SendEmoticon(GetCid(), EMOTICON_GHOST, -1);
 		}
+	}
+
+	if(GetCharacter() && GetCharacter()->m_SpecTile)
+	{
+		m_ViewPos = GetCharacter()->m_SpecTilePos;
 	}
 }
 
@@ -341,7 +350,7 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_Score = Score;
 		pPlayerInfo->m_Local = (int)(m_ClientId == SnappingClient && (m_Paused != PAUSE_PAUSED || SnappingClientVersion >= VERSION_DDNET_OLD));
 		pPlayerInfo->m_ClientId = id;
-		pPlayerInfo->m_Team = m_Team;
+		pPlayerInfo->m_Team = (GetCharacter() && GetCharacter()->m_SpecTile && SnappingClient == m_ClientId) ? TEAM_SPECTATORS : m_Team;
 		if(SnappingClientVersion < VERSION_DDNET_INDEPENDENT_SPECTATORS_TEAM)
 		{
 			// In older versions the SPECTATORS TEAM was also used if the own player is in PAUSE_PAUSED or if any player is in PAUSE_SPEC.
@@ -357,7 +366,7 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_PlayerFlags = PlayerFlags_SixToSeven(m_PlayerFlags);
 		if(SnappingClientVersion >= VERSION_DDRACE && (m_PlayerFlags & PLAYERFLAG_AIM))
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_AIM;
-		if(Server()->GetAuthedState(m_ClientId) != AUTHED_NO)
+		if(Server()->GetAuthedState(m_ClientId) && ((SnappingClient >= 0 && Server()->GetAuthedState(SnappingClient)) || !Server()->HasAuthHidden(m_ClientId)))
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_ADMIN;
 
 		// Times are in milliseconds for 0.7
@@ -389,21 +398,86 @@ void CPlayer::Snap(int SnappingClient)
 			pSpectatorInfo->m_Y = m_ViewPos.y;
 		}
 	}
+	else if(GetCharacter() && GetCharacter()->m_SpecTile)
+	{
+		if(!Server()->IsSixup(SnappingClient))
+		{
+			CNetObj_SpectatorInfo *pSpectatorInfo = Server()->SnapNewItem<CNetObj_SpectatorInfo>(m_ClientId);
+			if(!pSpectatorInfo)
+				return;
+
+
+			pSpectatorInfo->m_SpectatorId = m_ClientId;
+			pSpectatorInfo->m_X = GetCharacter()->m_SpecTilePos.x;
+			pSpectatorInfo->m_Y = GetCharacter()->m_SpecTilePos.y;
+		}
+	}
+
+	if(m_ClientId == SnappingClient)
+	{
+		// send extended spectator info even when playing, this allows demo to record camera settings for local player
+		const int SpectatingClient = ((m_Team != TEAM_SPECTATORS && !m_Paused) || m_SpectatorId < 0 || m_SpectatorId >= MAX_CLIENTS) ? id : m_SpectatorId;
+		const CPlayer *pSpecPlayer = GameServer()->m_apPlayers[SpectatingClient];
+
+		if(pSpecPlayer)
+		{
+			CNetObj_DDNetSpectatorInfo *pDDNetSpectatorInfo = Server()->SnapNewItem<CNetObj_DDNetSpectatorInfo>(id);
+			if(!pDDNetSpectatorInfo)
+				return;
+
+			pDDNetSpectatorInfo->m_HasCameraInfo = pSpecPlayer->m_CameraInfo.m_HasCameraInfo;
+			pDDNetSpectatorInfo->m_Zoom = pSpecPlayer->m_CameraInfo.m_Zoom * 1000.0f;
+			pDDNetSpectatorInfo->m_Deadzone = pSpecPlayer->m_CameraInfo.m_Deadzone;
+			pDDNetSpectatorInfo->m_FollowFactor = pSpecPlayer->m_CameraInfo.m_FollowFactor;
+
+			if(SpectatingClient == id && SnappingClient != SERVER_DEMO_CLIENT && m_Team != TEAM_SPECTATORS && !m_Paused)
+			{
+				int SpectatorCount = 0;
+				for(auto &pPlayer : GameServer()->m_apPlayers)
+				{
+					if(!pPlayer || pPlayer->m_ClientId == id || pPlayer->m_Afk ||
+						(Server()->GetAuthedState(pPlayer->m_ClientId) && Server()->HasAuthHidden(pPlayer->m_ClientId)) ||
+						!(pPlayer->m_Paused || pPlayer->m_Team == TEAM_SPECTATORS))
+					{
+						continue;
+					}
+
+					if(pPlayer->m_SpectatorId == id)
+					{
+						SpectatorCount++;
+					}
+					else if(GameServer()->m_apPlayers[id]->GetCharacter())
+					{
+						vec2 CheckPos = GameServer()->m_apPlayers[id]->GetCharacter()->GetPos();
+						float dx = pPlayer->m_ViewPos.x - CheckPos.x;
+						float dy = pPlayer->m_ViewPos.y - CheckPos.y;
+						if(absolute(dx) < (pPlayer->m_ShowDistance.x / 2.5f) && absolute(dy) < (pPlayer->m_ShowDistance.y / 2.3f))
+							SpectatorCount++;
+					}
+				}
+				pDDNetSpectatorInfo->m_SpectatorCount = SpectatorCount;
+			}
+		}
+	}
 
 	CNetObj_DDNetPlayer *pDDNetPlayer = Server()->SnapNewItem<CNetObj_DDNetPlayer>(id);
 	if(!pDDNetPlayer)
 		return;
 
-	pDDNetPlayer->m_AuthLevel = Server()->GetAuthedState(m_ClientId);
+	if((SnappingClient >= 0 && Server()->GetAuthedState(SnappingClient)) || !Server()->HasAuthHidden(m_ClientId))
+		pDDNetPlayer->m_AuthLevel = Server()->GetAuthedState(m_ClientId);
+	else
+		pDDNetPlayer->m_AuthLevel = AUTHED_NO;
+
 	pDDNetPlayer->m_Flags = 0;
-	if(m_Afk)
+	if(m_Afk || m_PlayerFlags & PLAYERFLAG_IN_MENU) // Raid added in menu
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_AFK;
 	if(m_Paused == PAUSE_SPEC)
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_SPEC;
 	if(m_Paused == PAUSE_PAUSED)
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_PAUSED;
 
-	if(Server()->IsSixup(SnappingClient) && m_pCharacter && m_pCharacter->m_DDRaceState == DDRACE_STARTED &&
+	if(Server()->IsSixup(SnappingClient) && m_pCharacter && m_pCharacter->m_DDRaceState == ERaceState::STARTED &&
 		GameServer()->m_apPlayers[SnappingClient]->m_TimerType == TIMERTYPE_SIXUP)
 	{
 		protocol7::CNetObj_PlayerInfoRace *pRaceInfo = Server()->SnapNewItem<protocol7::CNetObj_PlayerInfoRace>(id);
@@ -480,7 +554,7 @@ void CPlayer::OnDisconnect()
 	m_Moderating = false;
 }
 
-void CPlayer::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
+void CPlayer::OnPredictedInput(const CNetObj_PlayerInput *pNewInput)
 {
 	// skip the input if chat is active
 	if((m_PlayerFlags & PLAYERFLAG_CHATTING) && (pNewInput->m_PlayerFlags & PLAYERFLAG_CHATTING))
@@ -490,27 +564,30 @@ void CPlayer::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 
 	m_NumInputs++;
 
-	if(m_pCharacter && !m_Paused)
+	if(m_pCharacter && !m_Paused && (m_pCharacter->m_SpecTile ? true : !(pNewInput->m_PlayerFlags & PLAYERFLAG_SPEC_CAM)))
 		m_pCharacter->OnPredictedInput(pNewInput);
 
 	// Magic number when we can hope that client has successfully identified itself
 	if(m_NumInputs == 20 && g_Config.m_SvClientSuggestion[0] != '\0' && GetClientVersion() <= VERSION_DDNET_OLD)
 		GameServer()->SendBroadcast(g_Config.m_SvClientSuggestion, m_ClientId);
-	else if(m_NumInputs == 200 && Server()->IsSixup(m_ClientId))
-		GameServer()->SendBroadcast("This server uses an experimental translation from Teeworlds 0.7 to 0.6. Please report bugs on ddnet.org/discord", m_ClientId);
 }
 
-void CPlayer::OnDirectInput(CNetObj_PlayerInput *pNewInput)
+void CPlayer::OnDirectInput(const CNetObj_PlayerInput *pNewInput)
 {
 	Server()->SetClientFlags(m_ClientId, pNewInput->m_PlayerFlags);
 
 	AfkTimer();
 
-	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorId == SPEC_FREEVIEW)
+	if(((pNewInput->m_PlayerFlags & PLAYERFLAG_SPEC_CAM) || GetClientVersion() < VERSION_DDNET_PLAYERFLAG_SPEC_CAM) && ((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorId == SPEC_FREEVIEW)
 		m_ViewPos = vec2(pNewInput->m_TargetX, pNewInput->m_TargetY);
 
 	// check for activity
-	if(mem_comp(pNewInput, m_pLastTarget, sizeof(CNetObj_PlayerInput)))
+	// if a player is killed, their scoreboard opens automatically, so ignore that flag
+	CNetObj_PlayerInput NewWithoutScoreboard = *pNewInput;
+	CNetObj_PlayerInput LastWithoutScoreboard = *m_pLastTarget;
+	NewWithoutScoreboard.m_PlayerFlags &= ~PLAYERFLAG_SCOREBOARD;
+	LastWithoutScoreboard.m_PlayerFlags &= ~PLAYERFLAG_SCOREBOARD;
+	if(mem_comp(&NewWithoutScoreboard, &LastWithoutScoreboard, sizeof(CNetObj_PlayerInput)))
 	{
 		mem_copy(m_pLastTarget, pNewInput, sizeof(CNetObj_PlayerInput));
 		// Ignore the first direct input and keep the player afk as it is sent automatically
@@ -521,7 +598,7 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 	}
 }
 
-void CPlayer::OnPredictedEarlyInput(CNetObj_PlayerInput *pNewInput)
+void CPlayer::OnPredictedEarlyInput(const CNetObj_PlayerInput *pNewInput)
 {
 	m_PlayerFlags = pNewInput->m_PlayerFlags;
 
@@ -532,7 +609,7 @@ void CPlayer::OnPredictedEarlyInput(CNetObj_PlayerInput *pNewInput)
 	if(m_PlayerFlags & PLAYERFLAG_CHATTING)
 		return;
 
-	if(m_pCharacter && !m_Paused)
+	if(m_pCharacter && !m_Paused && (m_pCharacter->m_SpecTile ? true : !(m_PlayerFlags & PLAYERFLAG_SPEC_CAM))) //+KZ modified
 		m_pCharacter->OnDirectInput(pNewInput);
 }
 
@@ -545,14 +622,14 @@ CCharacter *CPlayer::GetCharacter()
 {
 	if(m_pCharacter && m_pCharacter->IsAlive())
 		return m_pCharacter;
-	return 0;
+	return nullptr;
 }
 
 const CCharacter *CPlayer::GetCharacter() const
 {
 	if(m_pCharacter && m_pCharacter->IsAlive())
 		return m_pCharacter;
-	return 0;
+	return nullptr;
 }
 
 void CPlayer::KillCharacter(int Weapon, bool SendKillMsg)
@@ -562,7 +639,7 @@ void CPlayer::KillCharacter(int Weapon, bool SendKillMsg)
 		m_pCharacter->Die(m_ClientId, Weapon, SendKillMsg);
 
 		delete m_pCharacter;
-		m_pCharacter = 0;
+		m_pCharacter = nullptr;
 	}
 }
 
@@ -591,7 +668,7 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 	m_Team = Team;
 	m_LastSetTeam = Server()->Tick();
 	m_LastActionTick = Server()->Tick();
-	m_SpectatorId = SPEC_FREEVIEW;
+	SetSpectatorId(SPEC_FREEVIEW);
 
 	protocol7::CNetMsg_Sv_Team Msg;
 	Msg.m_ClientId = m_ClientId;
@@ -606,7 +683,7 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 		for(auto &pPlayer : GameServer()->m_apPlayers)
 		{
 			if(pPlayer && pPlayer->m_SpectatorId == m_ClientId)
-				pPlayer->m_SpectatorId = SPEC_FREEVIEW;
+				pPlayer->SetSpectatorId(SPEC_FREEVIEW);
 		}
 	}
 
@@ -743,7 +820,7 @@ void CPlayer::ProcessPause()
 	if(m_ForcePauseTime && m_ForcePauseTime < Server()->Tick())
 	{
 		m_ForcePauseTime = 0;
-		Pause(PAUSE_NONE, true);
+		GameServer()->SendChatTarget(m_ClientId, "The force pause timer is now over, you can exit with /spec");
 	}
 
 	if(m_Paused == PAUSE_SPEC && !m_pCharacter->IsPaused() && CanSpec())
@@ -841,10 +918,15 @@ void CPlayer::SpectatePlayerName(const char *pName)
 	{
 		if(i != m_ClientId && Server()->ClientIngame(i) && !str_comp(pName, Server()->ClientName(i)))
 		{
-			m_SpectatorId = i;
+			SetSpectatorId(i);
 			return;
 		}
 	}
+}
+
+void CPlayer::SetSpectatorId(int Id)
+{
+	m_SpectatorId = Id;
 }
 
 void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
@@ -935,4 +1017,34 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 			break;
 		}
 	}
+}
+
+vec2 CPlayer::CCameraInfo::ConvertTargetToWorld(vec2 Position, vec2 Target) const
+{
+	vec2 TargetCameraOffset(0, 0);
+	float l = length(Target);
+
+	if(l > 0.0001f) // make sure that this isn't 0
+	{
+		float OffsetAmount = maximum(l - m_Deadzone, 0.0f) * (m_FollowFactor / 100.0f);
+		TargetCameraOffset = normalize_pre_length(Target, l) * OffsetAmount;
+	}
+
+	return Position + (Target - TargetCameraOffset) * m_Zoom + TargetCameraOffset;
+}
+
+void CPlayer::CCameraInfo::Write(const CNetMsg_Cl_CameraInfo *Msg)
+{
+	m_HasCameraInfo = true;
+	m_Zoom = Msg->m_Zoom / 1000.0f;
+	m_Deadzone = Msg->m_Deadzone;
+	m_FollowFactor = Msg->m_FollowFactor;
+}
+
+void CPlayer::CCameraInfo::Reset()
+{
+	m_HasCameraInfo = false;
+	m_Zoom = 1.0f;
+	m_Deadzone = 0.0f;
+	m_FollowFactor = 0.0f;
 }

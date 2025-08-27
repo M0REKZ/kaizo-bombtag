@@ -18,7 +18,6 @@
 #include <engine/shared/snapshot.h>
 #include <engine/shared/uuid_manager.h>
 
-#include <list>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -90,6 +89,14 @@ class CServer : public IServer
 	void UpdateDebugDummies(bool ForceDisconnect);
 #endif
 
+	virtual int GetClientInfclassVersion(int ClientId) override;
+	virtual bool IsTaterClient(int ClientId) override { return m_aClients[ClientId].m_IsTaterClient; }
+	virtual bool IsQxdClient(int ClientId) override { return m_aClients[ClientId].m_IsQxdClient; }
+	virtual bool IsChillerbotClient(int ClientId) override { return m_aClients[ClientId].m_IsChillerbotClient; }
+	virtual bool IsStAClient(int ClientId) override { return m_aClients[ClientId].m_IsStAClient; }
+	virtual bool IsAllTheHaxxClient(int ClientId) override { return m_aClients[ClientId].m_IsAllTheHaxxClient; }
+	virtual bool IsPulseClient(int ClientId) override { return m_aClients[ClientId].m_IsPulseClient; }
+
 public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class CConfig *Config() { return m_pConfig; }
@@ -110,13 +117,13 @@ public:
 	public:
 		enum
 		{
-			STATE_EMPTY = 0,
+			STATE_REDIRECTED = -1,
+			STATE_EMPTY,
 			STATE_PREAUTH,
 			STATE_AUTH,
 			STATE_CONNECTING,
 			STATE_READY,
 			STATE_INGAME,
-			STATE_REDIRECTED,
 
 			SNAPRATE_INIT = 0,
 			SNAPRATE_FULL,
@@ -147,6 +154,7 @@ public:
 		int m_LastInputTick;
 		CSnapshotStorage m_Snapshots;
 
+		CNetMsg_Sv_PreInput m_LastPreInput = {};
 		CInput m_LatestInput;
 		CInput m_aInputs[200]; // TODO: handle input better
 		int m_CurrentInput;
@@ -158,12 +166,33 @@ public:
 		int m_Authed;
 		int m_AuthKey;
 		int m_AuthTries;
+		bool m_AuthHidden;
 		int m_NextMapChunk;
 		int m_Flags;
 		bool m_ShowIps;
 		bool m_DebugDummy;
+		bool m_ForceHighBandwidthOnSpectate;
+		NETADDR m_DebugDummyAddr;
+		std::array<char, NETADDR_MAXSTRSIZE> m_aDebugDummyAddrString;
+		std::array<char, NETADDR_MAXSTRSIZE> m_aDebugDummyAddrStringNoPort;
+
+		//+KZ
+		int m_InfClassVersion; // to identify infclass clients
+		bool m_IsTaterClient; // to identify tater clients
+		bool m_IsQxdClient; // to identify qxd clients
+		bool m_IsChillerbotClient; // to identify chillerbot clients
+		bool m_IsStAClient; // to identify StA clients
+		bool m_IsAllTheHaxxClient; // to identify allthehaxx clients
+		bool m_IsPulseClient; // to identify pulse clients
 
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
+		enum
+		{
+			MAPLIST_UNINITIALIZED = -1,
+			MAPLIST_DISABLED = -2,
+			MAPLIST_DONE = -3,
+		};
+		int m_MaplistEntryToSend;
 
 		bool m_HasPersistentData;
 		void *m_pPersistentData;
@@ -172,7 +201,6 @@ public:
 
 		// DDRace
 
-		NETADDR m_Addr;
 		bool m_GotDDNetVersionPacket;
 		bool m_DDNetVersionSettled;
 		int m_DDNetVersion;
@@ -189,6 +217,11 @@ public:
 		bool IncludedInServerInfo() const
 		{
 			return m_State != STATE_EMPTY && !m_DebugDummy;
+		}
+
+		int ConsoleAccessLevel() const
+		{
+			return m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : m_Authed == AUTHED_MOD ? IConsole::ACCESS_LEVEL_MOD : IConsole::ACCESS_LEVEL_HELPER;
 		}
 	};
 
@@ -247,6 +280,7 @@ public:
 	unsigned m_aCurrentMapCrc[NUM_MAP_TYPES];
 	unsigned char *m_apCurrentMapData[NUM_MAP_TYPES];
 	unsigned int m_aCurrentMapSize[NUM_MAP_TYPES];
+	char m_aMapDownloadUrl[256];
 
 	CDemoRecorder m_aDemoRecorder[NUM_RECORDERS];
 	CAuthManager m_AuthManager;
@@ -284,7 +318,8 @@ public:
 
 	void Kick(int ClientId, const char *pReason) override;
 	void Ban(int ClientId, int Seconds, const char *pReason, bool VerbatimReason) override;
-	void RedirectClient(int ClientId, int Port, bool Verbose = false) override;
+	void ReconnectClient(int ClientId);
+	void RedirectClient(int ClientId, int Port) override;
 
 	void DemoRecorder_HandleAutoStart() override;
 
@@ -298,10 +333,12 @@ public:
 	void SetRconCid(int ClientId) override;
 	int GetAuthedState(int ClientId) const override;
 	const char *GetAuthName(int ClientId) const override;
+	bool HasAuthHidden(int ClientId) const override;
 	void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, SHA256_DIGEST *pMapSha256, int *pMapCrc) override;
 	bool GetClientInfo(int ClientId, CClientInfo *pInfo) const override;
 	void SetClientDDNetVersion(int ClientId, int DDNetVersion) override;
-	void GetClientAddr(int ClientId, char *pAddrStr, int Size) const override;
+	const NETADDR *ClientAddr(int ClientId) const override;
+	const std::array<char, NETADDR_MAXSTRSIZE> &ClientAddrStringImpl(int ClientId, bool IncludePort) const override;
 	const char *ClientName(int ClientId) const override;
 	const char *ClientClan(int ClientId) const override;
 	int ClientCountry(int ClientId) const override;
@@ -335,9 +372,24 @@ public:
 
 	void SendRconCmdAdd(const IConsole::CCommandInfo *pCommandInfo, int ClientId);
 	void SendRconCmdRem(const IConsole::CCommandInfo *pCommandInfo, int ClientId);
-	int GetConsoleAccessLevel(int ClientId);
+	void SendRconCmdGroupStart(int ClientId);
+	void SendRconCmdGroupEnd(int ClientId);
 	int NumRconCommands(int ClientId);
-	void UpdateClientRconCommands();
+	void UpdateClientRconCommands(int ClientId);
+
+	class CMaplistEntry
+	{
+	public:
+		char m_aName[128];
+
+		CMaplistEntry() = default;
+		CMaplistEntry(const char *pName);
+		bool operator<(const CMaplistEntry &Other) const;
+	};
+	std::vector<CMaplistEntry> m_vMaplistEntries;
+	void SendMaplistGroupStart(int ClientId);
+	void SendMaplistGroupEnd(int ClientId);
+	void UpdateClientMaplistEntries(int ClientId);
 
 	bool CheckReservedSlotAuth(int ClientId, const char *pPassword);
 	void ProcessClientPacket(CNetChunk *pPacket);
@@ -371,9 +423,9 @@ public:
 
 	void ExpireServerInfo() override;
 	void CacheServerInfo(CCache *pCache, int Type, bool SendClients);
-	void CacheServerInfoSixup(CCache *pCache, bool SendClients);
+	void CacheServerInfoSixup(CCache *pCache, bool SendClients, int MaxConsideredClients);
 	void SendServerInfo(const NETADDR *pAddr, int Token, int Type, bool SendClients);
-	void GetServerInfoSixup(CPacker *pPacker, int Token, bool SendClients);
+	void GetServerInfoSixup(CPacker *pPacker, bool SendClients);
 	bool RateLimitServerInfoConnless();
 	void SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type);
 	void UpdateRegisterServerInfo();
@@ -402,6 +454,8 @@ public:
 	static void ConMapReload(IConsole::IResult *pResult, void *pUser);
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);
 	static void ConShowIps(IConsole::IResult *pResult, void *pUser);
+	static void ConHideAuthStatus(IConsole::IResult *pResult, void *pUser);
+	static void ConForceHighBandwidthOnSpectate(IConsole::IResult *pResult, void *pUser);
 
 	static void ConAuthAdd(IConsole::IResult *pResult, void *pUser);
 	static void ConAuthAddHashed(IConsole::IResult *pResult, void *pUser);
@@ -413,6 +467,9 @@ public:
 	// console commands for sqlmasters
 	static void ConAddSqlServer(IConsole::IResult *pResult, void *pUserData);
 	static void ConDumpSqlServers(IConsole::IResult *pResult, void *pUserData);
+
+	static void ConReloadAnnouncement(IConsole::IResult *pResult, void *pUserData);
+	static void ConReloadMaplist(IConsole::IResult *pResult, void *pUserData);
 
 	static void ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
@@ -431,6 +488,7 @@ public:
 	static void ConchainStdoutOutputLevel(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainAnnouncementFileName(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMysteryRoundsFileName(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainInputFifo(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
 #if defined(CONF_FAMILY_UNIX)
 	static void ConchainConnLoggingServerChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
@@ -445,10 +503,12 @@ public:
 
 	// DDRace
 
-	void GetClientAddr(int ClientId, NETADDR *pAddr) const override;
 	int m_aPrevStates[MAX_CLIENTS];
 	const char *GetAnnouncementLine() override;
-	void ReadAnnouncementsFile(const char *pFileName) override;
+	void ReadAnnouncementsFile();
+
+	static int MaplistEntryCallback(const char *pFilename, int IsDir, int DirType, void *pUser);
+	void InitMaplist();
 
 	const char *GetMysteryRoundLine() override;
 	void ReadMysteryRoundsFile(const char *pFileName) override;
@@ -497,6 +557,8 @@ public:
 	void SendConnLoggingCommand(CONN_LOGGING_CMD Cmd, const NETADDR *pAddr);
 #endif
 };
+
+bool IsInterrupted();
 
 extern CServer *CreateServer();
 #endif

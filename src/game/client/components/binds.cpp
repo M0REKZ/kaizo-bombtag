@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "binds.h"
+#include <base/log.h>
 #include <base/system.h>
 #include <engine/config.h>
 #include <engine/shared/config.h>
@@ -9,7 +10,7 @@
 #include <game/client/components/console.h>
 #include <game/client/gameclient.h>
 
-static const ColorRGBA gs_BindPrintColor{1.0f, 1.0f, 0.8f, 1.0f};
+static constexpr LOG_COLOR BIND_PRINT_COLOR{255, 255, 204};
 
 bool CBinds::CBindsSpecial::OnInput(const IInput::CEvent &Event)
 {
@@ -19,7 +20,7 @@ bool CBinds::CBindsSpecial::OnInput(const IInput::CEvent &Event)
 	// only handle F and composed F binds
 	// do not handle F5 bind while menu is active
 	if(((Event.m_Key >= KEY_F1 && Event.m_Key <= KEY_F12) || (Event.m_Key >= KEY_F13 && Event.m_Key <= KEY_F24)) &&
-		(Event.m_Key != KEY_F5 || !m_pClient->m_Menus.IsActive()))
+		(Event.m_Key != KEY_F5 || !GameClient()->m_Menus.IsActive()))
 	{
 		return m_pBinds->OnInput(Event);
 	}
@@ -49,21 +50,19 @@ void CBinds::Bind(int KeyId, const char *pStr, bool FreeOnly, int ModifierCombin
 	free(m_aapKeyBindings[ModifierCombination][KeyId]);
 	m_aapKeyBindings[ModifierCombination][KeyId] = nullptr;
 
-	char aBuf[256];
 	char aModifiers[128];
 	GetKeyBindModifiersName(ModifierCombination, aModifiers, sizeof(aModifiers));
 	if(!pStr[0])
 	{
-		str_format(aBuf, sizeof(aBuf), "unbound %s%s (%d)", aModifiers, Input()->KeyName(KeyId), KeyId);
+		log_info_color(BIND_PRINT_COLOR, "binds", "unbound %s%s", aModifiers, Input()->KeyName(KeyId));
 	}
 	else
 	{
 		int Size = str_length(pStr) + 1;
 		m_aapKeyBindings[ModifierCombination][KeyId] = (char *)malloc(Size);
 		str_copy(m_aapKeyBindings[ModifierCombination][KeyId], pStr, Size);
-		str_format(aBuf, sizeof(aBuf), "bound %s%s (%d) = %s", aModifiers, Input()->KeyName(KeyId), KeyId, m_aapKeyBindings[ModifierCombination][KeyId]);
+		log_info_color(BIND_PRINT_COLOR, "binds", "bound %s%s = %s", aModifiers, Input()->KeyName(KeyId), m_aapKeyBindings[ModifierCombination][KeyId]);
 	}
-	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "binds", aBuf, gs_BindPrintColor);
 }
 
 int CBinds::GetModifierMask(IInput *pInput)
@@ -172,7 +171,7 @@ bool CBinds::OnInput(const IInput::CEvent &Event)
 			// Prevent binds from being deactivated while chat, console and menus are open, as these components will
 			// still allow key release events to be forwarded to this component, so the active binds can be cleared.
 			if(GameClient()->m_Chat.IsActive() ||
-				!GameClient()->m_GameConsole.IsClosed() ||
+				GameClient()->m_GameConsole.IsActive() ||
 				GameClient()->m_Menus.IsActive())
 			{
 				return;
@@ -324,23 +323,13 @@ void CBinds::ConBind(IConsole::IResult *pResult, void *pUserData)
 
 	if(!BindSlot.m_Key)
 	{
-		char aBuf[256];
-		str_format(aBuf, sizeof(aBuf), "key %s not found", pBindStr);
-		pBinds->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "binds", aBuf, gs_BindPrintColor);
+		log_info_color(BIND_PRINT_COLOR, "binds", "key %s not found", pBindStr);
 		return;
 	}
 
 	if(pResult->NumArguments() == 1)
 	{
-		char aBuf[256];
-		const char *pKeyName = pResult->GetString(0);
-
-		if(!pBinds->m_aapKeyBindings[BindSlot.m_ModifierMask][BindSlot.m_Key])
-			str_format(aBuf, sizeof(aBuf), "%s (%d) is not bound", pKeyName, BindSlot.m_Key);
-		else
-			str_format(aBuf, sizeof(aBuf), "%s (%d) = %s", pKeyName, BindSlot.m_Key, pBinds->m_aapKeyBindings[BindSlot.m_ModifierMask][BindSlot.m_Key]);
-
-		pBinds->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "binds", aBuf, gs_BindPrintColor);
+		ConBinds(pResult, pUserData);
 		return;
 	}
 
@@ -352,38 +341,35 @@ void CBinds::ConBinds(IConsole::IResult *pResult, void *pUserData)
 	CBinds *pBinds = (CBinds *)pUserData;
 	if(pResult->NumArguments() == 1)
 	{
-		char aBuf[256];
 		const char *pKeyName = pResult->GetString(0);
 		const CBindSlot BindSlot = pBinds->GetBindSlot(pKeyName);
 		if(!BindSlot.m_Key)
 		{
-			str_format(aBuf, sizeof(aBuf), "key '%s' not found", pKeyName);
-			pBinds->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "binds", aBuf, gs_BindPrintColor);
+			log_info_color(BIND_PRINT_COLOR, "binds", "key '%s' not found", pKeyName);
 		}
 		else
 		{
 			if(!pBinds->m_aapKeyBindings[BindSlot.m_ModifierMask][BindSlot.m_Key])
-				str_format(aBuf, sizeof(aBuf), "%s (%d) is not bound", pKeyName, BindSlot.m_Key);
+				log_info_color(BIND_PRINT_COLOR, "binds", "%s is not bound", pKeyName);
 			else
-				str_format(aBuf, sizeof(aBuf), "%s (%d) = %s", pKeyName, BindSlot.m_Key, pBinds->m_aapKeyBindings[BindSlot.m_ModifierMask][BindSlot.m_Key]);
-
-			pBinds->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "binds", aBuf, gs_BindPrintColor);
+			{
+				char *pBuf = pBinds->GetKeyBindCommand(BindSlot.m_ModifierMask, BindSlot.m_Key);
+				log_info_color(BIND_PRINT_COLOR, "binds", pBuf);
+				free(pBuf);
+			}
 		}
 	}
 	else
 	{
-		char aBuf[1024];
 		for(int Modifier = MODIFIER_NONE; Modifier < MODIFIER_COMBINATION_COUNT; Modifier++)
 		{
-			char aModifiers[128];
-			GetKeyBindModifiersName(Modifier, aModifiers, sizeof(aModifiers));
 			for(int Key = KEY_FIRST; Key < KEY_LAST; Key++)
 			{
 				if(!pBinds->m_aapKeyBindings[Modifier][Key])
 					continue;
-
-				str_format(aBuf, sizeof(aBuf), "%s%s (%d) = %s", aModifiers, pBinds->Input()->KeyName(Key), Key, pBinds->m_aapKeyBindings[Modifier][Key]);
-				pBinds->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "binds", aBuf, gs_BindPrintColor);
+				char *pBuf = pBinds->GetKeyBindCommand(Modifier, Key);
+				log_info_color(BIND_PRINT_COLOR, "binds", pBuf);
+				free(pBuf);
 			}
 		}
 	}
@@ -397,9 +383,7 @@ void CBinds::ConUnbind(IConsole::IResult *pResult, void *pUserData)
 
 	if(!BindSlot.m_Key)
 	{
-		char aBuf[256];
-		str_format(aBuf, sizeof(aBuf), "key %s not found", pKeyName);
-		pBinds->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "binds", aBuf, gs_BindPrintColor);
+		log_info_color(BIND_PRINT_COLOR, "binds", "key %s not found", pKeyName);
 		return;
 	}
 
@@ -470,6 +454,21 @@ void CBinds::GetKeyBindModifiersName(int ModifierCombination, char *pBuf, size_t
 	}
 }
 
+char *CBinds::GetKeyBindCommand(int ModifierCombination, int Key) const
+{
+	// worst case the str_escape can double the string length
+	int Size = str_length(m_aapKeyBindings[ModifierCombination][Key]) * 2 + 30;
+	auto *pBuf = static_cast<char *>(malloc(Size));
+	char aModifiers[128];
+	GetKeyBindModifiersName(ModifierCombination, aModifiers, sizeof(aModifiers));
+	str_format(pBuf, Size, "bind %s%s \"", aModifiers, Input()->KeyName(Key));
+	char *pDst = pBuf + str_length(pBuf);
+	// process the string. we need to escape some characters
+	str_escape(&pDst, m_aapKeyBindings[ModifierCombination][Key], pBuf + Size);
+	str_append(pBuf, "\"", Size);
+	return pBuf;
+}
+
 void CBinds::ConfigSaveCallback(IConfigManager *pConfigManager, void *pUserData)
 {
 	CBinds *pSelf = (CBinds *)pUserData;
@@ -477,26 +476,13 @@ void CBinds::ConfigSaveCallback(IConfigManager *pConfigManager, void *pUserData)
 	pConfigManager->WriteLine("unbindall");
 	for(int Modifier = MODIFIER_NONE; Modifier < MODIFIER_COMBINATION_COUNT; Modifier++)
 	{
-		char aModifiers[128];
-		GetKeyBindModifiersName(Modifier, aModifiers, sizeof(aModifiers));
 		for(int Key = KEY_FIRST; Key < KEY_LAST; Key++)
 		{
 			if(!pSelf->m_aapKeyBindings[Modifier][Key])
 				continue;
-
-			// worst case the str_escape can double the string length
-			int Size = str_length(pSelf->m_aapKeyBindings[Modifier][Key]) * 2 + 30;
-			char *pBuffer = (char *)malloc(Size);
-			char *pEnd = pBuffer + Size;
-
-			str_format(pBuffer, Size, "bind %s%s \"", aModifiers, pSelf->Input()->KeyName(Key));
-			// process the string. we need to escape some characters
-			char *pDst = pBuffer + str_length(pBuffer);
-			str_escape(&pDst, pSelf->m_aapKeyBindings[Modifier][Key], pEnd);
-			str_append(pBuffer, "\"", Size);
-
-			pConfigManager->WriteLine(pBuffer);
-			free(pBuffer);
+			char *pBuf = pSelf->GetKeyBindCommand(Modifier, Key);
+			pConfigManager->WriteLine(pBuf);
+			free(pBuf);
 		}
 	}
 }

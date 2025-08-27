@@ -11,9 +11,33 @@ A non-exhaustive list of things that usually get rejected:
   https://github.com/ddnet/ddnet/pull/5443#issuecomment-1158437505
 - Breaking backwards compatibility in the network protocol or file formats such as skins and demos.
 - Breaking backwards compatibility in gameplay:
-    + Existing ranks should not be made impossible.
-    + Existing maps should not break.
-    + New gameplay should not make runs easier on already completed maps.
+	- Existing ranks should not be made impossible.
+	- Existing maps should not break.
+	- New gameplay should not make runs easier on already completed maps.
+
+Check the [list of issues](https://github.com/ddnet/ddnet/issues) to find issues to work on.
+Unlabeled issues have not been triaged yet and are usually not good candidates.
+Furthermore, the label https://github.com/ddnet/ddnet/labels/needs-discussion indicate issues that still need discussion before they can be implemented and issues with the label https://github.com/ddnet/ddnet/labels/fix-changes-physics are too involved for new contributors.
+Working on issues with the labels https://github.com/ddnet/ddnet/labels/good%20first%20issue, https://github.com/ddnet/ddnet/labels/bug and https://github.com/ddnet/ddnet/labels/feature-accepted is recommended.
+Make sure the issue is not already being worked on by someone else, by checking its assignment and whether there are open pull requests linked to it.
+If you would like to work on an issue, please comment on it to be assigned to it or if you have any questions.
+
+Adding new features generally requires the support of at least two maintainers to avoid feature creep.
+
+## Programming languages
+
+We currently use the following languages to develop DDNet.
+
+- C++
+- very marginally Rust
+- Python for code generation and supporting tools
+- CMake for building
+
+Adding code in another programming language is not possible.
+
+For platform support, we also use other programming languages like Java on
+Android or Objective-C++ on macOS, but this is confined to platform-specific
+code.
 
 ## Code style
 
@@ -23,6 +47,8 @@ If your github pipeline shows some errors please have a look at the logs and try
 Such fix commits should ideally be squashed into one big commit using ``git commit --amend`` or ``git rebase -i``.
 
 A lot of the style offenses can be fixed automatically by running the fix script `./scripts/fix_style.py`
+
+We use clang-format 10. If your package manager no longer provides this version, you can download it from https://pypi.org/project/clang-format/10.0.1.1/.
 
 ### Upper camel case for variables, methods, class names
 
@@ -42,86 +68,94 @@ For multiple words:
 
 ❌ Avoid:
 
-```C++
+```cpp
 for(int i = 0; i < MAX_CLIENTS; i++)
 {
-    for(int k = 0; k < NUM_DUMMIES; k++)
-    {
-        if(k == 0)
-            continue;
+	for(int k = 0; k < NUM_DUMMIES; k++)
+	{
+		if(k == 0)
+			continue;
 
-        m_aClients[i].Foo();
-    }
+		m_aClients[i].Foo();
+	}
 }
 ```
 
 ✅ Instead do:
 
-```C++
+```cpp
 for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
 {
-    for(int Dummy = 0; Dummy < NUM_DUMMIES; Dummy++)
-    {
-        if(Dummy == 0)
-            continue;
+	for(int Dummy = 0; Dummy < NUM_DUMMIES; Dummy++)
+	{
+		if(Dummy == 0)
+			continue;
 
-        m_aClients[ClientId].Foo();
-    }
+		m_aClients[ClientId].Foo();
+	}
 }
 ```
 
 More examples can be found [here](https://github.com/ddnet/ddnet/pull/8288#issuecomment-2094097306)
 
-### Teeworlds interpretation of the hungarian notation
+### Our interpretation of the hungarian notation
 
 DDNet inherited the hungarian notation like prefixes from [Teeworlds](https://www.teeworlds.com/?page=docs&wiki=nomenclature)
 
-`m_`
+Only use the prefixes listed below. The ddnet code base does **NOT** follow the whole hungarian notation strictly.
 
-Class member
-
-`g_`
-
-Global variable
-
-`s_`
-
-Static variable
-
-`p`
-
-Pointer
-
-`a`
-
-Fixed array
-
-Combine them appropriately.
-Class Prefixes
-
-`C`
-
-Class, CMyClass, This goes for structures as well.
-
-`I`
-
-Interface, IMyClass
-
-Only use those prefixes. The ddnet code base does **NOT** follow the whole hungarian notation strictly.
 Do **NOT** use `c` for constants or `b` for booleans or `i` for integers.
 
-Examples:
+C-style function pointers are pointers, but `std::function` are not.
 
-```C++
-class CFoo
+#### For variables
+
+| Prefix | Usage | Example |
+| --- | --- | --- |
+| `m_` | Class member | `int m_Mode`, `CLine m_aLines[]` |
+| `g_` | Global member | `CConfig g_Config` |
+| `s_` | Static variable | `static EHistoryType s_HistoryType`, `static char *ms_apSkinNameVariables[NUM_DUMMIES]` |
+| `p` | Both raw and smart pointers | `char *pName`, `void **ppUserData`, `std::unique_ptr<IStorage> pStorage` |
+| `a` | Fixed sized arrays and `std::array`s | `float aWeaponInitialOffset[NUM_WEAPONS]`, `std::array<char, 12> aOriginalData` |
+| `v` | Vectors (`std::vector`) | `std::vector<CLanguage> m_vLanguages` |
+| `pfn` | Function pointers (NOT `std::function`) | `m_pfnUnknownCommandCallback = pfnCallback` |
+| `F` | Function type definitions | `typedef void (*FCommandCallback)(IResult *pResult, void *pUserData)`, `typedef std::function<int()> FButtonColorCallback` |
+
+Combine these appropriately
+
+#### For classes
+
+| Prefix | Usage | Example |
+| --- | --- | --- |
+| `C` | Classes | `class CTextCursor` |
+| `I` | Interfaces | `class IFavorites` |
+| `S` | ~~Structs (Use classes instead)~~ | ~~`struct STextContainerUsages`~~ |
+
+### Enumerations
+
+Both unscoped enums (`enum`) and scoped enums (`enum class`) should start with `E` and be CamelCase. The literals should use SCREAMING_SNAKE_CASE.
+
+All new code should use scoped enums where the names of the literals should not contain the enum name.
+
+❌ Avoid:
+
+```cpp
+enum STATUS
 {
-    int m_Foo = 0;
-    const char *m_pText = "";
+	STATUS_PENDING,
+	STATUS_OKAY,
+	STATUS_ERROR,
+};
+```
 
-    void Func(int Argument, int *pPointer)
-    {
-        int LocalVariable = 0;
-    };
+✅ Instead do:
+
+```cpp
+enum class EStatus
+{
+	PENDING,
+	OKAY,
+	ERROR,
 };
 ```
 
@@ -135,14 +169,14 @@ Do not set variables in if statements.
 
 ❌
 
-```C++
+```cpp
 int Foo;
 if((Foo = 2)) { .. }
 ```
 
 ✅
 
-```C++
+```cpp
 int Foo = 2;
 if(Foo) { .. }
 ```
@@ -153,14 +187,14 @@ Unless the alternative code is more complex and harder to read.
 
 ❌
 
-```C++
+```cpp
 int Foo = 0;
 if(!Foo) { .. }
 ```
 
 ✅
 
-```C++
+```cpp
 int Foo = 0;
 if(Foo != 0) { .. }
 ```
@@ -173,19 +207,54 @@ Default arguments tend to break quickly, if you have multiple you have to specif
 
 Try finding descriptive names instead.
 
+### Global/static variables should be avoided
+
+Use member variables or pass state by parameter instead of using global or static variables since static variables share the same value across instances of a class.
+
+Avoid static variables ❌: 
+
+```cpp
+int CMyClass::Foo()
+{
+	static int s_Count = 0;
+	s_Count++;
+	return s_Count;
+}
+```
+
+Use member variables instead ✅:
+
+```cpp
+class CMyClass
+{
+	int m_Count = 0;
+};
+int CMyClass::Foo()
+{
+	m_Count++;
+	return m_Count;
+}
+```
+
+Constants can be static ✅:
+
+```cpp
+static constexpr int ANSWER = 42;
+```
+
 ### Getters should not have a Get prefix
 
 While the code base already has a lot of methods that start with a ``Get`` prefix. If new getters are added they should not contain a prefix.
 
 ❌
 
-```C++
+```cpp
 int GetMyVariable() { return m_MyVariable; }
 ```
 
 ✅
 
-```C++
+```cpp
 int MyVariable() { return m_MyVariable; }
 ```
 
@@ -193,19 +262,19 @@ int MyVariable() { return m_MyVariable; }
 
 Instead of doing this ❌:
 
-```C++
+```cpp
 class CFoo
 {
-    int m_Foo;
+	int m_Foo;
 };
 ```
 
 Do this instead if possible ✅:
 
-```C++
+```cpp
 class CFoo
 {
-    int m_Foo = 0;
+	int m_Foo = 0;
 };
 ```
 
@@ -233,15 +302,25 @@ Code file names should be all lowercase and words should be separated with under
 
 ❌
 
-```C++
+```cpp
 src/game/FooBar.cpp
 ```
 
 ✅
 
-```C++
+```cpp
 src/game/foo_bar.cpp
 ```
+
+## Code documentation
+
+Code documentation is required for all public declarations of functions, classes etc. in the `base` folder.
+For other code, documentation is recommended for functions, classes etc. intended for reuse or when it improves clarity.
+
+We use [doxygen](https://www.doxygen.nl/) to generate code documentation.
+The documentation is updated regularly and available at https://codedoc.ddnet.org/
+
+We use [Javadoc style block comments](https://www.doxygen.nl/manual/docblocks.html) and prefix [doxygen commands](https://www.doxygen.nl/manual/commands.html) with `@`, not with `\`.
 
 ## Commit messages
 

@@ -67,8 +67,8 @@ public:
 
 	virtual int LoadOpus(const char *pFilename, int StorageType = IStorage::TYPE_ALL) = 0;
 	virtual int LoadWV(const char *pFilename, int StorageType = IStorage::TYPE_ALL) = 0;
-	virtual int LoadOpusFromMem(const void *pData, unsigned DataSize, bool FromEditor = false) = 0;
-	virtual int LoadWVFromMem(const void *pData, unsigned DataSize, bool FromEditor = false) = 0;
+	virtual int LoadOpusFromMem(const void *pData, unsigned DataSize, bool ForceLoad = false) = 0;
+	virtual int LoadWVFromMem(const void *pData, unsigned DataSize, bool ForceLoad = false) = 0;
 	virtual void UnloadSample(int SampleId) = 0;
 
 	virtual float GetSampleTotalTime(int SampleId) = 0; // in s
@@ -117,7 +117,7 @@ class IEngineSound : public ISound
 public:
 	virtual int Init() = 0;
 	virtual int Update() = 0;
-	virtual void Shutdown() override = 0;
+	void Shutdown() override = 0;
 };
 
 extern IEngineSound *CreateEngineSound();

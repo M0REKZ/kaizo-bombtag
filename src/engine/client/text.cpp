@@ -462,7 +462,7 @@ private:
 						if(GetX >= 0 && GetY >= 0 && GetX < w && GetY < h)
 						{
 							int Index = GetY * w + GetX;
-							float Mask = 1.f - clamp(length(vec2(sx, sy)) - OutlineCount, 0.f, 1.f);
+							float Mask = 1.f - std::clamp(length(vec2(sx, sy)) - OutlineCount, 0.f, 1.f);
 							c = maximum(c, int(pIn[Index] * Mask));
 						}
 					}
@@ -705,7 +705,7 @@ public:
 
 	const SGlyph *GetGlyph(int Chr, int FontSize)
 	{
-		FontSize = clamp(FontSize, MIN_FONT_SIZE, MAX_FONT_SIZE);
+		FontSize = std::clamp(FontSize, MIN_FONT_SIZE, MAX_FONT_SIZE);
 
 		// Find glyph index and most appropriate font face.
 		FT_Face Face;
@@ -804,8 +804,8 @@ public:
 				{
 					for(unsigned OffX = 0; OffX < pBitmap->width; ++OffX)
 					{
-						const int ImgOffX = clamp(x + OffX + WidthLastChars, x, (x + TexSubWidth) - 1);
-						const int ImgOffY = clamp(y + OffY, y, (y + TexSubHeight) - 1);
+						const int ImgOffX = std::clamp(x + OffX + WidthLastChars, x, (x + TexSubWidth) - 1);
+						const int ImgOffY = std::clamp(y + OffY, y, (y + TexSubHeight) - 1);
 						const size_t ImageOffset = ImgOffY * (TextImage.m_Width * PixelSize) + ImgOffX * PixelSize;
 						for(size_t i = 0; i < PixelSize - 1; ++i)
 						{
@@ -1178,7 +1178,7 @@ public:
 		}
 		if(pJsonData->type != json_object)
 		{
-			log_error("textrender", "Font index malformed: root must be an object", pFilename, aError);
+			log_error("textrender", "Font index malformed: root must be an object in file '%s'", pFilename);
 			return false;
 		}
 
@@ -1580,7 +1580,7 @@ public:
 		const unsigned RenderFlags = TextContainer.m_RenderFlags;
 
 		float DrawX = 0.0f, DrawY = 0.0f;
-		if((RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT) != 0)
+		if((RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT) != 0)
 		{
 			DrawX = pCursor->m_X;
 			DrawY = pCursor->m_Y;
@@ -1653,7 +1653,7 @@ public:
 
 			DrawX = pCursor->m_StartX;
 			DrawY += pCursor->m_AlignedFontSize + pCursor->m_AlignedLineSpacing;
-			if((RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT) == 0)
+			if((RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT) == 0)
 			{
 				DrawX = round_to_int(DrawX * FakeToScreen.x) / FakeToScreen.x; // realign
 				DrawY = round_to_int(DrawY * FakeToScreen.y) / FakeToScreen.y;
@@ -2225,7 +2225,7 @@ public:
 		float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 		Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
 
-		if((TextContainer.m_RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT) == 0)
+		if((TextContainer.m_RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT) == 0)
 		{
 			const vec2 FakeToScreen = vec2(Graphics()->ScreenWidth() / (ScreenX1 - ScreenX0), Graphics()->ScreenHeight() / (ScreenY1 - ScreenY0));
 			const float AlignedX = round_to_int((TextContainer.m_X + X) * FakeToScreen.x) / FakeToScreen.x;

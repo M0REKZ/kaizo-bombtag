@@ -1,4 +1,5 @@
 #include <engine/keys.h>
+#include <game/client/gameclient.h>
 #include <game/mapitems.h>
 
 #include "editor.h"
@@ -168,7 +169,7 @@ void CEditor::LayerSelectImage()
 
 	static SLayerPopupContext s_LayerPopupContext = {};
 	s_LayerPopupContext.m_pEditor = this;
-	Ui()->DoPopupMenu(&s_LayerPopupContext, Ui()->MouseX(), Ui()->MouseY(), 120, 270, &s_LayerPopupContext, PopupLayer);
+	Ui()->DoPopupMenu(&s_LayerPopupContext, Ui()->MouseX(), Ui()->MouseY(), 150, 300, &s_LayerPopupContext, PopupLayer);
 	PopupSelectImageInvoke(pTiles->m_Image, Ui()->MouseX(), Ui()->MouseY());
 }
 
@@ -213,4 +214,72 @@ void CEditor::DeleteSelectedLayer()
 	m_Map.m_vpGroups[m_SelectedGroup]->DeleteLayer(m_vSelectedLayers[0]);
 
 	SelectPreviousLayer();
+}
+
+void CEditor::TestMapLocally()
+{
+	const char *pFileNameNoMaps = str_startswith(m_aFileName, "maps/");
+	if(!pFileNameNoMaps)
+	{
+		ShowFileDialogError("The map isn't saved in the maps/ folder. It must be saved there to load on the server.");
+		return;
+	}
+
+	char aFileNameNoExt[IO_MAX_PATH_LENGTH];
+	fs_split_file_extension(pFileNameNoMaps, aFileNameNoExt, sizeof(aFileNameNoExt));
+
+	if(Client()->RconAuthed())
+	{
+		if(net_addr_is_local(&Client()->ServerAddress()))
+		{
+			OnClose();
+			g_Config.m_ClEditor = 0;
+			char aMapChange[IO_MAX_PATH_LENGTH + 64];
+			str_format(aMapChange, sizeof(aMapChange), "change_map %s", aFileNameNoExt);
+			Client()->Rcon(aMapChange);
+			return;
+		}
+	}
+
+	CGameClient *pGameClient = (CGameClient *)Kernel()->RequestInterface<IGameClient>();
+	if(pGameClient->m_LocalServer.IsServerRunning())
+	{
+		m_PopupEventType = CEditor::POPEVENT_RESTART_SERVER;
+		m_PopupEventActivated = true;
+	}
+	else
+	{
+		char aMapChange[IO_MAX_PATH_LENGTH + 64];
+		str_format(aMapChange, sizeof(aMapChange), "change_map %s", aFileNameNoExt);
+		pGameClient->m_LocalServer.RunServer({"sv_register 0", aMapChange});
+		OnClose();
+		g_Config.m_ClEditor = 0;
+		Client()->Connect("localhost");
+	}
+}
+
+// KZ
+
+void CEditor::AddKZGameLayer()
+{
+	std::shared_ptr<CLayer> pKZGameLayer = std::make_shared<CLayerKZGame>(this, m_Map.m_pGameLayer->m_Width, m_Map.m_pGameLayer->m_Height);
+	if(pKZGameLayer)
+		printf("KZGameLayer created\n");
+	m_Map.MakeKZGameLayer(pKZGameLayer);
+	m_Map.m_vpGroups[m_SelectedGroup]->AddLayer(pKZGameLayer);
+	int LayerIndex = m_Map.m_vpGroups[m_SelectedGroup]->m_vpLayers.size() - 1;
+	SelectLayer(LayerIndex);
+	m_pBrush->Clear();
+	m_EditorHistory.RecordAction(std::make_shared<CEditorActionAddLayer>(this, m_SelectedGroup, LayerIndex));
+}
+
+void CEditor::AddKZFrontLayer()
+{
+	std::shared_ptr<CLayer> pKZFrontLayer = std::make_shared<CLayerKZFront>(this, m_Map.m_pGameLayer->m_Width, m_Map.m_pGameLayer->m_Height);
+	m_Map.MakeKZFrontLayer(pKZFrontLayer);
+	m_Map.m_vpGroups[m_SelectedGroup]->AddLayer(pKZFrontLayer);
+	int LayerIndex = m_Map.m_vpGroups[m_SelectedGroup]->m_vpLayers.size() - 1;
+	SelectLayer(LayerIndex);
+	m_pBrush->Clear();
+	m_EditorHistory.RecordAction(std::make_shared<CEditorActionAddLayer>(this, m_SelectedGroup, LayerIndex));
 }

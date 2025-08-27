@@ -14,27 +14,29 @@
 #   We don't want to use anonymous namespaces instead of static functions.
 # bugprone-suspicious-realloc-usage
 #   We generally don't handle memory allocation failures.
+# performance-noexcept-*
+#   Exceptions may be disabled later, adding noexcept is just noise
 
 Checks: >
   -*,
   bugprone-*,
   -bugprone-assignment-in-if-condition,
   -bugprone-branch-clone,
+  -bugprone-casting-through-void,
   -bugprone-easily-swappable-parameters,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-incorrect-roundings,
   -bugprone-integer-division,
   -bugprone-macro-parentheses,
+  -bugprone-multi-level-implicit-pointer-conversion,
   -bugprone-narrowing-conversions,
   -bugprone-parent-virtual-call,
   -bugprone-reserved-identifier,
   -bugprone-suspicious-include,
-  -bugprone-unhandled-self-assignment,
   -bugprone-suspicious-realloc-usage,
   -bugprone-switch-missing-default-case,
-  -bugprone-casting-through-void,
-  -bugprone-multi-level-implicit-pointer-conversion,
   -bugprone-unchecked-optional-access,
+  -bugprone-unhandled-self-assignment,
   clang-analyzer-*,
   -clang-analyzer-optin.cplusplus.UninitializedObject,
   -clang-analyzer-optin.cplusplus.VirtualCall,
@@ -49,19 +51,19 @@ Checks: >
   cppcoreguidelines-virtual-class-destructor,
   misc-*,
   -misc-const-correctness,
+  -misc-include-cleaner,
   -misc-no-recursion,
   -misc-non-private-member-variables-in-classes,
   -misc-static-assert,
   -misc-unused-parameters,
   -misc-use-anonymous-namespace,
-  -misc-include-cleaner,
   modernize-avoid-bind,
   modernize-concat-nested-namespaces,
   modernize-deprecated-headers,
   modernize-deprecated-ios-base-aliases,
   modernize-loop-convert,
-  modernize-make-unique,
   modernize-make-shared,
+  modernize-make-unique,
   modernize-redundant-void-arg,
   modernize-replace-auto-ptr,
   modernize-replace-disallow-copy-and-assign-macro,
@@ -76,6 +78,7 @@ Checks: >
   modernize-use-transparent-functors,
   modernize-use-uncaught-exceptions,
   readability-*,
+  -readability-avoid-nested-conditional-operator,
   -readability-braces-around-statements,
   -readability-convert-member-functions-to-static,
   -readability-else-after-return,
@@ -85,16 +88,17 @@ Checks: >
   -readability-implicit-bool-conversion,
   -readability-isolate-declaration,
   -readability-magic-numbers,
+  -readability-math-missing-parentheses,
   -readability-named-parameter,
   -readability-non-const-parameter,
   -readability-simplify-boolean-expr,
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix,
   -readability-use-std-min-max,
-  -readability-avoid-nested-conditional-operator,
   performance-*,
-  -performance-no-int-to-ptr,
   -performance-enum-size,
+  -performance-no-int-to-ptr,
+  -performance-noexcept-*,
   portability-*,
 
 WarningsAsErrors:
@@ -110,15 +114,13 @@ CheckOptions:
   - key:             readability-identifier-naming.LocalConstantCase
     value:           CamelCase
   - key:             readability-identifier-naming.ClassMemberCase
-    value:           CamelCase
+    value:           UPPER_CASE
   - key:             readability-identifier-naming.MemberCase
     value:           CamelCase
   - key:             readability-identifier-naming.MemberPrefix
     value:           m_
   - key:             readability-identifier-naming.MemberIgnoredRegexp
     value:           '^(m_ap|m_v|m_p|m_a|ms_p|[a-z]$).*'
-  - key:             readability-identifier-naming.ClassMemberPrefix
-    value:           ms_
   - key:             readability-identifier-naming.StaticVariablePrefix
     value:           s_
   - key:             readability-identifier-naming.ClassMethodCase

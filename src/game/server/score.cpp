@@ -1,9 +1,3 @@
-#include "score.h"
-#include "gamemodes/DDRace.h"
-#include "player.h"
-#include "save.h"
-#include "scoreworker.h"
-
 #include <base/system.h>
 #include <engine/server/databases/connection_pool.h>
 #include <engine/shared/config.h>
@@ -11,8 +5,15 @@
 #include <engine/shared/linereader.h>
 #include <engine/storage.h>
 #include <game/generated/wordlist.h>
+#include <game/server/gamemodes/DDRace.h>
+#include <game/team_state.h>
 
 #include <memory>
+
+#include "player.h"
+#include "save.h"
+#include "score.h"
+#include "scoreworker.h"
 
 class IDbConnection;
 
@@ -48,7 +49,7 @@ void CScore::ExecPlayerThread(
 bool CScore::RateLimitPlayer(int ClientId)
 {
 	CPlayer *pPlayer = GameServer()->m_apPlayers[ClientId];
-	if(pPlayer == 0)
+	if(pPlayer == nullptr)
 		return true;
 	if(pPlayer->m_LastSqlQuery + (int64_t)g_Config.m_SvSqlQueriesDelay * Server()->TickSpeed() >= Server()->Tick())
 		return true;
@@ -264,7 +265,7 @@ void CScore::RandomMap(int ClientId, int Stars)
 	Tmp->m_Stars = Stars;
 	str_copy(Tmp->m_aCurrentMap, Server()->GetMapName(), sizeof(Tmp->m_aCurrentMap));
 	str_copy(Tmp->m_aServerType, g_Config.m_SvServerType, sizeof(Tmp->m_aServerType));
-	str_copy(Tmp->m_aRequestingPlayer, GameServer()->Server()->ClientName(ClientId), sizeof(Tmp->m_aRequestingPlayer));
+	str_copy(Tmp->m_aRequestingPlayer, ClientId == -1 ? "nameless tee" : GameServer()->Server()->ClientName(ClientId), sizeof(Tmp->m_aRequestingPlayer));
 
 	m_pPool->Execute(CScoreWorker::RandomMap, std::move(Tmp), "random map");
 }
@@ -278,7 +279,7 @@ void CScore::RandomUnfinishedMap(int ClientId, int Stars)
 	Tmp->m_Stars = Stars;
 	str_copy(Tmp->m_aCurrentMap, Server()->GetMapName(), sizeof(Tmp->m_aCurrentMap));
 	str_copy(Tmp->m_aServerType, g_Config.m_SvServerType, sizeof(Tmp->m_aServerType));
-	str_copy(Tmp->m_aRequestingPlayer, GameServer()->Server()->ClientName(ClientId), sizeof(Tmp->m_aRequestingPlayer));
+	str_copy(Tmp->m_aRequestingPlayer, ClientId == -1 ? "nameless tee" : GameServer()->Server()->ClientName(ClientId), sizeof(Tmp->m_aRequestingPlayer));
 
 	m_pPool->Execute(CScoreWorker::RandomUnfinishedMap, std::move(Tmp), "random unfinished map");
 }
@@ -331,7 +332,7 @@ void CScore::SaveTeam(int ClientId, const char *pCode, const char *pServer)
 			Tmp->m_aCode,
 			Tmp->m_aGeneratedCode);
 	}
-	pController->Teams().KillSavedTeam(ClientId, Team);
+	pController->Teams().KillCharacterOrTeam(ClientId, Team);
 	GameServer()->SendChatTeam(Team, aBuf);
 	m_pPool->ExecuteWrite(CScoreWorker::SaveTeam, std::move(Tmp), "save team");
 }
@@ -352,7 +353,7 @@ void CScore::LoadTeam(const char *pCode, int ClientId)
 		GameServer()->SendChatTarget(ClientId, "You have to be in a team (from 1-63)");
 		return;
 	}
-	if(pController->Teams().GetTeamState(Team) != CGameTeams::TEAMSTATE_OPEN)
+	if(pController->Teams().GetTeamState(Team) != ETeamState::OPEN)
 	{
 		GameServer()->SendChatTarget(ClientId, "Team can't be loaded while racing");
 		return;

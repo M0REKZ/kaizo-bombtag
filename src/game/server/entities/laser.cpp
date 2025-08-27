@@ -31,6 +31,15 @@ CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEner
 	m_TeamMask = pOwnerChar ? pOwnerChar->TeamMask() : CClientMask();
 	m_BelongsToPracticeTeam = pOwnerChar && pOwnerChar->Teams()->IsPractice(pOwnerChar->Team());
 
+	//+KZ
+	if(pOwnerChar && (pOwnerChar->m_ForcedTuneKZ || pOwnerChar->m_TuneZoneOverrideKZ >= 0))
+	{
+		if(pOwnerChar->m_TuneZoneOverrideKZ >= 0 && !m_TuneZone) //+KZ
+			m_TuneZone = pOwnerChar->m_TuneZoneOverrideKZ;
+		else if(pOwnerChar->m_ForcedTuneKZ)
+			m_TuneZone = pOwnerChar->m_TuneZone;
+	}
+
 	GameWorld()->InsertEntity(this);
 	DoBounce();
 }
@@ -44,9 +53,9 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 	bool pDontHitSelf = g_Config.m_SvOldLaser || (m_Bounces == 0 && !m_WasTele);
 
 	if(pOwnerChar ? (!pOwnerChar->LaserHitDisabled() && m_Type == WEAPON_LASER) || (!pOwnerChar->ShotgunHitDisabled() && m_Type == WEAPON_SHOTGUN) : g_Config.m_SvHit)
-		pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : 0, m_Owner);
+		pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : nullptr, m_Owner);
 	else
-		pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : 0, m_Owner, pOwnerChar);
+		pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : nullptr, m_Owner, pOwnerChar);
 
 	if(!pHit || (pHit == pOwnerChar && g_Config.m_SvOldLaser) || (pHit != pOwnerChar && pOwnerChar ? (pOwnerChar->LaserHitDisabled() && m_Type == WEAPON_LASER) || (pOwnerChar->ShotgunHitDisabled() && m_Type == WEAPON_SHOTGUN) : !g_Config.m_SvHit))
 		return false;
@@ -100,6 +109,16 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 
 void CLaser::DoBounce()
 {
+	// KZ
+	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner); 
+	CCharacterCore *pOwnerCore = nullptr;
+
+	if(pOwnerChar)
+	{
+		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
+	}
+	// End KZ
+
 	m_EvalTick = Server()->Tick();
 
 	if(m_Energy < 0)
@@ -122,7 +141,35 @@ void CLaser::DoBounce()
 
 	vec2 To = m_Pos + m_Dir * m_Energy;
 
-	Res = GameServer()->Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To, &z);
+	//+KZ
+	SKZColTeleWeaponParams ParamsKZ;
+	ParamsKZ.From = m_Pos;
+	ParamsKZ.To = To;
+	ParamsKZ.Type = m_Type;
+	ParamsKZ.OwnerId = m_Owner;
+	ParamsKZ.BounceNum = m_Bounces;
+	SKZColCharCoreParams ParamsKZ2;
+	ParamsKZ.pCharCoreParams = &ParamsKZ2;
+	ParamsKZ2.pCore = pOwnerCore;
+
+	Res = GameServer()->Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To, &z, &ParamsKZ); // KZ added ParamsKZ
+
+	if(m_Bounces != ParamsKZ.BounceNum)
+	{
+		m_Bounces = ParamsKZ.BounceNum;
+
+		int BounceNum = Tuning()->m_LaserBounceNum;
+		if(m_TuneZone)
+			BounceNum = TuningList()[m_TuneZone].m_LaserBounceNum;
+		if(m_Bounces > BounceNum)
+		{
+			m_Energy = -1;
+			m_From = m_Pos;
+			m_Pos = To;
+		}
+		GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, m_TeamMask);
+		return;
+	}
 
 	if(Res)
 	{
@@ -141,7 +188,7 @@ void CLaser::DoBounce()
 				f = GameServer()->Collision()->GetTile(round_to_int(Coltile.x), round_to_int(Coltile.y));
 				GameServer()->Collision()->SetCollisionAt(round_to_int(Coltile.x), round_to_int(Coltile.y), TILE_SOLID);
 			}
-			GameServer()->Collision()->MovePoint(&TempPos, &TempDir, 1.0f, 0);
+			GameServer()->Collision()->MovePoint(&TempPos, &TempDir, 1.0f, nullptr, &ParamsKZ2); // KZ added ParamsKZ2
 			if(Res == -1)
 			{
 				GameServer()->Collision()->SetCollisionAt(round_to_int(Coltile.x), round_to_int(Coltile.y), f);
@@ -197,7 +244,7 @@ void CLaser::DoBounce()
 		}
 	}
 
-	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
+	//CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner); //KZ
 	if(m_Owner >= 0 && m_Energy <= 0 && !m_TeleportCancelled && pOwnerChar &&
 		pOwnerChar->IsAlive() && pOwnerChar->HasTelegunLaser() && m_Type == WEAPON_LASER)
 	{
@@ -209,9 +256,9 @@ void CLaser::DoBounce()
 		vec2 At;
 		CCharacter *pHit;
 		if(pOwnerChar ? (!pOwnerChar->LaserHitDisabled() && m_Type == WEAPON_LASER) : g_Config.m_SvHit)
-			pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : 0, m_Owner);
+			pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : nullptr, m_Owner);
 		else
-			pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : 0, m_Owner, pOwnerChar);
+			pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, pDontHitSelf ? pOwnerChar : nullptr, m_Owner, pOwnerChar);
 
 		if(pHit)
 			Found = GetNearestAirPosPlayer(pHit->m_Pos, &PossiblePos);
@@ -228,7 +275,7 @@ void CLaser::DoBounce()
 	else if(m_Owner >= 0)
 	{
 		int MapIndex = GameServer()->Collision()->GetPureMapIndex(Coltile);
-		int TileFIndex = GameServer()->Collision()->GetFTileIndex(MapIndex);
+		int TileFIndex = GameServer()->Collision()->GetFrontTileIndex(MapIndex);
 		bool IsSwitchTeleGun = GameServer()->Collision()->GetSwitchType(MapIndex) == TILE_ALLOW_TELE_GUN;
 		bool IsBlueSwitchTeleGun = GameServer()->Collision()->GetSwitchType(MapIndex) == TILE_ALLOW_BLUE_TELE_GUN;
 		int IsTeleInWeapon = GameServer()->Collision()->IsTeleportWeapon(MapIndex);
@@ -294,7 +341,7 @@ void CLaser::Snap(int SnappingClient)
 {
 	if(NetworkClipped(SnappingClient) && NetworkClipped(SnappingClient, m_From))
 		return;
-	CCharacter *pOwnerChar = 0;
+	CCharacter *pOwnerChar = nullptr;
 	if(m_Owner >= 0)
 		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
 	if(!pOwnerChar)
@@ -315,7 +362,7 @@ void CLaser::Snap(int SnappingClient)
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
 	int LaserType = m_Type == WEAPON_LASER ? LASERTYPE_RIFLE : m_Type == WEAPON_SHOTGUN ? LASERTYPE_SHOTGUN : -1;
 
-	GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion), GetId(),
+	GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Server()->IsSixup(SnappingClient), SnappingClient), GetId(),
 		m_Pos, m_From, m_EvalTick, m_Owner, LaserType, 0, m_Number);
 }
 

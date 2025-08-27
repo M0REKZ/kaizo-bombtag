@@ -6,14 +6,14 @@
 
 #include <SDL.h>
 #include <SDL_messagebox.h>
+#include <SDL_vulkan.h>
 
+#include <base/log.h>
 #include <base/math.h>
-#include <cstdlib>
+#include <base/tl/threading.h>
 
 #include <engine/shared/config.h>
 #include <engine/shared/localization.h>
-
-#include <base/tl/threading.h>
 
 #if defined(CONF_VIDEORECORDER)
 #include <engine/shared/video.h>
@@ -41,10 +41,16 @@
 
 #include <engine/graphics.h>
 
+#include <algorithm>
+#include <cstdlib>
+
 class IStorage;
 
 // ------------ CGraphicsBackend_Threaded
 
+// Run everything single threaded when compiling for Emscripten, as context binding does not work outside of the main thread with SDL2.
+// TODO SDL3: Check if SDL3 supports threaded graphics and PROXY_TO_PTHREAD, OFFSCREENCANVAS_SUPPORT and OFFSCREEN_FRAMEBUFFER correctly.
+#if !defined(CONF_PLATFORM_EMSCRIPTEN)
 void CGraphicsBackend_Threaded::ThreadFunc(void *pUser)
 {
 	auto *pSelf = (CGraphicsBackend_Threaded *)pUser;
@@ -73,14 +79,17 @@ void CGraphicsBackend_Threaded::ThreadFunc(void *pUser)
 		}
 	}
 }
+#endif
 
 CGraphicsBackend_Threaded::CGraphicsBackend_Threaded(TTranslateFunc &&TranslateFunc) :
 	m_TranslateFunc(std::move(TranslateFunc))
 {
-	m_pBuffer = nullptr;
 	m_pProcessor = nullptr;
 	m_Shutdown = true;
+#if !defined(CONF_PLATFORM_EMSCRIPTEN)
+	m_pBuffer = nullptr;
 	m_BufferInProcess.store(false, std::memory_order_relaxed);
+#endif
 }
 
 void CGraphicsBackend_Threaded::StartProcessor(ICommandProcessor *pProcessor)
@@ -88,33 +97,42 @@ void CGraphicsBackend_Threaded::StartProcessor(ICommandProcessor *pProcessor)
 	dbg_assert(m_Shutdown, "Processor was already not shut down.");
 	m_Shutdown = false;
 	m_pProcessor = pProcessor;
+#if !defined(CONF_PLATFORM_EMSCRIPTEN)
 	std::unique_lock<std::mutex> Lock(m_BufferSwapMutex);
 	m_pThread = thread_init(ThreadFunc, this, "Graphics thread");
 	// wait for the thread to start
 	m_BufferSwapCond.wait(Lock, [this]() -> bool { return m_Started; });
+#endif
 }
 
 void CGraphicsBackend_Threaded::StopProcessor()
 {
 	dbg_assert(!m_Shutdown, "Processor was already shut down.");
 	m_Shutdown = true;
+#if defined(CONF_PLATFORM_EMSCRIPTEN)
+	m_Warning = m_pProcessor->GetWarning();
+#else
 	{
 		std::unique_lock<std::mutex> Lock(m_BufferSwapMutex);
 		m_Warning = m_pProcessor->GetWarning();
 		m_BufferSwapCond.notify_all();
 	}
 	thread_wait(m_pThread);
+#endif
 }
 
 void CGraphicsBackend_Threaded::RunBuffer(CCommandBuffer *pBuffer)
 {
 	SGfxErrorContainer Error;
-#ifdef CONF_WEBASM
-	// run everything single threaded for now, context binding in a thread seems to not work as of now
+#if defined(CONF_PLATFORM_EMSCRIPTEN)
 	Error = m_pProcessor->GetError();
 	if(Error.m_ErrorType == GFX_ERROR_TYPE_NONE)
 	{
 		RunBufferSingleThreadedUnsafe(pBuffer);
+#if defined(CONF_VIDEORECORDER)
+		if(IVideo::Current())
+			IVideo::Current()->NextVideoFrameThread();
+#endif
 	}
 #else
 	WaitForIdle();
@@ -144,13 +162,19 @@ void CGraphicsBackend_Threaded::RunBufferSingleThreadedUnsafe(CCommandBuffer *pB
 
 bool CGraphicsBackend_Threaded::IsIdle() const
 {
+#if defined(CONF_PLATFORM_EMSCRIPTEN)
+	return true;
+#else
 	return !m_BufferInProcess.load(std::memory_order_relaxed);
+#endif
 }
 
 void CGraphicsBackend_Threaded::WaitForIdle()
 {
+#if !defined(CONF_PLATFORM_EMSCRIPTEN)
 	std::unique_lock<std::mutex> Lock(m_BufferSwapMutex);
 	m_BufferSwapCond.wait(Lock, [this]() { return m_pBuffer == nullptr; });
+#endif
 }
 
 void CGraphicsBackend_Threaded::ProcessError(const SGfxErrorContainer &Error)
@@ -164,7 +188,7 @@ void CGraphicsBackend_Threaded::ProcessError(const SGfxErrorContainer &Error)
 		else
 			VerboseStr.append(ErrStr.m_Err);
 	}
-	dbg_assert(false, VerboseStr.c_str());
+	dbg_assert(false, "%s", VerboseStr.c_str());
 }
 
 bool CGraphicsBackend_Threaded::GetWarning(std::vector<std::string> &WarningStrings)
@@ -189,7 +213,6 @@ bool CCommandProcessorFragment_General::RunCommand(const CCommandBuffer::SComman
 {
 	switch(pBaseCommand->m_Cmd)
 	{
-	case CCommandBuffer::CMD_NOP: break;
 	case CCommandBuffer::CMD_SIGNAL: Cmd_Signal(static_cast<const CCommandBuffer::SCommand_Signal *>(pBaseCommand)); break;
 	default: return false;
 	}
@@ -209,7 +232,7 @@ void CCommandProcessorFragment_SDL::Cmd_Init(const SCommand_Init *pCommand)
 void CCommandProcessorFragment_SDL::Cmd_Shutdown(const SCommand_Shutdown *pCommand)
 {
 	if(m_GLContext)
-		SDL_GL_MakeCurrent(NULL, NULL);
+		SDL_GL_MakeCurrent(nullptr, nullptr);
 }
 
 void CCommandProcessorFragment_SDL::Cmd_Swap(const CCommandBuffer::SCommand_Swap *pCommand)
@@ -221,7 +244,16 @@ void CCommandProcessorFragment_SDL::Cmd_Swap(const CCommandBuffer::SCommand_Swap
 void CCommandProcessorFragment_SDL::Cmd_VSync(const CCommandBuffer::SCommand_VSync *pCommand)
 {
 	if(m_GLContext)
+	{
+#if defined(CONF_PLATFORM_EMSCRIPTEN)
+		// SDL_GL_SetSwapInterval is not supported with Emscripten as this is only a wrapper for the
+		// emscripten_set_main_loop_timing function which does not work because we do not use the
+		// emscripten_set_main_loop function before.
+		*pCommand->m_pRetOk = !pCommand->m_VSync;
+#else
 		*pCommand->m_pRetOk = SDL_GL_SetSwapInterval(pCommand->m_VSync) == 0;
+#endif
+	}
 }
 
 void CCommandProcessorFragment_SDL::Cmd_WindowCreateNtf(const CCommandBuffer::SCommand_WindowCreateNtf *pCommand)
@@ -232,7 +264,6 @@ void CCommandProcessorFragment_SDL::Cmd_WindowCreateNtf(const CCommandBuffer::SC
 #ifdef CONF_PLATFORM_ANDROID
 	if(m_GLContext)
 		SDL_GL_MakeCurrent(m_pWindow, m_GLContext);
-	dbg_msg("gfx", "render surface created.");
 #endif
 }
 
@@ -240,7 +271,6 @@ void CCommandProcessorFragment_SDL::Cmd_WindowDestroyNtf(const CCommandBuffer::S
 {
 	// Unbind the graphic context from the window, so it does not get destroyed
 #ifdef CONF_PLATFORM_ANDROID
-	dbg_msg("gfx", "render surface destroyed.");
 	if(m_GLContext)
 		SDL_GL_MakeCurrent(NULL, NULL);
 #endif
@@ -281,7 +311,7 @@ void CCommandProcessor_SDL_GL::HandleError()
 	case GFX_ERROR_TYPE_OUT_OF_MEMORY_BUFFER:
 		[[fallthrough]];
 	case GFX_ERROR_TYPE_OUT_OF_MEMORY_STAGING:
-		m_Error.m_vErrors.emplace_back(SGfxErrorContainer::SError{true, Localizable("Out of VRAM. Try removing custom assets (skins, entities, etc.), especially those with high resolution.", "Graphics error")});
+		m_Error.m_vErrors.emplace_back(SGfxErrorContainer::SError{true, Localizable("Out of VRAM. Try setting 'cl_skins_loaded_max' to a lower value or remove custom assets (skins, entities, etc.), especially those with high resolution.", "Graphics error")});
 		break;
 	case GFX_ERROR_TYPE_RENDER_RECORDING:
 		m_Error.m_vErrors.emplace_back(SGfxErrorContainer::SError{true, Localizable("An error during command recording occurred. Try to update your GPU drivers.", "Graphics error")});
@@ -319,9 +349,17 @@ void CCommandProcessor_SDL_GL::HandleWarning()
 	case GFX_WARNING_LOW_ON_MEMORY:
 		// ignore this warning for now
 		return;
+	case GFX_WARNING_TYPE_INIT_FAILED_NO_DEVICE_WITH_REQUIRED_VERSION:
+	{
+		// Ignore this warning for now completely.
+		// A console message was already printed by the backend
+		m_Warning.m_WarningType = GFX_WARNING_TYPE_NONE;
+		m_Warning.m_vWarnings.clear();
+		return;
+	}
 	default:
-		dbg_msg("gfx", "unhandled warning %d", (int)m_Warning.m_WarningType);
-		break;
+		dbg_assert(false, "Unhandled graphics warning type %d", (int)m_Warning.m_WarningType);
+		dbg_break();
 	}
 }
 
@@ -355,7 +393,8 @@ void CCommandProcessor_SDL_GL::RunBuffer(CCommandBuffer *pBuffer)
 		if(m_General.RunCommand(pCommand))
 			continue;
 
-		dbg_msg("gfx", "unknown command %d", pCommand->m_Cmd);
+		dbg_assert(false, "Unknown graphics command %d", pCommand->m_Cmd);
+		dbg_break();
 	}
 
 	m_pGLBackend->EndCommands();
@@ -727,20 +766,20 @@ void CGraphicsBackend_SDL_GL::ClampDriverVersion(EBackendType BackendType)
 		// clamp the versions to existing versions(only for OpenGL major <= 3)
 		if(g_Config.m_GfxGLMajor == 1)
 		{
-			g_Config.m_GfxGLMinor = clamp(g_Config.m_GfxGLMinor, 1, 5);
+			g_Config.m_GfxGLMinor = std::clamp(g_Config.m_GfxGLMinor, 1, 5);
 			if(g_Config.m_GfxGLMinor == 2)
-				g_Config.m_GfxGLPatch = clamp(g_Config.m_GfxGLPatch, 0, 1);
+				g_Config.m_GfxGLPatch = std::clamp(g_Config.m_GfxGLPatch, 0, 1);
 			else
 				g_Config.m_GfxGLPatch = 0;
 		}
 		else if(g_Config.m_GfxGLMajor == 2)
 		{
-			g_Config.m_GfxGLMinor = clamp(g_Config.m_GfxGLMinor, 0, 1);
+			g_Config.m_GfxGLMinor = std::clamp(g_Config.m_GfxGLMinor, 0, 1);
 			g_Config.m_GfxGLPatch = 0;
 		}
 		else if(g_Config.m_GfxGLMajor == 3)
 		{
-			g_Config.m_GfxGLMinor = clamp(g_Config.m_GfxGLMinor, 0, 3);
+			g_Config.m_GfxGLMinor = std::clamp(g_Config.m_GfxGLMinor, 0, 3);
 			if(g_Config.m_GfxGLMinor < 3)
 				g_Config.m_GfxGLMinor = 0;
 			g_Config.m_GfxGLPatch = 0;
@@ -775,7 +814,62 @@ void CGraphicsBackend_SDL_GL::ClampDriverVersion(EBackendType BackendType)
 	}
 }
 
-bool CGraphicsBackend_SDL_GL::ShowMessageBox(unsigned Type, const char *pTitle, const char *pMsg)
+static Uint32 MessageBoxTypeToSdlFlags(IGraphics::EMessageBoxType Type)
+{
+	switch(Type)
+	{
+	case IGraphics::EMessageBoxType::ERROR:
+		return SDL_MESSAGEBOX_ERROR;
+	case IGraphics::EMessageBoxType::WARNING:
+		return SDL_MESSAGEBOX_WARNING;
+	case IGraphics::EMessageBoxType::INFO:
+		return SDL_MESSAGEBOX_INFORMATION;
+	}
+	dbg_assert(false, "Type invalid");
+	return 0;
+}
+
+static std::optional<int> ShowMessageBoxImpl(const IGraphics::CMessageBox &MessageBox, SDL_Window *pWindow)
+{
+	dbg_assert(!MessageBox.m_vButtons.empty(), "At least one button is required");
+
+	std::vector<SDL_MessageBoxButtonData> vButtonData;
+	vButtonData.reserve(MessageBox.m_vButtons.size());
+	for(const auto &Button : MessageBox.m_vButtons)
+	{
+		SDL_MessageBoxButtonData ButtonData{};
+		ButtonData.buttonid = vButtonData.size();
+		ButtonData.flags = (Button.m_Confirm ? SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT : 0) | (Button.m_Cancel ? SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT : 0);
+		ButtonData.text = Button.m_pLabel;
+		vButtonData.emplace_back(ButtonData);
+	}
+#if defined(CONF_FAMILY_WINDOWS)
+	// TODO SDL3: The order of buttons is not defined by default, but the flags returned by MessageBoxTypeToSdlFlags do not work together
+	//            with SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT with SDL2 on various platforms. Windows appears to be the only platform that
+	//            lays out buttons from right to left by default, so we reverse the order manually.
+	std::reverse(vButtonData.begin(), vButtonData.end());
+#endif
+	SDL_MessageBoxData MessageBoxData{};
+	MessageBoxData.title = MessageBox.m_pTitle;
+	MessageBoxData.message = MessageBox.m_pMessage;
+	MessageBoxData.flags = MessageBoxTypeToSdlFlags(MessageBox.m_Type);
+	MessageBoxData.numbuttons = vButtonData.size();
+	MessageBoxData.buttons = vButtonData.data();
+	MessageBoxData.window = pWindow;
+	int ButtonId = -1;
+	if(SDL_ShowMessageBox(&MessageBoxData, &ButtonId) != 0)
+	{
+		return std::nullopt;
+	}
+	return ButtonId;
+}
+
+std::optional<int> ShowMessageBoxWithoutGraphics(const IGraphics::CMessageBox &MessageBox)
+{
+	return ShowMessageBoxImpl(MessageBox, nullptr);
+}
+
+std::optional<int> CGraphicsBackend_SDL_GL::ShowMessageBox(const IGraphics::CMessageBox &MessageBox)
 {
 	if(m_pProcessor != nullptr)
 	{
@@ -789,7 +883,7 @@ bool CGraphicsBackend_SDL_GL::ShowMessageBox(unsigned Type, const char *pTitle, 
 		SDL_DestroyWindow(m_pWindow);
 		m_pWindow = nullptr;
 	}
-	return SDL_ShowSimpleMessageBox(Type, pTitle, pMsg, nullptr) == 0;
+	return ShowMessageBoxImpl(MessageBox, m_pWindow);
 }
 
 bool CGraphicsBackend_SDL_GL::IsModernAPI(EBackendType BackendType)
@@ -889,7 +983,7 @@ const char *CGraphicsBackend_SDL_GL::GetScreenName(int Screen) const
 	return pName == nullptr ? "unknown/error" : pName;
 }
 
-static void DisplayToVideoMode(CVideoMode *pVMode, SDL_DisplayMode *pMode, int HiDPIScale, int RefreshRate)
+static void DisplayToVideoMode(CVideoMode *pVMode, SDL_DisplayMode *pMode, float HiDPIScale, int RefreshRate)
 {
 	pVMode->m_CanvasWidth = pMode->w * HiDPIScale;
 	pVMode->m_CanvasHeight = pMode->h * HiDPIScale;
@@ -902,19 +996,19 @@ static void DisplayToVideoMode(CVideoMode *pVMode, SDL_DisplayMode *pMode, int H
 	pVMode->m_Format = pMode->format;
 }
 
-void CGraphicsBackend_SDL_GL::GetVideoModes(CVideoMode *pModes, int MaxModes, int *pNumModes, int HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int ScreenId)
+void CGraphicsBackend_SDL_GL::GetVideoModes(CVideoMode *pModes, int MaxModes, int *pNumModes, float HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int ScreenId)
 {
 	SDL_DisplayMode DesktopMode;
 	int MaxModesAvailable = SDL_GetNumDisplayModes(ScreenId);
 
 	// Only collect fullscreen modes when requested, that makes sure in windowed mode no refresh rates are shown that aren't supported without
 	// fullscreen anyway(except fullscreen desktop)
-	bool IsFullscreenDestkop = m_pWindow != NULL && (((SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) || g_Config.m_GfxFullscreen == 3);
-	bool CollectFullscreenModes = m_pWindow == NULL || ((SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_FULLSCREEN) != 0 && !IsFullscreenDestkop);
+	bool IsFullscreenDestkop = m_pWindow != nullptr && (((SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) || g_Config.m_GfxFullscreen == 3);
+	bool CollectFullscreenModes = m_pWindow == nullptr || ((SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_FULLSCREEN) != 0 && !IsFullscreenDestkop);
 
 	if(SDL_GetDesktopDisplayMode(ScreenId, &DesktopMode) < 0)
 	{
-		dbg_msg("gfx", "unable to get display mode: %s", SDL_GetError());
+		log_error("gfx", "Unable to get desktop display mode of screen %d: %s", ScreenId, SDL_GetError());
 	}
 
 	constexpr int ModeCount = 256;
@@ -925,7 +1019,7 @@ void CGraphicsBackend_SDL_GL::GetVideoModes(CVideoMode *pModes, int MaxModes, in
 		SDL_DisplayMode Mode;
 		if(SDL_GetDisplayMode(ScreenId, i, &Mode) < 0)
 		{
-			dbg_msg("gfx", "unable to get display mode: %s", SDL_GetError());
+			log_error("gfx", "Unable to get display mode %d of screen %d: %s", i, ScreenId, SDL_GetError());
 			continue;
 		}
 
@@ -966,7 +1060,7 @@ void CGraphicsBackend_SDL_GL::GetVideoModes(CVideoMode *pModes, int MaxModes, in
 	*pNumModes = NumModesInserted;
 }
 
-void CGraphicsBackend_SDL_GL::GetCurrentVideoMode(CVideoMode &CurMode, int HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int ScreenId)
+void CGraphicsBackend_SDL_GL::GetCurrentVideoMode(CVideoMode &CurMode, float HiDPIScale, int MaxWindowWidth, int MaxWindowHeight, int ScreenId)
 {
 	SDL_DisplayMode DpMode;
 	// if "real" fullscreen, obtain the video mode for that
@@ -974,22 +1068,26 @@ void CGraphicsBackend_SDL_GL::GetCurrentVideoMode(CVideoMode &CurMode, int HiDPI
 	{
 		if(SDL_GetCurrentDisplayMode(ScreenId, &DpMode))
 		{
-			dbg_msg("gfx", "unable to get display mode: %s", SDL_GetError());
+			log_error("gfx", "Unable to get current display mode of screen %d: %s", ScreenId, SDL_GetError());
 		}
 	}
 	else
 	{
 		if(SDL_GetDesktopDisplayMode(ScreenId, &DpMode) < 0)
 		{
-			dbg_msg("gfx", "unable to get display mode: %s", SDL_GetError());
+			log_error("gfx", "Unable to get desktop display mode of screen %d: %s", ScreenId, SDL_GetError());
 		}
 		else
 		{
 			int Width = 0;
 			int Height = 0;
-			SDL_GL_GetDrawableSize(m_pWindow, &Width, &Height);
-			DpMode.w = Width;
-			DpMode.h = Height;
+			if(m_BackendType != EBackendType::BACKEND_TYPE_VULKAN)
+				SDL_GL_GetDrawableSize(m_pWindow, &Width, &Height);
+			else
+				SDL_Vulkan_GetDrawableSize(m_pWindow, &Width, &Height);
+			// SDL video modes are in screen space which are logical pixels
+			DpMode.w = Width / HiDPIScale;
+			DpMode.h = Height / HiDPIScale;
 		}
 	}
 	DisplayToVideoMode(&CurMode, &DpMode, HiDPIScale, DpMode.refresh_rate);
@@ -1019,7 +1117,8 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 
 		SDL_VERSION(&Compiled);
 		SDL_GetVersion(&Linked);
-		dbg_msg("sdl", "SDL version %d.%d.%d (compiled = %d.%d.%d)", Linked.major, Linked.minor, Linked.patch,
+		log_info("sdl", "SDL version %d.%d.%d (compiled = %d.%d.%d)",
+			Linked.major, Linked.minor, Linked.patch,
 			Compiled.major, Compiled.minor, Compiled.patch);
 
 #if CONF_PLATFORM_LINUX && SDL_VERSION_ATLEAST(2, 0, 22)
@@ -1034,7 +1133,7 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 	{
 		if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
 		{
-			dbg_msg("gfx", "unable to init SDL video: %s", SDL_GetError());
+			log_error("gfx", "Unable to initialize SDL video: %s", SDL_GetError());
 			return EGraphicsBackendErrorCodes::GRAPHICS_BACKEND_ERROR_CODE_SDL_INIT_FAILED;
 		}
 	}
@@ -1072,7 +1171,23 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, g_Config.m_GfxGLMinor);
 	}
 
-	dbg_msg("gfx", "Created %s %d.%d context.", ((m_BackendType == BACKEND_TYPE_VULKAN) ? "Vulkan" : "OpenGL"), g_Config.m_GfxGLMajor, g_Config.m_GfxGLMinor);
+	const char *pBackendName;
+	switch(m_BackendType)
+	{
+	case BACKEND_TYPE_OPENGL:
+		pBackendName = "OpenGL";
+		break;
+	case BACKEND_TYPE_OPENGL_ES:
+		pBackendName = "OpenGL ES";
+		break;
+	case BACKEND_TYPE_VULKAN:
+		pBackendName = "Vulkan";
+		break;
+	default:
+		dbg_assert(false, "Invalid m_BackendType: %d", m_BackendType);
+		dbg_break();
+	}
+	log_info("gfx", "Created %s %d.%d context", pBackendName, g_Config.m_GfxGLMajor, g_Config.m_GfxGLMinor);
 
 	if(m_BackendType == BACKEND_TYPE_OPENGL)
 	{
@@ -1096,20 +1211,20 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 	}
 
 	// set screen
-	SDL_Rect ScreenPos;
 	m_NumScreens = SDL_GetNumVideoDisplays();
 	if(m_NumScreens > 0)
 	{
-		*pScreen = clamp(*pScreen, 0, m_NumScreens - 1);
+		SDL_Rect ScreenPos;
+		*pScreen = std::clamp(*pScreen, 0, m_NumScreens - 1);
 		if(SDL_GetDisplayBounds(*pScreen, &ScreenPos) != 0)
 		{
-			dbg_msg("gfx", "unable to retrieve screen information: %s", SDL_GetError());
+			log_error("gfx", "Unable to get display bounds of screen %d: %s", *pScreen, SDL_GetError());
 			return EGraphicsBackendErrorCodes::GRAPHICS_BACKEND_ERROR_CODE_SDL_SCREEN_INFO_REQUEST_FAILED;
 		}
 	}
 	else
 	{
-		dbg_msg("gfx", "unable to retrieve number of screens: %s", SDL_GetError());
+		log_error("gfx", "Unable to get number of screens: %s", SDL_GetError());
 		return EGraphicsBackendErrorCodes::GRAPHICS_BACKEND_ERROR_CODE_SDL_SCREEN_REQUEST_FAILED;
 	}
 
@@ -1117,7 +1232,7 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 	SDL_DisplayMode DisplayMode;
 	if(SDL_GetDesktopDisplayMode(*pScreen, &DisplayMode))
 	{
-		dbg_msg("gfx", "unable to get desktop resolution: %s", SDL_GetError());
+		log_error("gfx", "Unable to get desktop display mode of screen %d: %s", *pScreen, SDL_GetError());
 		return EGraphicsBackendErrorCodes::GRAPHICS_BACKEND_ERROR_CODE_SDL_SCREEN_RESOLUTION_REQUEST_FAILED;
 	}
 
@@ -1145,10 +1260,8 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 	}
 
 	// set flags
-	int SdlFlags = SDL_WINDOW_INPUT_GRABBED | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
+	int SdlFlags = SDL_WINDOW_INPUT_GRABBED | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_ALLOW_HIGHDPI;
 	SdlFlags |= (IsOpenGLFamilyBackend) ? SDL_WINDOW_OPENGL : SDL_WINDOW_VULKAN;
-	if(Flags & IGraphicsBackend::INITFLAG_HIGHDPI)
-		SdlFlags |= SDL_WINDOW_ALLOW_HIGHDPI;
 	if(Flags & IGraphicsBackend::INITFLAG_RESIZABLE)
 		SdlFlags |= SDL_WINDOW_RESIZABLE;
 	if(Flags & IGraphicsBackend::INITFLAG_BORDERLESS)
@@ -1203,9 +1316,9 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 		SdlFlags);
 
 	// set caption
-	if(m_pWindow == NULL)
+	if(m_pWindow == nullptr)
 	{
-		dbg_msg("gfx", "unable to create window: %s", SDL_GetError());
+		log_error("gfx", "Unable to create window: %s", SDL_GetError());
 		if(m_BackendType == BACKEND_TYPE_VULKAN)
 			return EGraphicsBackendErrorCodes::GRAPHICS_BACKEND_ERROR_CODE_GL_CONTEXT_FAILED;
 		else
@@ -1220,11 +1333,11 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 	{
 		m_GLContext = SDL_GL_CreateContext(m_pWindow);
 
-		if(m_GLContext == NULL)
+		if(m_GLContext == nullptr)
 		{
+			log_error("gfx", "Unable to create graphics context: %s", SDL_GetError());
 			SDL_DestroyWindow(m_pWindow);
 			m_pWindow = nullptr;
-			dbg_msg("gfx", "unable to create graphic context: %s", SDL_GetError());
 			return EGraphicsBackendErrorCodes::GRAPHICS_BACKEND_ERROR_CODE_GL_CONTEXT_FAILED;
 		}
 
@@ -1238,20 +1351,31 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 	}
 
 	int InitError = 0;
-	const char *pErrorStr = NULL;
+	const char *pErrorStr = nullptr;
 
 	InitError = IsVersionSupportedGlew(m_BackendType, g_Config.m_GfxGLMajor, g_Config.m_GfxGLMinor, g_Config.m_GfxGLPatch, GlewMajor, GlewMinor, GlewPatch);
 
 	// SDL_GL_GetDrawableSize reports HiDPI resolution even with SDL_WINDOW_ALLOW_HIGHDPI not set, which is wrong
-	if(SdlFlags & SDL_WINDOW_ALLOW_HIGHDPI && IsOpenGLFamilyBackend)
-		SDL_GL_GetDrawableSize(m_pWindow, pCurrentWidth, pCurrentHeight);
+	if(SdlFlags & SDL_WINDOW_ALLOW_HIGHDPI)
+	{
+		if(IsOpenGLFamilyBackend)
+			SDL_GL_GetDrawableSize(m_pWindow, pCurrentWidth, pCurrentHeight);
+		else
+			SDL_Vulkan_GetDrawableSize(m_pWindow, pCurrentWidth, pCurrentHeight);
+	}
 	else
 		SDL_GetWindowSize(m_pWindow, pCurrentWidth, pCurrentHeight);
+	SDL_GetWindowSize(m_pWindow, pWidth, pHeight);
 
 	if(IsOpenGLFamilyBackend)
 	{
+#if !defined(CONF_PLATFORM_EMSCRIPTEN)
+		// SDL_GL_SetSwapInterval is not supported with Emscripten as this is only a wrapper for the
+		// emscripten_set_main_loop_timing function which does not work because we do not use the
+		// emscripten_set_main_loop function before.
 		SDL_GL_SetSwapInterval(Flags & IGraphicsBackend::INITFLAG_VSYNC ? 1 : 0);
-		SDL_GL_MakeCurrent(NULL, NULL);
+#endif
+		SDL_GL_MakeCurrent(nullptr, nullptr);
 	}
 
 	if(InitError != 0)
@@ -1372,7 +1496,7 @@ int CGraphicsBackend_SDL_GL::Init(const char *pName, int *pScreen, int *pWidth, 
 			g_Config.m_GfxGLPatch = m_Capabilites.m_ContextPatch;
 		}
 
-		if(pErrorStr != NULL)
+		if(pErrorStr != nullptr)
 		{
 			str_copy(m_aErrorString, pErrorStr);
 		}
@@ -1485,12 +1609,12 @@ void CGraphicsBackend_SDL_GL::SetWindowParams(int FullscreenMode, bool IsBorderl
 #else
 			SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
 #endif
-			SDL_SetWindowResizable(m_pWindow, SDL_TRUE);
+			SDL_SetWindowResizable(m_pWindow, SDL_FALSE);
 		}
 		else if(IsDesktopFullscreen)
 		{
 			SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-			SDL_SetWindowResizable(m_pWindow, SDL_TRUE);
+			SDL_SetWindowResizable(m_pWindow, SDL_FALSE);
 		}
 		else
 		{
@@ -1500,7 +1624,7 @@ void CGraphicsBackend_SDL_GL::SetWindowParams(int FullscreenMode, bool IsBorderl
 			SDL_DisplayMode DpMode;
 			if(SDL_GetDesktopDisplayMode(g_Config.m_GfxScreen, &DpMode) < 0)
 			{
-				dbg_msg("gfx", "unable to get display mode: %s", SDL_GetError());
+				log_error("gfx", "Unable to get desktop display mode of screen %d: %s", g_Config.m_GfxScreen, SDL_GetError());
 			}
 			else
 			{
@@ -1544,14 +1668,13 @@ bool CGraphicsBackend_SDL_GL::UpdateDisplayMode(int Index)
 	SDL_DisplayMode DisplayMode;
 	if(SDL_GetDesktopDisplayMode(Index, &DisplayMode) < 0)
 	{
-		dbg_msg("gfx", "unable to get display mode: %s", SDL_GetError());
+		log_error("gfx", "Unable to get desktop display mode of screen %d: %s", Index, SDL_GetError());
 		return false;
 	}
 
 	g_Config.m_GfxScreen = Index;
 	g_Config.m_GfxDesktopWidth = DisplayMode.w;
 	g_Config.m_GfxDesktopHeight = DisplayMode.h;
-
 	return true;
 }
 
@@ -1615,7 +1738,10 @@ bool CGraphicsBackend_SDL_GL::ResizeWindow(int w, int h, int RefreshRate)
 
 void CGraphicsBackend_SDL_GL::GetViewportSize(int &w, int &h)
 {
-	SDL_GL_GetDrawableSize(m_pWindow, &w, &h);
+	if(m_BackendType != EBackendType::BACKEND_TYPE_VULKAN)
+		SDL_GL_GetDrawableSize(m_pWindow, &w, &h);
+	else
+		SDL_Vulkan_GetDrawableSize(m_pWindow, &w, &h);
 }
 
 void CGraphicsBackend_SDL_GL::NotifyWindow()
@@ -1628,6 +1754,11 @@ void CGraphicsBackend_SDL_GL::NotifyWindow()
 		return;
 	}
 #endif
+}
+
+bool CGraphicsBackend_SDL_GL::IsScreenKeyboardShown()
+{
+	return SDL_IsScreenKeyboardShown(m_pWindow);
 }
 
 void CGraphicsBackend_SDL_GL::WindowDestroyNtf(uint32_t WindowId)

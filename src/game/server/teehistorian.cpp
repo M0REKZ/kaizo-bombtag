@@ -24,7 +24,7 @@ private:
 static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
 static const CUuid TEEHISTORIAN_UUID = CalculateUuid(TEEHISTORIAN_NAME);
 static const char TEEHISTORIAN_VERSION[] = "2";
-static const char TEEHISTORIAN_VERSION_MINOR[] = "9";
+static const char TEEHISTORIAN_VERSION_MINOR[] = "11";
 
 #define UUID(id, name) static const CUuid UUID_##id = CalculateUuid(name);
 #include <engine/shared/teehistorian_ex_chunks.h>
@@ -49,8 +49,8 @@ enum
 CTeeHistorian::CTeeHistorian()
 {
 	m_State = STATE_START;
-	m_pfnWriteCallback = 0;
-	m_pWriteCallbackUserdata = 0;
+	m_pfnWriteCallback = nullptr;
+	m_pWriteCallbackUserdata = nullptr;
 }
 
 void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser)

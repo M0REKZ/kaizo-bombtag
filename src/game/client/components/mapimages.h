@@ -30,7 +30,15 @@ enum EMapImageModType
 	MAP_IMAGE_MOD_TYPE_COUNT,
 };
 
-extern const char *const gs_apModEntitiesNames[];
+constexpr const char *const gs_apModEntitiesNames[] = {
+	"ddnet",
+	"ddrace",
+	"race",
+	"blockworlds",
+	"fng",
+	"vanilla",
+	"f-ddrace",
+};
 
 class CMapImages : public CComponent
 {
@@ -44,14 +52,15 @@ class CMapImages : public CComponent
 
 public:
 	CMapImages();
-	virtual int Sizeof() const override { return sizeof(*this); }
+	int Sizeof() const override { return sizeof(*this); }
 
 	IGraphics::CTextureHandle Get(int Index) const { return m_aTextures[Index]; }
 	int Num() const { return m_Count; }
 
 	void OnMapLoadImpl(class CLayers *pLayers, class IMap *pMap);
-	virtual void OnMapLoad() override;
-	virtual void OnInit() override;
+	void OnMapLoad() override;
+	void OnInit() override;
+	void Unload();
 	void LoadBackground(class CLayers *pLayers, class IMap *pMap);
 
 	// DDRace

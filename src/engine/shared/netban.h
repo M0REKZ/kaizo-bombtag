@@ -124,7 +124,7 @@ protected:
 					return pBan;
 			}
 
-			return 0;
+			return nullptr;
 		}
 		CBan<CDataType> *Get(int Index) const;
 
@@ -173,7 +173,7 @@ public:
 	class IConsole *Console() const { return m_pConsole; }
 	class IStorage *Storage() const { return m_pStorage; }
 
-	virtual ~CNetBan() {}
+	virtual ~CNetBan() = default;
 	void Init(class IConsole *pConsole, class IStorage *pStorage);
 	void Update();
 
@@ -198,7 +198,7 @@ public:
 template<class T>
 void CNetBan::MakeBanInfo(const CBan<T> *pBan, char *pBuf, unsigned BuffSize, int Type) const
 {
-	if(pBan == 0 || pBuf == 0)
+	if(pBan == nullptr || pBuf == nullptr)
 	{
 		if(BuffSize > 0)
 			pBuf[0] = 0;

@@ -21,12 +21,7 @@ enum
 
 struct CGhostSkin
 {
-	int m_Skin0;
-	int m_Skin1;
-	int m_Skin2;
-	int m_Skin3;
-	int m_Skin4;
-	int m_Skin5;
+	int m_aSkin[6];
 	int m_UseCustomColor;
 	int m_ColorBody;
 	int m_ColorFeet;
@@ -87,7 +82,7 @@ private:
 	class CGhostItem
 	{
 	public:
-		CTeeRenderInfo m_RenderInfo;
+		std::shared_ptr<CManagedTeeRenderInfo> m_pManagedTeeRenderInfo;
 		CGhostSkin m_Skin;
 		CGhostPath m_Path;
 		int m_StartTick;
@@ -99,6 +94,7 @@ private:
 		bool Empty() const { return m_Path.Size() == 0; }
 		void Reset()
 		{
+			m_pManagedTeeRenderInfo = nullptr;
 			m_Path.Reset();
 			m_StartTick = -1;
 			m_PlaybackPos = -1;
@@ -122,7 +118,7 @@ private:
 	bool m_Rendering = false;
 	bool m_RenderingStartedByServer = false;
 
-	static void GetGhostSkin(CGhostSkin *pSkin, const char *pSkinName, int UseCustomColor, int ColorBody, int ColorFeet);
+	static void SetGhostSkinData(CGhostSkin *pSkin, const char *pSkinName, int UseCustomColor, int ColorBody, int ColorFeet);
 	static void GetGhostCharacter(CGhostCharacter *pGhostChar, const CNetObj_Character *pChar, const CNetObj_DDNetCharacter *pDDnetChar);
 	static void GetNetObjCharacter(CNetObj_Character *pChar, const CGhostCharacter *pGhostChar);
 
@@ -140,23 +136,22 @@ private:
 	void StartRender(int Tick);
 	void StopRender();
 
-	void InitRenderInfos(CGhostItem *pGhost);
+	void UpdateTeeRenderInfo(CGhostItem &Ghost);
 
 	static void ConGPlay(IConsole::IResult *pResult, void *pUserData);
 
 public:
 	bool m_AllowRestart;
 
-	virtual int Sizeof() const override { return sizeof(*this); }
+	int Sizeof() const override { return sizeof(*this); }
 
-	virtual void OnRender() override;
-	virtual void OnConsoleInit() override;
-	virtual void OnReset() override;
-	virtual void OnRefreshSkins() override;
-	virtual void OnMessage(int MsgType, void *pRawMsg) override;
-	virtual void OnMapLoad() override;
-	virtual void OnShutdown() override;
-	virtual void OnNewSnapshot() override;
+	void OnRender() override;
+	void OnConsoleInit() override;
+	void OnReset() override;
+	void OnMessage(int MsgType, void *pRawMsg) override;
+	void OnMapLoad() override;
+	void OnShutdown() override;
+	void OnNewSnapshot() override;
 
 	void OnNewPredictedSnapshot();
 

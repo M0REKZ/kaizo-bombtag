@@ -3,6 +3,7 @@
 #ifndef ENGINE_SERVER_H
 #define ENGINE_SERVER_H
 
+#include <array>
 #include <optional>
 #include <type_traits>
 
@@ -60,7 +61,9 @@ public:
 	virtual bool ClientIngame(int ClientId) const = 0;
 	virtual bool GetClientInfo(int ClientId, CClientInfo *pInfo) const = 0;
 	virtual void SetClientDDNetVersion(int ClientId, int DDNetVersion) = 0;
-	virtual void GetClientAddr(int ClientId, char *pAddrStr, int Size) const = 0;
+	virtual const NETADDR *ClientAddr(int ClientId) const = 0;
+	virtual const std::array<char, NETADDR_MAXSTRSIZE> &ClientAddrStringImpl(int ClientId, bool IncludePort) const = 0;
+	inline const char *ClientAddrString(int ClientId, bool IncludePort) const { return ClientAddrStringImpl(ClientId, IncludePort).data(); }
 
 	/**
 	 * Returns the version of the client with the given client ID.
@@ -210,7 +213,7 @@ public:
 			return true;
 		if(GetClientVersion(Client) >= VERSION_DDNET_OLD)
 			return true;
-		Target = clamp(Target, 0, VANILLA_MAX_CLIENTS - 1);
+		Target = std::clamp(Target, 0, VANILLA_MAX_CLIENTS - 1);
 		int *pMap = GetIdMap(Client);
 		if(pMap[Target] == -1)
 			return false;
@@ -249,9 +252,10 @@ public:
 	virtual void SetRconCid(int ClientId) = 0;
 	virtual int GetAuthedState(int ClientId) const = 0;
 	virtual const char *GetAuthName(int ClientId) const = 0;
+	virtual bool HasAuthHidden(int ClientId) const = 0;
 	virtual void Kick(int ClientId, const char *pReason) = 0;
 	virtual void Ban(int ClientId, int Seconds, const char *pReason, bool VerbatimReason) = 0;
-	virtual void RedirectClient(int ClientId, int Port, bool Verbose = false) = 0;
+	virtual void RedirectClient(int ClientId, int Port) = 0;
 	virtual void ChangeMap(const char *pMap) = 0;
 	virtual void ReloadMap() = 0;
 
@@ -264,8 +268,6 @@ public:
 	virtual void StopRecord(int ClientId) = 0;
 	virtual bool IsRecording(int ClientId) = 0;
 	virtual void StopDemos() = 0;
-
-	virtual void GetClientAddr(int ClientId, NETADDR *pAddr) const = 0;
 
 	virtual int *GetIdMap(int ClientId) = 0;
 
@@ -293,6 +295,16 @@ public:
 	virtual const char *GetMapName() const = 0;
 
 	virtual bool IsSixup(int ClientId) const = 0;
+
+	//+KZ
+	virtual int GetClientInfclassVersion(int ClientId) { return 0; } //identify infclass clients
+	virtual bool IsTaterClient(int ClientId) { return false; } // identify tater clients
+	virtual bool IsQxdClient(int ClientId) { return false; } // identify qxd clients
+	virtual bool IsChillerbotClient(int ClientId) { return false; } // identify chillerbot clients
+	virtual bool IsStAClient(int ClientId) { return false; } // identify StA clients
+	virtual bool IsAllTheHaxxClient(int ClientId) { return false; } // identify allthehaxx clients
+	virtual bool IsPulseClient(int ClientId) { return false; } // identify pulse clients
+
 };
 
 class IGameServer : public IInterface
@@ -304,15 +316,25 @@ public:
 	// is instantiated.
 	virtual void OnInit(const void *pPersistentData) = 0;
 	virtual void OnConsoleInit() = 0;
-	virtual void OnMapChange(char *pNewMapName, int MapNameSize) = 0;
+	// Returns `true` if map change accepted.
+	[[nodiscard]] virtual bool OnMapChange(char *pNewMapName, int MapNameSize) = 0;
 	// `pPersistentData` may be null if this is the last time `IGameServer`
 	// is destroyed.
 	virtual void OnShutdown(void *pPersistentData) = 0;
 
 	virtual void OnTick() = 0;
-	virtual void OnPreSnap() = 0;
-	virtual void OnSnap(int ClientId) = 0;
-	virtual void OnPostSnap() = 0;
+
+	// Snap for a specific client.
+	//
+	// GlobalSnap is true when sending snapshots to all clients,
+	// otherwise only forced high bandwidth clients would receive snap.
+	virtual void OnSnap(int ClientId, bool GlobalSnap) = 0;
+
+	// Called after sending snapshots to all clients.
+	//
+	// Note if any client has force high bandwidth enabled,
+	// this will not be called when only sending snapshots to these clients.
+	virtual void OnPostGlobalSnap() = 0;
 
 	virtual void OnMessage(int MsgId, CUnpacker *pUnpacker, int ClientId) = 0;
 
@@ -335,12 +357,15 @@ public:
 	virtual void OnClientEnter(int ClientId) = 0;
 	virtual void OnClientDrop(int ClientId, const char *pReason) = 0;
 	virtual void OnClientPrepareInput(int ClientId, void *pInput) = 0;
-	virtual void OnClientDirectInput(int ClientId, void *pInput) = 0;
-	virtual void OnClientPredictedInput(int ClientId, void *pInput) = 0;
-	virtual void OnClientPredictedEarlyInput(int ClientId, void *pInput) = 0;
+	virtual void OnClientDirectInput(int ClientId, const void *pInput) = 0;
+	virtual void OnClientPredictedInput(int ClientId, const void *pInput) = 0;
+	virtual void OnClientPredictedEarlyInput(int ClientId, const void *pInput) = 0;
+
+	virtual void PreInputClients(int ClientId, bool *pClients) = 0;
 
 	virtual bool IsClientReady(int ClientId) const = 0;
 	virtual bool IsClientPlayer(int ClientId) const = 0;
+	virtual bool IsClientHighBandwidth(int ClientId) const = 0;
 
 	virtual int PersistentDataSize() const = 0;
 	virtual int PersistentClientDataSize() const = 0;

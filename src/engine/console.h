@@ -9,7 +9,7 @@
 
 #include <memory>
 
-static const ColorRGBA gs_ConsoleDefaultColor(1, 1, 1, 1);
+static constexpr ColorRGBA gs_ConsoleDefaultColor(1, 1, 1, 1);
 
 enum LEVEL : char;
 struct CChecksumData;
@@ -38,6 +38,8 @@ public:
 
 		CLIENT_ID_GAME = -2,
 		CLIENT_ID_NO_GAME = -3,
+
+		FILE_RECURSION_LIMIT = 16,
 	};
 
 	// TODO: rework this interface to reduce the amount of virtual calls
@@ -50,10 +52,7 @@ public:
 		IResult(int ClientId) :
 			m_NumArgs(0),
 			m_ClientId(ClientId) {}
-		IResult(const IResult &Other) :
-			m_NumArgs(Other.m_NumArgs),
-			m_ClientId(Other.m_ClientId) {}
-		virtual ~IResult() {}
+		virtual ~IResult() = default;
 
 		virtual int GetInteger(unsigned Index) const = 0;
 		virtual float GetFloat(unsigned Index) const = 0;
@@ -77,7 +76,7 @@ public:
 
 	public:
 		CCommandInfo() { m_AccessLevel = ACCESS_LEVEL_ADMIN; }
-		virtual ~CCommandInfo() {}
+		virtual ~CCommandInfo() = default;
 		const char *m_pName;
 		const char *m_pHelp;
 		const char *m_pParams;

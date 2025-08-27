@@ -24,7 +24,7 @@
 
 using namespace FontIcons;
 
-static const ColorRGBA gs_HighlightedTextColor = ColorRGBA(0.4f, 0.4f, 1.0f, 1.0f);
+static constexpr ColorRGBA gs_HighlightedTextColor = ColorRGBA(0.4f, 0.4f, 1.0f, 1.0f);
 
 static ColorRGBA PlayerBackgroundColor(bool Friend, bool Clan, bool Afk, bool Inside)
 {
@@ -64,7 +64,7 @@ static void FormatServerbrowserPing(char (&aBuffer)[N], const CServerInfo *pInfo
 
 static ColorRGBA GetPingTextColor(int Latency)
 {
-	return color_cast<ColorRGBA>(ColorHSLA((300.0f - clamp(Latency, 0, 300)) / 1000.0f, 1.0f, 0.5f));
+	return color_cast<ColorRGBA>(ColorHSLA((300.0f - std::clamp(Latency, 0, 300)) / 1000.0f, 1.0f, 0.5f));
 }
 
 static ColorRGBA GetGametypeTextColor(const char *pGametype)
@@ -133,7 +133,10 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 		COL_FRIENDS,
 		COL_PLAYERS,
 		COL_PING,
+	};
 
+	enum
+	{
 		UI_ELEM_LOCK_ICON = 0,
 		UI_ELEM_FAVORITE_ICON,
 		UI_ELEM_NAME_1,
@@ -219,7 +222,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 		if(Col.m_Id == COL_FRIENDS)
 		{
 			TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-			TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+			TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 			Ui()->DoLabel(&Col.m_Rect, FONT_ICON_HEART, 14.0f, TEXTALIGN_MC);
 			TextRender()->SetRenderFlags(0);
 			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -242,6 +245,10 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), Localize("No local servers found (ports %d-%d)"), IServerBrowser::LAN_PORT_BEGIN, IServerBrowser::LAN_PORT_END);
 				Ui()->DoLabel(&View, aBuf, 16.0f, TEXTALIGN_MC);
+			}
+			else if(ServerBrowser()->IsServerlistError())
+			{
+				Ui()->DoLabel(&View, Localize("Could not get server list from master server"), 16.0f, TEXTALIGN_MC);
 			}
 			else
 			{
@@ -277,7 +284,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 	const auto &&RenderBrowserIcons = [this](CUIElement::SUIElementRect &UIRect, CUIRect *pRect, const ColorRGBA &TextColor, const ColorRGBA &TextOutlineColor, const char *pText, int TextAlign, bool SmallFont = false) {
 		const float FontSize = SmallFont ? 6.0f : 14.0f;
 		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 		TextRender()->TextColor(TextColor);
 		TextRender()->TextOutlineColor(TextOutlineColor);
 		Ui()->DoLabelStreamed(UIRect, pRect, pText, FontSize, TextAlign);
@@ -345,13 +352,13 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 			{
 				if(pCommunity != nullptr)
 				{
-					const SCommunityIcon *pIcon = FindCommunityIcon(pCommunity->Id());
+					const CCommunityIcon *pIcon = m_CommunityIcons.Find(pCommunity->Id());
 					if(pIcon != nullptr)
 					{
 						CUIRect CommunityIcon;
 						Button.Margin(2.0f, &CommunityIcon);
-						RenderCommunityIcon(pIcon, CommunityIcon, true);
-						Ui()->DoButtonLogic(&pItem->m_aCommunityId, 0, &CommunityIcon);
+						m_CommunityIcons.Render(pIcon, CommunityIcon, true);
+						Ui()->DoButtonLogic(&pItem->m_aCommunityId, 0, &CommunityIcon, BUTTONFLAG_NONE);
 						GameClient()->m_Tooltips.DoToolTip(&pItem->m_aCommunityId, &CommunityIcon, pCommunity->Name());
 					}
 				}
@@ -495,7 +502,7 @@ void CMenus::RenderServerbrowserStatusBox(CUIRect StatusBox, bool WasListboxItem
 	}
 
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 	const float SearchExcludeAddrStrMax = 130.0f;
 	const float SearchIconWidth = TextRender()->TextWidth(16.0f, FONT_ICON_MAGNIFYING_GLASS);
 	const float ExcludeIconWidth = TextRender()->TextWidth(16.0f, FONT_ICON_BAN);
@@ -519,7 +526,7 @@ void CMenus::RenderServerbrowserStatusBox(CUIRect StatusBox, bool WasListboxItem
 	// render quick search
 	{
 		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 		Ui()->DoLabel(&QuickSearch, FONT_ICON_MAGNIFYING_GLASS, 16.0f, TEXTALIGN_ML);
 		TextRender()->SetRenderFlags(0);
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -548,7 +555,7 @@ void CMenus::RenderServerbrowserStatusBox(CUIRect StatusBox, bool WasListboxItem
 	// render quick exclude
 	{
 		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 		Ui()->DoLabel(&QuickExclude, FONT_ICON_BAN, 16.0f, TEXTALIGN_ML);
 		TextRender()->SetRenderFlags(0);
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -733,9 +740,9 @@ void CMenus::RenderServerbrowserFilters(CUIRect View)
 		const float OldWidth = Flag.w;
 		Flag.w = Flag.h * 2.0f;
 		Flag.x += (OldWidth - Flag.w) / 2.0f;
-		m_pClient->m_CountryFlags.Render(g_Config.m_BrFilterCountryIndex, ColorRGBA(1.0f, 1.0f, 1.0f, Ui()->HotItem() == &g_Config.m_BrFilterCountryIndex ? 1.0f : g_Config.m_BrFilterCountry ? 0.9f : 0.5f), Flag.x, Flag.y, Flag.w, Flag.h);
+		GameClient()->m_CountryFlags.Render(g_Config.m_BrFilterCountryIndex, ColorRGBA(1.0f, 1.0f, 1.0f, Ui()->HotItem() == &g_Config.m_BrFilterCountryIndex ? 1.0f : g_Config.m_BrFilterCountry ? 0.9f : 0.5f), Flag.x, Flag.y, Flag.w, Flag.h);
 
-		if(Ui()->DoButtonLogic(&g_Config.m_BrFilterCountryIndex, 0, &Flag))
+		if(Ui()->DoButtonLogic(&g_Config.m_BrFilterCountryIndex, 0, &Flag, BUTTONFLAG_LEFT))
 		{
 			static SPopupMenuId s_PopupCountryId;
 			static SPopupCountrySelectionContext s_PopupCountryContext;
@@ -891,7 +898,7 @@ void CMenus::RenderServerbrowserDDNetFilter(CUIRect View,
 		const char *pName = GetItemName(ItemIndex);
 		const bool Active = !Filter.Filtered(pName);
 
-		const int Click = Ui()->DoButtonLogic(pItemId, 0, &Item);
+		const int Click = Ui()->DoButtonLogic(pItemId, 0, &Item, BUTTONFLAG_ALL);
 		if(Click == 1 || Click == 2)
 		{
 			// left/right click to toggle filter
@@ -1009,10 +1016,10 @@ void CMenus::RenderServerbrowserCommunitiesFilter(CUIRect View)
 		Label.VSplitLeft(Spacing, nullptr, &Label);
 
 		const char *pItemName = GetItemName(ItemIndex);
-		const SCommunityIcon *pIcon = FindCommunityIcon(pItemName);
+		const CCommunityIcon *pIcon = m_CommunityIcons.Find(pItemName);
 		if(pIcon != nullptr)
 		{
-			RenderCommunityIcon(pIcon, Icon, Active);
+			m_CommunityIcons.Render(pIcon, Icon, Active);
 		}
 
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, Alpha);
@@ -1056,7 +1063,7 @@ void CMenus::RenderServerbrowserCountriesFilter(CUIRect View)
 		const float OldWidth = Item.w;
 		Item.w = Item.h * 2.0f;
 		Item.x += (OldWidth - Item.w) / 2.0f;
-		m_pClient->m_CountryFlags.Render(ServerBrowser()->CommunityCache().SelectableCountries()[ItemIndex]->FlagId(), ColorRGBA(1.0f, 1.0f, 1.0f, (Active ? 0.9f : 0.2f) + (Ui()->HotItem() == pItemId ? 0.1f : 0.0f)), Item.x, Item.y, Item.w, Item.h);
+		GameClient()->m_CountryFlags.Render(ServerBrowser()->CommunityCache().SelectableCountries()[ItemIndex]->FlagId(), ColorRGBA(1.0f, 1.0f, 1.0f, (Active ? 0.9f : 0.2f) + (Ui()->HotItem() == pItemId ? 0.1f : 0.0f)), Item.x, Item.y, Item.w, Item.h);
 	};
 
 	RenderServerbrowserDDNetFilter(View, ServerBrowser()->CountriesFilter(), ItemHeight + 2.0f * Spacing, MaxEntries, EntriesPerRow, s_ScrollRegion, s_vItemIds, false, GetItemName, RenderItem);
@@ -1093,7 +1100,7 @@ CUi::EPopupMenuFunctionResult CMenus::PopupCountrySelection(void *pContext, CUIR
 
 	static CListBox s_ListBox;
 	s_ListBox.SetActive(Active);
-	s_ListBox.DoStart(50.0f, pMenus->m_pClient->m_CountryFlags.Num(), 8, 1, -1, &View, false);
+	s_ListBox.DoStart(50.0f, pMenus->GameClient()->m_CountryFlags.Num(), 8, 1, -1, &View, false);
 
 	if(pPopupContext->m_New)
 	{
@@ -1101,9 +1108,9 @@ CUi::EPopupMenuFunctionResult CMenus::PopupCountrySelection(void *pContext, CUIR
 		s_ListBox.ScrollToSelected();
 	}
 
-	for(size_t i = 0; i < pMenus->m_pClient->m_CountryFlags.Num(); ++i)
+	for(size_t i = 0; i < pMenus->GameClient()->m_CountryFlags.Num(); ++i)
 	{
-		const CCountryFlags::CCountryFlag *pEntry = pMenus->m_pClient->m_CountryFlags.GetByIndex(i);
+		const CCountryFlags::CCountryFlag *pEntry = pMenus->GameClient()->m_CountryFlags.GetByIndex(i);
 
 		const CListboxItem Item = s_ListBox.DoNextItem(pEntry, pEntry->m_CountryCode == pPopupContext->m_Selection);
 		if(!Item.m_Visible)
@@ -1116,13 +1123,13 @@ CUi::EPopupMenuFunctionResult CMenus::PopupCountrySelection(void *pContext, CUIR
 		const float OldWidth = FlagRect.w;
 		FlagRect.w = FlagRect.h * 2.0f;
 		FlagRect.x += (OldWidth - FlagRect.w) / 2.0f;
-		pMenus->m_pClient->m_CountryFlags.Render(pEntry->m_CountryCode, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), FlagRect.x, FlagRect.y, FlagRect.w, FlagRect.h);
+		pMenus->GameClient()->m_CountryFlags.Render(pEntry->m_CountryCode, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), FlagRect.x, FlagRect.y, FlagRect.w, FlagRect.h);
 
 		pMenus->Ui()->DoLabel(&Label, pEntry->m_aCountryCodeString, 10.0f, TEXTALIGN_MC);
 	}
 
 	const int NewSelected = s_ListBox.DoEnd();
-	pPopupContext->m_Selection = NewSelected >= 0 ? pMenus->m_pClient->m_CountryFlags.GetByIndex(NewSelected)->m_CountryCode : -1;
+	pPopupContext->m_Selection = NewSelected >= 0 ? pMenus->GameClient()->m_CountryFlags.GetByIndex(NewSelected)->m_CountryCode : -1;
 	if(s_ListBox.WasItemSelected() || s_ListBox.WasItemActivated())
 	{
 		g_Config.m_BrFilterCountry = 1;
@@ -1315,7 +1322,7 @@ void CMenus::RenderServerbrowserInfoScoreboard(CUIRect View, const CServerInfo *
 			CRenderTools::GetRenderTeeOffsetToRenderedTee(pIdleState, &TeeInfo, OffsetToMid);
 			const vec2 TeeRenderPos = vec2(Skin.x + TeeInfo.m_Size / 2.0f, Skin.y + Skin.h / 2.0f + OffsetToMid.y);
 			RenderTools()->RenderTee(pIdleState, &TeeInfo, CurrentClient.m_Afk ? EMOTE_BLINK : EMOTE_NORMAL, vec2(1.0f, 0.0f), TeeRenderPos);
-			Ui()->DoButtonLogic(&CurrentClient.m_aSkin, 0, &Skin);
+			Ui()->DoButtonLogic(&CurrentClient.m_aSkin, 0, &Skin, BUTTONFLAG_NONE);
 			GameClient()->m_Tooltips.DoToolTip(&CurrentClient.m_aSkin, &Skin, CurrentClient.m_aSkin);
 		}
 
@@ -1353,7 +1360,7 @@ void CMenus::RenderServerbrowserInfoScoreboard(CUIRect View, const CServerInfo *
 			TextRender()->TextEx(&Cursor, pClan, -1);
 
 		// flag
-		m_pClient->m_CountryFlags.Render(CurrentClient.m_Country, ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f), Flag.x, Flag.y, Flag.w, Flag.h);
+		GameClient()->m_CountryFlags.Render(CurrentClient.m_Country, ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f), Flag.x, Flag.y, Flag.w, Flag.h);
 	}
 
 	const int NewSelected = s_ListBox.DoEnd();
@@ -1361,9 +1368,9 @@ void CMenus::RenderServerbrowserInfoScoreboard(CUIRect View, const CServerInfo *
 	{
 		const CServerInfo::CClient &SelectedClient = pSelectedServer->m_aClients[NewSelected];
 		if(SelectedClient.m_FriendState == IFriends::FRIEND_PLAYER)
-			m_pClient->Friends()->RemoveFriend(SelectedClient.m_aName, SelectedClient.m_aClan);
+			GameClient()->Friends()->RemoveFriend(SelectedClient.m_aName, SelectedClient.m_aClan);
 		else
-			m_pClient->Friends()->AddFriend(SelectedClient.m_aName, SelectedClient.m_aClan);
+			GameClient()->Friends()->AddFriend(SelectedClient.m_aName, SelectedClient.m_aClan);
 		FriendlistOnUpdate();
 		Client()->ServerBrowserUpdate();
 	}
@@ -1385,11 +1392,17 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 	m_pRemoveFriend = nullptr;
 	for(auto &vFriends : m_avFriends)
 		vFriends.clear();
-
-	for(int FriendIndex = 0; FriendIndex < m_pClient->Friends()->NumFriends(); ++FriendIndex)
+	m_avFriends[FRIEND_OFF].reserve(GameClient()->Friends()->NumFriends());
+	for(int FriendIndex = 0; FriendIndex < GameClient()->Friends()->NumFriends(); ++FriendIndex)
 	{
-		m_avFriends[FRIEND_OFF].emplace_back(m_pClient->Friends()->GetFriend(FriendIndex));
+		m_avFriends[FRIEND_OFF].emplace_back(GameClient()->Friends()->GetFriend(FriendIndex));
 	}
+	bool HasFriend = std::any_of(m_avFriends[FRIEND_OFF].begin(), m_avFriends[FRIEND_OFF].end(), [&](const auto &Friend) {
+		return Friend.Name()[0] != '\0';
+	}),
+	     HasClan = std::any_of(m_avFriends[FRIEND_OFF].begin(), m_avFriends[FRIEND_OFF].end(), [&](const auto &Friend) {
+		     return Friend.Name()[0] == '\0';
+	     });
 
 	for(int ServerIndex = 0; ServerIndex < ServerBrowser()->NumSortedServers(); ++ServerIndex)
 	{
@@ -1456,7 +1469,7 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 			break;
 		}
 		Ui()->DoLabel(&GroupLabel, aBuf, FontSize, TEXTALIGN_ML);
-		if(Ui()->DoButtonLogic(&s_aListExtended[FriendType], 0, &Header))
+		if(Ui()->DoButtonLogic(&s_aListExtended[FriendType], 0, &Header, BUTTONFLAG_LEFT))
 		{
 			s_aListExtended[FriendType] = !s_aListExtended[FriendType];
 		}
@@ -1481,7 +1494,7 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 					continue;
 
 				const bool Inside = Ui()->HotItem() == Friend.ListItemId() || Ui()->HotItem() == Friend.RemoveButtonId() || Ui()->HotItem() == Friend.CommunityTooltipId() || Ui()->HotItem() == Friend.SkinTooltipId();
-				int ButtonResult = Ui()->DoButtonLogic(Friend.ListItemId(), 0, &Rect);
+				int ButtonResult = Ui()->DoButtonLogic(Friend.ListItemId(), 0, &Rect, BUTTONFLAG_LEFT);
 
 				if(Friend.ServerInfo())
 				{
@@ -1513,7 +1526,7 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 					CRenderTools::GetRenderTeeOffsetToRenderedTee(pIdleState, &TeeInfo, OffsetToMid);
 					const vec2 TeeRenderPos = vec2(Skin.x + Skin.w / 2.0f, Skin.y + Skin.h * 0.55f + OffsetToMid.y);
 					RenderTools()->RenderTee(pIdleState, &TeeInfo, Friend.IsAfk() ? EMOTE_BLINK : EMOTE_NORMAL, vec2(1.0f, 0.0f), TeeRenderPos);
-					Ui()->DoButtonLogic(Friend.SkinTooltipId(), 0, &Skin);
+					Ui()->DoButtonLogic(Friend.SkinTooltipId(), 0, &Skin, BUTTONFLAG_NONE);
 					GameClient()->m_Tooltips.DoToolTip(Friend.SkinTooltipId(), &Skin, Friend.Skin());
 				}
 				Rect.HSplitTop(11.0f, &NameLabel, &ClanLabel);
@@ -1531,14 +1544,14 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 					const CCommunity *pCommunity = ServerBrowser()->Community(Friend.ServerInfo()->m_aCommunityId);
 					if(pCommunity != nullptr)
 					{
-						const SCommunityIcon *pIcon = FindCommunityIcon(pCommunity->Id());
+						const CCommunityIcon *pIcon = m_CommunityIcons.Find(pCommunity->Id());
 						if(pIcon != nullptr)
 						{
 							CUIRect CommunityIcon;
 							InfoLabel.VSplitLeft(21.0f, &CommunityIcon, &InfoLabel);
 							InfoLabel.VSplitLeft(2.0f, nullptr, &InfoLabel);
-							RenderCommunityIcon(pIcon, CommunityIcon, true);
-							Ui()->DoButtonLogic(Friend.CommunityTooltipId(), 0, &CommunityIcon);
+							m_CommunityIcons.Render(pIcon, CommunityIcon, true);
+							Ui()->DoButtonLogic(Friend.CommunityTooltipId(), 0, &CommunityIcon, BUTTONFLAG_NONE);
 							GameClient()->m_Tooltips.DoToolTip(Friend.CommunityTooltipId(), &CommunityIcon, pCommunity->Name());
 						}
 					}
@@ -1563,7 +1576,7 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 					TextRender()->SetRenderFlags(0);
 					TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 					TextRender()->TextColor(TextRender()->DefaultTextColor());
-					if(Ui()->DoButtonLogic(Friend.RemoveButtonId(), 0, &RemoveButton))
+					if(Ui()->DoButtonLogic(Friend.RemoveButtonId(), 0, &RemoveButton, BUTTONFLAG_LEFT))
 					{
 						m_pRemoveFriend = &Friend;
 						ButtonResult = 0;
@@ -1584,24 +1597,13 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 			}
 
 			// Render empty description
-			if(m_avFriends[FriendType].empty())
+			const char *pText = nullptr;
+			if(FriendType == FRIEND_PLAYER_ON && !HasFriend)
+				pText = Localize("Add friends by entering their name below or by clicking their name in the player list.");
+			else if(FriendType == FRIEND_CLAN_ON && !HasClan)
+				pText = Localize("Add clanmates by entering their clan below and leaving the name blank.");
+			if(pText != nullptr)
 			{
-				const char *pText;
-				switch(FriendType)
-				{
-				case FRIEND_PLAYER_ON:
-					pText = Localize("Add friends by entering their name below or by clicking their name in the player list.");
-					break;
-				case FRIEND_CLAN_ON:
-					pText = Localize("Add clanmates by entering their clan below and leaving the name blank.");
-					break;
-				case FRIEND_OFF:
-					pText = Localize("Offline friends and clanmates will appear here.");
-					break;
-				default:
-					dbg_assert(false, "Invalid friend state");
-					dbg_break();
-				}
 				const float DescriptionMargin = 2.0f;
 				const STextBoundingBox BoundingBox = TextRender()->TextBoundingBox(FontSize, pText, -1, List.w - 2 * DescriptionMargin);
 				CUIRect EmptyDescription;
@@ -1633,7 +1635,7 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 	}
 
 	// add friend
-	if(m_pClient->Friends()->NumFriends() < IFriends::MAX_FRIENDS)
+	if(GameClient()->Friends()->NumFriends() < IFriends::MAX_FRIENDS)
 	{
 		CUIRect Button;
 		ServerFriends.Margin(5.0f, &ServerFriends);
@@ -1658,7 +1660,7 @@ void CMenus::RenderServerbrowserFriends(CUIRect View)
 		static CButtonContainer s_AddButton;
 		if(DoButton_Menu(&s_AddButton, s_NameInput.IsEmpty() && !s_ClanInput.IsEmpty() ? Localize("Add Clan") : Localize("Add Friend"), 0, &Button))
 		{
-			m_pClient->Friends()->AddFriend(s_NameInput.GetString(), s_ClanInput.GetString());
+			GameClient()->Friends()->AddFriend(s_NameInput.GetString(), s_ClanInput.GetString());
 			s_NameInput.Clear();
 			s_ClanInput.Clear();
 			FriendlistOnUpdate();
@@ -1674,7 +1676,7 @@ void CMenus::FriendlistOnUpdate()
 
 void CMenus::PopupConfirmRemoveFriend()
 {
-	m_pClient->Friends()->RemoveFriend(m_pRemoveFriend->FriendState() == IFriends::FRIEND_PLAYER ? m_pRemoveFriend->Name() : "", m_pRemoveFriend->Clan());
+	GameClient()->Friends()->RemoveFriend(m_pRemoveFriend->FriendState() == IFriends::FRIEND_PLAYER ? m_pRemoveFriend->Name() : "", m_pRemoveFriend->Clan());
 	FriendlistOnUpdate();
 	Client()->ServerBrowserUpdate();
 	m_pRemoveFriend = nullptr;
@@ -1704,7 +1706,7 @@ void CMenus::RenderServerbrowserTabBar(CUIRect TabBar)
 	}
 
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 
 	static CButtonContainer s_FilterTabButton;
 	if(DoButton_MenuTab(&s_FilterTabButton, FONT_ICON_LIST_UL, g_Config.m_UiToolboxPage == UI_TOOLBOX_PAGE_FILTERS, &FilterTabButton, IGraphics::CORNER_T, &m_aAnimatorsSmallPage[SMALL_TAB_BROWSER_FILTER], &ColorInactive, &ColorActive))
@@ -1852,7 +1854,7 @@ bool CMenus::PrintHighlighted(const char *pName, F &&PrintFn)
 CTeeRenderInfo CMenus::GetTeeRenderInfo(vec2 Size, const char *pSkinName, bool CustomSkinColors, int CustomSkinColorBody, int CustomSkinColorFeet) const
 {
 	CTeeRenderInfo TeeInfo;
-	TeeInfo.Apply(m_pClient->m_Skins.Find(pSkinName));
+	TeeInfo.Apply(GameClient()->m_Skins.Find(pSkinName));
 	TeeInfo.ApplyColors(CustomSkinColors, CustomSkinColorBody, CustomSkinColorFeet);
 	TeeInfo.m_Size = minimum(Size.x, Size.y);
 	return TeeInfo;
@@ -1917,205 +1919,5 @@ void CMenus::UpdateCommunityCache(bool Force)
 	else
 	{
 		ServerBrowser()->CommunityCache().Update(Force);
-	}
-}
-
-CMenus::CAbstractCommunityIconJob::CAbstractCommunityIconJob(CMenus *pMenus, const char *pCommunityId, int StorageType) :
-	m_pMenus(pMenus),
-	m_StorageType(StorageType)
-{
-	str_copy(m_aCommunityId, pCommunityId);
-	str_format(m_aPath, sizeof(m_aPath), "communityicons/%s.png", pCommunityId);
-}
-
-CMenus::CCommunityIconDownloadJob::CCommunityIconDownloadJob(CMenus *pMenus, const char *pCommunityId, const char *pUrl, const SHA256_DIGEST &Sha256) :
-	CHttpRequest(pUrl),
-	CAbstractCommunityIconJob(pMenus, pCommunityId, IStorage::TYPE_SAVE)
-{
-	WriteToFile(pMenus->Storage(), m_aPath, IStorage::TYPE_SAVE);
-	ExpectSha256(Sha256);
-	Timeout(CTimeout{0, 0, 0, 0});
-	LogProgress(HTTPLOG::FAILURE);
-}
-
-void CMenus::CCommunityIconLoadJob::Run()
-{
-	m_Success = m_pMenus->LoadCommunityIconFile(m_aPath, m_StorageType, m_ImageInfo, m_Sha256);
-}
-
-CMenus::CCommunityIconLoadJob::CCommunityIconLoadJob(CMenus *pMenus, const char *pCommunityId, int StorageType) :
-	CAbstractCommunityIconJob(pMenus, pCommunityId, StorageType)
-{
-	Abortable(true);
-}
-
-CMenus::CCommunityIconLoadJob::~CCommunityIconLoadJob()
-{
-	m_ImageInfo.Free();
-}
-
-int CMenus::CommunityIconScan(const char *pName, int IsDir, int DirType, void *pUser)
-{
-	const char *pExtension = ".png";
-	CMenus *pSelf = static_cast<CMenus *>(pUser);
-	if(IsDir || !str_endswith(pName, pExtension) || str_length(pName) - str_length(pExtension) >= (int)CServerInfo::MAX_COMMUNITY_ID_LENGTH)
-		return 0;
-
-	char aCommunityId[CServerInfo::MAX_COMMUNITY_ID_LENGTH];
-	str_truncate(aCommunityId, sizeof(aCommunityId), pName, str_length(pName) - str_length(pExtension));
-
-	std::shared_ptr<CCommunityIconLoadJob> pJob = std::make_shared<CCommunityIconLoadJob>(pSelf, aCommunityId, DirType);
-	pSelf->Engine()->AddJob(pJob);
-	pSelf->m_CommunityIconLoadJobs.push_back(pJob);
-	return 0;
-}
-
-const SCommunityIcon *CMenus::FindCommunityIcon(const char *pCommunityId)
-{
-	auto Icon = std::find_if(m_vCommunityIcons.begin(), m_vCommunityIcons.end(), [pCommunityId](const SCommunityIcon &Element) {
-		return str_comp(Element.m_aCommunityId, pCommunityId) == 0;
-	});
-	return Icon == m_vCommunityIcons.end() ? nullptr : &(*Icon);
-}
-
-bool CMenus::LoadCommunityIconFile(const char *pPath, int DirType, CImageInfo &Info, SHA256_DIGEST &Sha256)
-{
-	char aError[IO_MAX_PATH_LENGTH + 128];
-	if(!Graphics()->LoadPng(Info, pPath, DirType))
-	{
-		str_format(aError, sizeof(aError), "Failed to load community icon from '%s'", pPath);
-		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "menus/browser", aError);
-		return false;
-	}
-	if(Info.m_Format != CImageInfo::FORMAT_RGBA)
-	{
-		Info.Free();
-		str_format(aError, sizeof(aError), "Failed to load community icon from '%s': must be an RGBA image", pPath);
-		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "menus/browser", aError);
-		return false;
-	}
-	if(!Storage()->CalculateHashes(pPath, DirType, &Sha256))
-	{
-		Info.Free();
-		str_format(aError, sizeof(aError), "Failed to load community icon from '%s': could not calculate hash", pPath);
-		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "menus/browser", aError);
-		return false;
-	}
-	return true;
-}
-
-void CMenus::LoadCommunityIconFinish(const char *pCommunityId, CImageInfo &Info, const SHA256_DIGEST &Sha256)
-{
-	SCommunityIcon CommunityIcon;
-	str_copy(CommunityIcon.m_aCommunityId, pCommunityId);
-	CommunityIcon.m_Sha256 = Sha256;
-	CommunityIcon.m_OrgTexture = Graphics()->LoadTextureRaw(Info, 0, pCommunityId);
-
-	ConvertToGrayscale(Info);
-	CommunityIcon.m_GreyTexture = Graphics()->LoadTextureRawMove(Info, 0, pCommunityId);
-
-	auto ExistingIcon = std::find_if(m_vCommunityIcons.begin(), m_vCommunityIcons.end(), [pCommunityId](const SCommunityIcon &Element) {
-		return str_comp(Element.m_aCommunityId, pCommunityId) == 0;
-	});
-	if(ExistingIcon == m_vCommunityIcons.end())
-	{
-		m_vCommunityIcons.push_back(CommunityIcon);
-	}
-	else
-	{
-		Graphics()->UnloadTexture(&ExistingIcon->m_OrgTexture);
-		Graphics()->UnloadTexture(&ExistingIcon->m_GreyTexture);
-		*ExistingIcon = CommunityIcon;
-	}
-
-	char aBuf[CServerInfo::MAX_COMMUNITY_ID_LENGTH + 32];
-	str_format(aBuf, sizeof(aBuf), "Loaded community icon '%s'", pCommunityId);
-	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "menus/browser", aBuf);
-}
-
-void CMenus::RenderCommunityIcon(const SCommunityIcon *pIcon, CUIRect Rect, bool Active)
-{
-	Rect.VMargin(Rect.w / 2.0f - Rect.h, &Rect);
-
-	Graphics()->TextureSet(Active ? pIcon->m_OrgTexture : pIcon->m_GreyTexture);
-	Graphics()->QuadsBegin();
-	Graphics()->SetColor(1.0f, 1.0f, 1.0f, Active ? 1.0f : 0.5f);
-	IGraphics::CQuadItem QuadItem(Rect.x, Rect.y, Rect.w, Rect.h);
-	Graphics()->QuadsDrawTL(&QuadItem, 1);
-	Graphics()->QuadsEnd();
-}
-
-void CMenus::UpdateCommunityIcons()
-{
-	// Update load jobs (icon is loaded from existing file)
-	if(!m_CommunityIconLoadJobs.empty())
-	{
-		std::shared_ptr<CCommunityIconLoadJob> pJob = m_CommunityIconLoadJobs.front();
-		if(pJob->Done())
-		{
-			if(pJob->Success())
-				LoadCommunityIconFinish(pJob->CommunityId(), pJob->ImageInfo(), pJob->Sha256());
-			m_CommunityIconLoadJobs.pop_front();
-		}
-
-		// Don't start download jobs until all load jobs are done
-		if(!m_CommunityIconLoadJobs.empty())
-			return;
-	}
-
-	// Update download jobs (icon is downloaded and loaded from new file)
-	if(!m_CommunityIconDownloadJobs.empty())
-	{
-		std::shared_ptr<CCommunityIconDownloadJob> pJob = m_CommunityIconDownloadJobs.front();
-		if(pJob->Done())
-		{
-			if(pJob->State() == EHttpState::DONE)
-			{
-				std::shared_ptr<CCommunityIconLoadJob> pLoadJob = std::make_shared<CCommunityIconLoadJob>(this, pJob->CommunityId(), IStorage::TYPE_SAVE);
-				Engine()->AddJob(pLoadJob);
-				m_CommunityIconLoadJobs.push_back(pLoadJob);
-			}
-			m_CommunityIconDownloadJobs.pop_front();
-		}
-	}
-
-	// Rescan for changed communities only when necessary
-	if(!ServerBrowser()->DDNetInfoAvailable() || (m_CommunityIconsInfoSha256 != SHA256_ZEROED && m_CommunityIconsInfoSha256 == ServerBrowser()->DDNetInfoSha256()))
-		return;
-	m_CommunityIconsInfoSha256 = ServerBrowser()->DDNetInfoSha256();
-
-	// Remove icons for removed communities
-	auto RemovalIterator = m_vCommunityIcons.begin();
-	while(RemovalIterator != m_vCommunityIcons.end())
-	{
-		if(ServerBrowser()->Community(RemovalIterator->m_aCommunityId) == nullptr)
-		{
-			Graphics()->UnloadTexture(&RemovalIterator->m_OrgTexture);
-			Graphics()->UnloadTexture(&RemovalIterator->m_GreyTexture);
-			RemovalIterator = m_vCommunityIcons.erase(RemovalIterator);
-		}
-		else
-		{
-			++RemovalIterator;
-		}
-	}
-
-	// Find added and updated community icons
-	for(const auto &Community : ServerBrowser()->Communities())
-	{
-		if(str_comp(Community.Id(), IServerBrowser::COMMUNITY_NONE) == 0)
-			continue;
-		auto ExistingIcon = std::find_if(m_vCommunityIcons.begin(), m_vCommunityIcons.end(), [Community](const auto &Element) {
-			return str_comp(Element.m_aCommunityId, Community.Id()) == 0;
-		});
-		auto pExistingDownload = std::find_if(m_CommunityIconDownloadJobs.begin(), m_CommunityIconDownloadJobs.end(), [Community](const auto &Element) {
-			return str_comp(Element->CommunityId(), Community.Id()) == 0;
-		});
-		if(pExistingDownload == m_CommunityIconDownloadJobs.end() && (ExistingIcon == m_vCommunityIcons.end() || ExistingIcon->m_Sha256 != Community.IconSha256()))
-		{
-			std::shared_ptr<CCommunityIconDownloadJob> pJob = std::make_shared<CCommunityIconDownloadJob>(this, Community.Id(), Community.IconUrl(), Community.IconSha256());
-			Http()->Run(pJob);
-			m_CommunityIconDownloadJobs.push_back(pJob);
-		}
 	}
 }

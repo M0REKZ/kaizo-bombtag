@@ -45,6 +45,17 @@ CProjectile::CProjectile(
 
 	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
 	m_BelongsToPracticeTeam = pOwnerChar && pOwnerChar->Teams()->IsPractice(pOwnerChar->Team());
+	m_DDRaceTeam = m_Owner == -1 ? 0 : GameServer()->GetDDRaceTeam(m_Owner);
+	m_IsSolo = pOwnerChar && pOwnerChar->GetCore().m_Solo;
+
+	//+KZ
+	if(pOwnerChar && (pOwnerChar->m_ForcedTuneKZ || pOwnerChar->m_TuneZoneOverrideKZ >= 0))
+	{
+		if(pOwnerChar->m_TuneZoneOverrideKZ >= 0 && !m_TuneZone) //+KZ
+			m_TuneZone = pOwnerChar->m_TuneZoneOverrideKZ;
+		else if(pOwnerChar->m_ForcedTuneKZ)
+			m_TuneZone = pOwnerChar->m_TuneZone;
+	}
 
 	GameWorld()->InsertEntity(this);
 }
@@ -114,13 +125,28 @@ void CProjectile::Tick()
 	vec2 CurPos = GetPos(Ct);
 	vec2 ColPos;
 	vec2 NewPos;
-	int Collide = GameServer()->Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos);
-	CCharacter *pOwnerChar = 0;
+	//int Collide = GameServer()->Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos); // KZ
+	CCharacter *pOwnerChar = nullptr;
+	CCharacterCore *pOwnerCore = nullptr; // KZ
 
 	if(m_Owner >= 0)
 		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
 
-	CCharacter *pTargetChr = 0;
+	if(pOwnerChar) // KZ
+	{
+		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
+	}
+
+	SKZColIntersectLineParams ParamsKZ;
+	ParamsKZ.pCore = pOwnerCore;
+	ParamsKZ.IsHook = false;
+	ParamsKZ.IsWeapon = true;
+	ParamsKZ.pProjPos = &m_Pos;
+	ParamsKZ.Weapon = m_Type;
+
+	int Collide = GameServer()->Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos, &ParamsKZ); // KZ	
+
+	CCharacter *pTargetChr = nullptr;
 
 	if(pOwnerChar ? !pOwnerChar->GrenadeHitDisabled() : g_Config.m_SvHit)
 		pTargetChr = GameServer()->m_World.IntersectCharacter(PrevPos, ColPos, m_Freeze ? 1.0f : 6.0f, ColPos, pOwnerChar, m_Owner);
@@ -184,7 +210,7 @@ void CProjectile::Tick()
 			((m_Type == WEAPON_GRENADE && pOwnerChar->HasTelegunGrenade()) || (m_Type == WEAPON_GUN && pOwnerChar->HasTelegunGun())))
 		{
 			int MapIndex = GameServer()->Collision()->GetPureMapIndex(pTargetChr ? pTargetChr->m_Pos : ColPos);
-			int TileFIndex = GameServer()->Collision()->GetFTileIndex(MapIndex);
+			int TileFIndex = GameServer()->Collision()->GetFrontTileIndex(MapIndex);
 			bool IsSwitchTeleGun = GameServer()->Collision()->GetSwitchType(MapIndex) == TILE_ALLOW_TELE_GUN;
 			bool IsBlueSwitchTeleGun = GameServer()->Collision()->GetSwitchType(MapIndex) == TILE_ALLOW_BLUE_TELE_GUN;
 
@@ -326,7 +352,7 @@ void CProjectile::Snap(int SnappingClient)
 			return;
 	}
 
-	CCharacter *pOwnerChar = 0;
+	CCharacter *pOwnerChar = nullptr;
 	CClientMask TeamMask = CClientMask().set();
 
 	if(m_Owner >= 0)
@@ -376,6 +402,15 @@ void CProjectile::SwapClients(int Client1, int Client2)
 }
 
 // DDRace
+
+bool CProjectile::CanCollide(int ClientId)
+{
+	if(m_DDRaceTeam != GameServer()->GetDDRaceTeam(ClientId))
+		return false;
+	if(m_IsSolo)
+		return m_Owner == ClientId;
+	return true;
+}
 
 void CProjectile::SetBouncing(int Value)
 {

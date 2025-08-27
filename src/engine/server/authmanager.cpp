@@ -35,6 +35,11 @@ void CAuthManager::Init()
 		NumDefaultKeys++;
 	if(g_Config.m_SvRconHelperPassword[0])
 		NumDefaultKeys++;
+
+	auto It = std::find_if(m_vKeys.begin(), m_vKeys.end(), [](CKey Key) { return str_comp(Key.m_aIdent, DEFAULT_SAVED_RCON_USER) == 0; });
+	if(It != m_vKeys.end())
+		NumDefaultKeys++;
+
 	if(m_vKeys.size() == NumDefaultKeys && !g_Config.m_SvRconPassword[0])
 	{
 		secure_random_password(g_Config.m_SvRconPassword, sizeof(g_Config.m_SvRconPassword), 6);
@@ -116,8 +121,13 @@ int CAuthManager::KeyLevel(int Slot) const
 const char *CAuthManager::KeyIdent(int Slot) const
 {
 	if(Slot < 0 || Slot >= (int)m_vKeys.size())
-		return NULL;
+		return nullptr;
 	return m_vKeys[Slot].m_aIdent;
+}
+
+bool CAuthManager::IsValidIdent(const char *pIdent) const
+{
+	return str_length(pIdent) < (int)sizeof(CKey().m_aIdent);
 }
 
 void CAuthManager::UpdateKeyHash(int Slot, MD5_DIGEST Hash, const unsigned char *pSalt, int AuthLevel)

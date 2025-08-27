@@ -13,12 +13,17 @@
 #include <game/generated/protocol.h>
 #include <game/generated/server_data.h>
 #include <game/mapitems.h>
+#include <game/team_state.h>
 
 #include <game/server/gamecontext.h>
 #include <game/server/gamecontroller.h>
 #include <game/server/player.h>
 #include <game/server/score.h>
 #include <game/server/teams.h>
+
+#include <game/server/entities/kz/portal_projectile.h>
+#include <game/server/entities/kz/portal_laser.h>
+#include <game/server/entities/kz/portal.h>
 
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
@@ -43,6 +48,29 @@ CCharacter::CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput) :
 	for(float &CurrentTimeCp : m_aCurrentTimeCp)
 	{
 		CurrentTimeCp = 0.0f;
+	}
+
+	for(int i = 0; i < 7; i++)
+	{
+		m_aCrown[i] = Server()->SnapNewId();
+	}
+
+	m_PortalKindId = Server()->SnapNewId();
+
+	m_aCustomWeapons[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START].m_Snap = WEAPON_LASER;
+}
+
+CCharacter::~CCharacter()
+{
+	for(int i = 0; i < 7; i++)
+	{
+		if(m_aCrown[i] != -1)
+			Server()->SnapFreeId(m_aCrown[i]);
+	}
+
+	if(m_PortalKindId != -1)
+	{
+		Server()->SnapFreeId(m_PortalKindId);
 	}
 }
 
@@ -123,13 +151,6 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 			delete GameServer()->m_apSavedTees[m_pPlayer->GetCid()];
 			GameServer()->m_apSavedTees[m_pPlayer->GetCid()] = nullptr;
 		}
-
-		if(GameServer()->m_apSavedTeleTees[m_pPlayer->GetCid()])
-		{
-			m_pPlayer->m_LastTeleTee = *GameServer()->m_apSavedTeleTees[m_pPlayer->GetCid()];
-			delete GameServer()->m_apSavedTeleTees[m_pPlayer->GetCid()];
-			GameServer()->m_apSavedTeleTees[m_pPlayer->GetCid()] = nullptr;
-		}
 	}
 
 	return true;
@@ -137,7 +158,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 void CCharacter::Destroy()
 {
-	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCid()] = 0;
+	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCid()] = nullptr;
 	m_Alive = false;
 	SetSolo(false);
 }
@@ -152,8 +173,15 @@ void CCharacter::SetWeapon(int W)
 	m_Core.m_ActiveWeapon = W;
 	GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, TeamMask());
 
-	if(m_Core.m_ActiveWeapon < 0 || m_Core.m_ActiveWeapon >= NUM_WEAPONS)
+	if(m_Core.m_ActiveWeapon < 0 || m_Core.m_ActiveWeapon >= KZ_NUM_CUSTOM_WEAPONS)
 		m_Core.m_ActiveWeapon = 0;
+
+	//+KZ
+	
+	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+	{
+		GameServer()->SendBroadcast("Weapon: Portal Gun",m_pPlayer->GetCid());
+	}	
 }
 
 void CCharacter::SetJetpack(bool Active)
@@ -189,7 +217,7 @@ void CCharacter::SetSuper(bool Super)
 	{
 		m_TeamBeforeSuper = Team();
 		Teams()->SetCharacterTeam(GetPlayer()->GetCid(), TEAM_SUPER);
-		m_DDRaceState = DDRACE_CHEAT;
+		m_DDRaceState = ERaceState::CHEATED;
 	}
 	else if(!Super && WasSuper)
 	{
@@ -206,6 +234,8 @@ void CCharacter::SetInvincible(bool Invincible)
 	m_Core.m_Invincible = Invincible;
 	if(Invincible)
 		UnFreeze();
+
+	SetEndlessJump(Invincible);
 }
 
 void CCharacter::SetLiveFrozen(bool Active)
@@ -220,9 +250,9 @@ void CCharacter::SetDeepFrozen(bool Active)
 
 bool CCharacter::IsGrounded()
 {
-	if(Collision()->CheckPoint(m_Pos.x + GetProximityRadius() / 2, m_Pos.y + GetProximityRadius() / 2 + 5))
+	if(Collision()->CheckPoint(m_Pos.x + GetProximityRadius() / 2, m_Pos.y + GetProximityRadius() / 2 + 5, &m_Core.m_CharCoreParams)) // KZ added m_Core
 		return true;
-	if(Collision()->CheckPoint(m_Pos.x - GetProximityRadius() / 2, m_Pos.y + GetProximityRadius() / 2 + 5))
+	if(Collision()->CheckPoint(m_Pos.x - GetProximityRadius() / 2, m_Pos.y + GetProximityRadius() / 2 + 5, &m_Core.m_CharCoreParams)) // KZ added m_Core
 		return true;
 
 	int MoveRestrictionsBelow = Collision()->GetMoveRestrictions(m_Pos + vec2(0, GetProximityRadius() / 2 + 4), 0.0f);
@@ -310,7 +340,7 @@ void CCharacter::HandleNinja()
 			GetTuning(m_TuneZone)->m_GroundElasticityX,
 			GetTuning(m_TuneZone)->m_GroundElasticityY);
 
-		Collision()->MoveBox(&m_Core.m_Pos, &m_Core.m_Vel, vec2(GetProximityRadius(), GetProximityRadius()), GroundElasticity);
+		Collision()->MoveBox(&m_Core.m_Pos, &m_Core.m_Vel, vec2(GetProximityRadius(), GetProximityRadius()), GroundElasticity, nullptr, &m_Core.m_CharCoreParams); // KZ added m_Core
 
 		// reset velocity so the client doesn't predict stuff
 		ResetVelocity();
@@ -370,7 +400,7 @@ void CCharacter::HandleNinja()
 void CCharacter::DoWeaponSwitch()
 {
 	// make sure we can switch
-	if(m_ReloadTimer != 0 || m_QueuedWeapon == -1 || m_Core.m_aWeapons[WEAPON_NINJA].m_Got || !m_Core.m_aWeapons[m_QueuedWeapon].m_Got)
+	if(m_ReloadTimer != 0 || m_QueuedWeapon == -1 || m_Core.m_aWeapons[WEAPON_NINJA].m_Got || (m_QueuedWeapon >= 0 && m_QueuedWeapon < NUM_WEAPONS ? !m_Core.m_aWeapons[m_QueuedWeapon].m_Got : ( m_QueuedWeapon >= KZ_CUSTOM_WEAPONS_START && m_QueuedWeapon < KZ_NUM_CUSTOM_WEAPONS ? !m_aCustomWeapons[m_QueuedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got : false)))
 		return;
 
 	// switch Weapon
@@ -397,9 +427,15 @@ void CCharacter::HandleWeaponSwitch()
 	{
 		while(Next) // Next Weapon selection
 		{
-			WantedWeapon = (WantedWeapon + 1) % NUM_WEAPONS;
-			if(m_Core.m_aWeapons[WantedWeapon].m_Got)
-				Next--;
+			WantedWeapon = (WantedWeapon + 1) % KZ_NUM_CUSTOM_WEAPONS;
+			if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && m_Core.m_aWeapons[WantedWeapon].m_Got)
+			{
+					Next--;
+			}
+			else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_NUM_CUSTOM_WEAPONS && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+			{
+					Next--;
+			}
 		}
 	}
 
@@ -407,9 +443,15 @@ void CCharacter::HandleWeaponSwitch()
 	{
 		while(Prev) // Prev Weapon selection
 		{
-			WantedWeapon = (WantedWeapon - 1) < 0 ? NUM_WEAPONS - 1 : WantedWeapon - 1;
-			if(m_Core.m_aWeapons[WantedWeapon].m_Got)
-				Prev--;
+			WantedWeapon = (WantedWeapon - 1) < 0 ? KZ_NUM_CUSTOM_WEAPONS - 1 : WantedWeapon - 1;
+			if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && m_Core.m_aWeapons[WantedWeapon].m_Got)
+			{
+					Prev--;
+			}
+			else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_NUM_CUSTOM_WEAPONS && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+			{
+					Prev--;
+			}
 		}
 	}
 
@@ -419,7 +461,13 @@ void CCharacter::HandleWeaponSwitch()
 
 	// check for insane values
 	if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && WantedWeapon != m_Core.m_ActiveWeapon && m_Core.m_aWeapons[WantedWeapon].m_Got)
+	{
 		m_QueuedWeapon = WantedWeapon;
+	}
+	else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_NUM_CUSTOM_WEAPONS && WantedWeapon != m_Core.m_ActiveWeapon && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+	{
+		m_QueuedWeapon = WantedWeapon;
+	}
 
 	DoWeaponSwitch();
 }
@@ -458,7 +506,7 @@ void CCharacter::FireWeapon()
 	if(CountInput(m_LatestPrevInput.m_Fire, m_LatestInput.m_Fire).m_Presses)
 		WillFire = true;
 
-	if(FullAuto && (m_LatestInput.m_Fire & 1) && m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
+	if(FullAuto && (m_LatestInput.m_Fire & 1) && (m_Core.m_ActiveWeapon < NUM_WEAPONS ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Ammo))
 		WillFire = true;
 
 	if(!WillFire)
@@ -476,7 +524,9 @@ void CCharacter::FireWeapon()
 	}
 
 	// check for ammo
-	if(!m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
+	if(m_Core.m_ActiveWeapon >=0 && m_Core.m_ActiveWeapon < NUM_WEAPONS && !m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
+		return;
+	else if(m_Core.m_ActiveWeapon >= KZ_CUSTOM_WEAPONS_START && m_Core.m_ActiveWeapon < KZ_NUM_CUSTOM_WEAPONS && !m_aCustomWeapons[m_Core.m_ActiveWeapon-KZ_CUSTOM_WEAPONS_START].m_Ammo)
 		return;
 
 	vec2 ProjStartPos = m_Pos + Direction * GetProximityRadius() * 0.75f;
@@ -527,9 +577,6 @@ void CCharacter::FireWeapon()
 			pTarget->TakeDamage((vec2(0.f, -1.0f) + Temp) * Strength, g_pData->m_Weapons.m_Hammer.m_pBase->m_Damage,
 				m_pPlayer->GetCid(), m_Core.m_ActiveWeapon);
 			//pTarget->UnFreeze();
-
-			if(m_FreezeHammer)
-				pTarget->Freeze();
 
 			Antibot()->OnHammerHit(m_pPlayer->GetCid(), pTarget->GetPlayer()->GetCid());
 			Hits++;
@@ -648,15 +695,38 @@ void CCharacter::FireWeapon()
 		GameServer()->CreateSound(m_Pos, SOUND_NINJA_FIRE, TeamMask()); // NOLINT(clang-analyzer-unix.Malloc)
 	}
 	break;
+	
+	//+KZ
+	case KZ_CUSTOM_WEAPON_PORTAL_GUN:
+	{
+		if(g_Config.m_SvPortalProjectile)
+		{
+			new CPortalProjectile(GameWorld(),m_pPlayer->GetCid(),m_Pos,Direction,m_BluePortal);
+		}
+		else
+		{
+			float LaserReach = g_Config.m_SvPortalLaserReach;
+			new CPortalLaser(GameWorld(), m_Pos, Direction, LaserReach, m_pPlayer->GetCid(), m_BluePortal);
+		}
+		GameServer()->CreateSound(m_Pos, SOUND_LASER_FIRE, TeamMask());
+	}
+	break;
 	}
 
 	m_AttackTick = Server()->Tick();
 
-	if(!m_ReloadTimer)
+	if(!m_ReloadTimer && m_Core.m_ActiveWeapon < NUM_WEAPONS)
 	{
 		float FireDelay;
-		GetTuning(m_TuneZone)->Get(38 + m_Core.m_ActiveWeapon, &FireDelay);
+		GetTuning(m_TuneZone)->Get(offsetof(CTuningParams, m_HammerFireDelay) / sizeof(CTuneParam) + m_Core.m_ActiveWeapon, &FireDelay);
 		m_ReloadTimer = FireDelay * Server()->TickSpeed() / 1000;
+	}
+	else if(m_Core.m_ActiveWeapon < KZ_NUM_CUSTOM_WEAPONS)
+	{
+		if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+		{
+			m_ReloadTimer = GetTuning(m_TuneZone)->m_LaserFireDelay * Server()->TickSpeed() / 1000;
+		}
 	}
 }
 
@@ -712,7 +782,7 @@ void CCharacter::SetEmote(int Emote, int Tick)
 	m_EmoteStop = Tick;
 }
 
-void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
+void CCharacter::OnPredictedInput(const CNetObj_PlayerInput *pNewInput)
 {
 	// check for changes
 	if(mem_comp(&m_SavedInput, pNewInput, sizeof(CNetObj_PlayerInput)) != 0)
@@ -728,7 +798,7 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 	mem_copy(&m_SavedInput, &m_Input, sizeof(m_SavedInput));
 }
 
-void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
+void CCharacter::OnDirectInput(const CNetObj_PlayerInput *pNewInput)
 {
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
@@ -804,6 +874,26 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
+	if(m_pPlayer->m_PlayerFlags & PLAYERFLAG_AIM)
+	{
+		m_AimPressed = true;
+	}
+	else
+	{
+		m_AimPressed = false;
+		m_Waitingforreleaseaim = false;
+	}
+
+	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN && m_AimPressed && !m_Waitingforreleaseaim)
+	{
+		m_BluePortal = !m_BluePortal;
+		m_Waitingforreleaseaim = true;
+		if(m_BluePortal)
+			GameServer()->SendBroadcast("Portal Gun: Blue Portal",m_pPlayer->GetCid());
+		else
+			GameServer()->SendBroadcast("Portal Gun: Orange Portal",m_pPlayer->GetCid());
+	}
+
 	if(g_Config.m_SvNoWeakHook)
 	{
 		if(m_Paused)
@@ -839,6 +929,9 @@ void CCharacter::Tick()
 	m_PrevInput = m_Input;
 
 	m_PrevPos = m_Core.m_Pos;
+
+	//+KZ
+	m_StillPressingFire = (m_Input.m_Fire & 1);
 }
 
 void CCharacter::TickDeferred()
@@ -941,12 +1034,13 @@ void CCharacter::TickDeferred()
 		m_Core.Write(&Current);
 
 		// only allow dead reckoning for a top of 3 seconds
-		if(m_Core.m_Reset || m_ReckoningTick + Server()->TickSpeed() * 3 < Server()->Tick() || mem_comp(&Predicted, &Current, sizeof(CNetObj_Character)) != 0)
+		if(m_Core.m_SendCoreThisTick || m_Core.m_Reset || m_ReckoningTick + Server()->TickSpeed() * 3 < Server()->Tick() || mem_comp(&Predicted, &Current, sizeof(CNetObj_Character)) != 0)
 		{
 			m_ReckoningTick = Server()->Tick();
 			m_SendCore = m_Core;
 			m_ReckoningCore = m_Core;
 			m_Core.m_Reset = false;
+			m_Core.m_SendCoreThisTick = false; //+KZ
 		}
 	}
 }
@@ -967,9 +1061,9 @@ void CCharacter::TickPaused()
 
 bool CCharacter::IncreaseHealth(int Amount)
 {
-	if(m_Health >= 10)
+	if(m_Health >= g_Config.m_SvMaxHealth) //svmaxhealth +KZ
 		return false;
-	m_Health = clamp(m_Health + Amount, 0, 10);
+	m_Health = std::clamp(m_Health + Amount, 0, g_Config.m_SvMaxHealth); //+KZ svmaxhealth
 	return true;
 }
 
@@ -977,7 +1071,7 @@ bool CCharacter::IncreaseArmor(int Amount)
 {
 	if(m_Armor >= 10)
 		return false;
-	m_Armor = clamp(m_Armor + Amount, 0, 10);
+	m_Armor = std::clamp(m_Armor + Amount, 0, 10);
 	return true;
 }
 
@@ -998,6 +1092,8 @@ void CCharacter::StopRecording()
 
 void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 {
+	if(Killer != WEAPON_GAME && m_SetSavePos[RESCUEMODE_AUTO])
+		GetPlayer()->m_LastDeath = m_RescueTee[RESCUEMODE_AUTO];
 	StopRecording();
 	int ModeSpecial = GameServer()->m_pController->OnCharacterDeath(this, GameServer()->m_apPlayers[Killer], Weapon);
 
@@ -1008,7 +1104,7 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
 	// send the kill message
-	if(SendKillMsg && (Team() == TEAM_FLOCK || Teams()->TeamFlock(Team()) || Teams()->Count(Team()) == 1 || Teams()->GetTeamState(Team()) == CGameTeams::TEAMSTATE_OPEN || !Teams()->TeamLocked(Team())))
+	if(SendKillMsg && (Team() == TEAM_FLOCK || Teams()->TeamFlock(Team()) || Teams()->Count(Team()) == 1 || Teams()->GetTeamState(Team()) == ETeamState::OPEN || !Teams()->TeamLocked(Team())))
 	{
 		CNetMsg_Sv_KillMsg Msg;
 		Msg.m_Killer = Killer;
@@ -1029,9 +1125,17 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 	SetSolo(false);
 
 	GameServer()->m_World.RemoveEntity(this);
-	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCid()] = 0;
+	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCid()] = nullptr;
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
 	Teams()->OnCharacterDeath(GetPlayer()->GetCid(), Weapon);
+
+	// Cancel swap requests
+	for(auto &pPlayer : GameServer()->m_apPlayers)
+	{
+		if(pPlayer && pPlayer->m_SwapTargetsClientId == GetPlayer()->GetCid())
+			pPlayer->m_SwapTargetsClientId = -1;
+	}
+	GetPlayer()->m_SwapTargetsClientId = -1;
 }
 
 bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
@@ -1113,15 +1217,14 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 	}
 
 	if(m_pPlayer->GetCid() == SnappingClient || SnappingClient == SERVER_DEMO_CLIENT ||
-		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCid() == GameServer()->m_apPlayers[SnappingClient]->m_SpectatorId))
+		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCid() == GameServer()->m_apPlayers[SnappingClient]->SpectatorId()))
 	{
 		Health = m_Health;
 		Armor = m_Armor;
-		if(m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo > 0)
-			AmmoCount = (m_FreezeTime == 0) ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : 0;
+		AmmoCount = (m_FreezeTime == 0) ? (m_Core.m_ActiveWeapon < NUM_WEAPONS ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Ammo) : 0;
 	}
 
-	if(GetPlayer()->IsAfk() || GetPlayer()->IsPaused())
+	if(GetPlayer()->IsAfk() || GetPlayer()->IsPaused() || (m_pPlayer->m_PlayerFlags & PLAYERFLAG_IN_MENU)) // +KZ added in menu
 	{
 		if(m_FreezeTime > 0 || m_Core.m_DeepFrozen || m_Core.m_LiveFrozen)
 			Emote = EMOTE_NORMAL;
@@ -1134,6 +1237,20 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 		if(5 * Server()->TickSpeed() - ((Server()->Tick() - m_LastAction) % (5 * Server()->TickSpeed())) < 5)
 			Emote = EMOTE_BLINK;
 	}
+
+	//+KZ
+	if(Weapon >= KZ_CUSTOM_WEAPONS_START)
+		m_SnapCustomWeapon = true;
+	else
+		m_SnapCustomWeapon = false;
+
+
+	float fHealth = ((float)Health/g_Config.m_SvMaxHealth) * 10; //+KZ
+
+	if(fHealth < 1 && fHealth > 0)
+		Health = 1;
+	else
+		Health = fHealth;
 
 	if(!Server()->IsSixup(SnappingClient))
 	{
@@ -1154,7 +1271,10 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 
 		pCharacter->m_AttackTick = m_AttackTick;
 		pCharacter->m_Direction = m_Input.m_Direction;
-		pCharacter->m_Weapon = Weapon;
+		if(m_SnapCustomWeapon)
+			pCharacter->m_Weapon = m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Snap;
+		else
+			pCharacter->m_Weapon = Weapon;
 		pCharacter->m_AmmoCount = AmmoCount;
 		pCharacter->m_Health = Health;
 		pCharacter->m_Armor = Armor;
@@ -1180,7 +1300,10 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 		pCharacter->m_Emote = Emote;
 		pCharacter->m_AttackTick = m_AttackTick;
 		pCharacter->m_Direction = m_Input.m_Direction;
-		pCharacter->m_Weapon = Weapon;
+		if(m_SnapCustomWeapon)
+			pCharacter->m_Weapon = m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Snap;
+		else
+			pCharacter->m_Weapon = Weapon;
 		pCharacter->m_AmmoCount = AmmoCount;
 
 		if(m_FreezeTime > 0 || m_Core.m_DeepFrozen)
@@ -1204,9 +1327,9 @@ bool CCharacter::CanSnapCharacter(int SnappingClient)
 
 	if(pSnapPlayer->GetTeam() == TEAM_SPECTATORS || pSnapPlayer->IsPaused())
 	{
-		if(pSnapPlayer->m_SpectatorId != SPEC_FREEVIEW && !CanCollide(pSnapPlayer->m_SpectatorId) && (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_OFF || (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_ONLY_TEAM && !SameTeam(pSnapPlayer->m_SpectatorId))))
+		if(pSnapPlayer->SpectatorId() != SPEC_FREEVIEW && !CanCollide(pSnapPlayer->SpectatorId()) && (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_OFF || (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_ONLY_TEAM && !SameTeam(pSnapPlayer->SpectatorId()))))
 			return false;
-		else if(pSnapPlayer->m_SpectatorId == SPEC_FREEVIEW && !CanCollide(SnappingClient) && pSnapPlayer->m_SpecTeam && !SameTeam(SnappingClient))
+		else if(pSnapPlayer->SpectatorId() == SPEC_FREEVIEW && !CanCollide(SnappingClient) && pSnapPlayer->m_SpecTeam && !SameTeam(SnappingClient))
 			return false;
 	}
 	else if(pSnapChar && !pSnapChar->m_Core.m_Super && !CanCollide(SnappingClient) && (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_OFF || (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_ONLY_TEAM && !SameTeam(SnappingClient))))
@@ -1247,6 +1370,17 @@ bool CCharacter::IsSnappingCharacterInView(int SnappingClientId)
 void CCharacter::Snap(int SnappingClient)
 {
 	int Id = m_pPlayer->GetCid();
+	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
+	bool Sixup = Server()->IsSixup(SnappingClient);
+
+	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+	{
+				vec2 postemp;
+				
+		postemp = m_Pos + (normalize(vec2(m_Input.m_TargetX,m_Input.m_TargetY)) * 82);
+
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_PortalKindId,postemp,postemp,Server()->Tick(),m_pPlayer->GetCid(),m_BluePortal ? LASERTYPE_RIFLE : LASERTYPE_SHOTGUN);
+	}
 
 	if(!Server()->Translate(Id, SnappingClient))
 		return;
@@ -1256,8 +1390,29 @@ void CCharacter::Snap(int SnappingClient)
 		return;
 	}
 
-	if(!IsSnappingCharacterInView(SnappingClient))
+	// always snap the snapping client, even if it is not in view
+	if(!IsSnappingCharacterInView(SnappingClient) && Id != SnappingClient)
 		return;
+
+	CPlayerData *pData = GameServer()->Score()->PlayerData(m_pPlayer->GetCid());
+
+	if(!pData)
+		return;
+
+	vec2 Charpos = m_Pos;
+
+	//int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient); +KZ commented
+
+	if(m_EnableCrown && ((SnappingClient >= 0 && SnappingClient < SERVER_MAX_CLIENTS) ? (GameServer()->m_apPlayers[SnappingClient] && GameServer()->m_apPlayers[SnappingClient]->m_SendCrowns) : true))
+	{
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[0],vec2(Charpos.x,Charpos.y-100),vec2(Charpos.x+10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[1],vec2(Charpos.x,Charpos.y-100),vec2(Charpos.x-10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[2],vec2(Charpos.x + 20,Charpos.y-100),vec2(Charpos.x+10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[3],vec2(Charpos.x - 20,Charpos.y-100),vec2(Charpos.x-10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[4],vec2(Charpos.x + 20,Charpos.y-100),vec2(Charpos.x+20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[5],vec2(Charpos.x - 20,Charpos.y-100),vec2(Charpos.x-20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[6],vec2(Charpos.x-20,Charpos.y-60),vec2(Charpos.x+20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+	}
 
 	SnapCharacter(SnappingClient, Id);
 
@@ -1274,9 +1429,9 @@ void CCharacter::Snap(int SnappingClient)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_INVINCIBLE;
 	if(m_Core.m_EndlessHook)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_ENDLESS_HOOK;
-	if(m_Core.m_CollisionDisabled || !Tuning()->m_PlayerCollision)
+	if(m_Core.m_CollisionDisabled || !GetTuning(m_TuneZone)->m_PlayerCollision)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_COLLISION_DISABLED;
-	if(m_Core.m_HookHitDisabled || !Tuning()->m_PlayerHooking)
+	if(m_Core.m_HookHitDisabled || !GetTuning(m_TuneZone)->m_PlayerHooking)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_HOOK_HIT_DISABLED;
 	if(m_Core.m_EndlessJump)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_ENDLESS_JUMP;
@@ -1338,9 +1493,12 @@ void CCharacter::Snap(int SnappingClient)
 	}
 	pDDNetCharacter->m_TargetX = m_Core.m_Input.m_TargetX;
 	pDDNetCharacter->m_TargetY = m_Core.m_Input.m_TargetY;
+
+	// -1 is the default value, SnapNewItem zeroes the object, so it would incorrectly become 0
+	pDDNetCharacter->m_TuneZoneOverride = ((m_TuneZoneOverrideKZ < 0) ? (m_ForcedTuneKZ ? m_TuneZone : -1) : m_TuneZoneOverrideKZ); //+KZ modified
 }
 
-void CCharacter::PostSnap()
+void CCharacter::PostGlobalSnap()
 {
 	m_TriggeredEvents7 = 0;
 }
@@ -1369,6 +1527,44 @@ void CCharacter::FillAntibot(CAntibotCharacterData *pData)
 	pData->m_HookedPlayer = m_Core.HookedPlayer();
 	pData->m_SpawnTick = m_SpawnTick;
 	pData->m_WeaponChangeTick = m_WeaponChangeTick;
+
+	// 0
+	pData->m_aLatestInputs[0].m_Direction = m_LatestInput.m_Direction;
+	pData->m_aLatestInputs[0].m_TargetX = m_LatestInput.m_TargetX;
+	pData->m_aLatestInputs[0].m_TargetY = m_LatestInput.m_TargetY;
+	pData->m_aLatestInputs[0].m_Jump = m_LatestInput.m_Jump;
+	pData->m_aLatestInputs[0].m_Fire = m_LatestInput.m_Fire;
+	pData->m_aLatestInputs[0].m_Hook = m_LatestInput.m_Hook;
+	pData->m_aLatestInputs[0].m_PlayerFlags = m_LatestInput.m_PlayerFlags;
+	pData->m_aLatestInputs[0].m_WantedWeapon = m_LatestInput.m_WantedWeapon;
+	pData->m_aLatestInputs[0].m_NextWeapon = m_LatestInput.m_NextWeapon;
+	pData->m_aLatestInputs[0].m_PrevWeapon = m_LatestInput.m_PrevWeapon;
+
+	// 1
+	pData->m_aLatestInputs[1].m_Direction = m_LatestPrevInput.m_Direction;
+	pData->m_aLatestInputs[1].m_TargetX = m_LatestPrevInput.m_TargetX;
+	pData->m_aLatestInputs[1].m_TargetY = m_LatestPrevInput.m_TargetY;
+	pData->m_aLatestInputs[1].m_Jump = m_LatestPrevInput.m_Jump;
+	pData->m_aLatestInputs[1].m_Fire = m_LatestPrevInput.m_Fire;
+	pData->m_aLatestInputs[1].m_Hook = m_LatestPrevInput.m_Hook;
+	pData->m_aLatestInputs[1].m_PlayerFlags = m_LatestPrevInput.m_PlayerFlags;
+	pData->m_aLatestInputs[1].m_WantedWeapon = m_LatestPrevInput.m_WantedWeapon;
+	pData->m_aLatestInputs[1].m_NextWeapon = m_LatestPrevInput.m_NextWeapon;
+	pData->m_aLatestInputs[1].m_PrevWeapon = m_LatestPrevInput.m_PrevWeapon;
+
+	// 2
+	pData->m_aLatestInputs[2].m_Direction = m_LatestPrevPrevInput.m_Direction;
+	pData->m_aLatestInputs[2].m_TargetX = m_LatestPrevPrevInput.m_TargetX;
+	pData->m_aLatestInputs[2].m_TargetY = m_LatestPrevPrevInput.m_TargetY;
+	pData->m_aLatestInputs[2].m_Jump = m_LatestPrevPrevInput.m_Jump;
+	pData->m_aLatestInputs[2].m_Fire = m_LatestPrevPrevInput.m_Fire;
+	pData->m_aLatestInputs[2].m_Hook = m_LatestPrevPrevInput.m_Hook;
+	pData->m_aLatestInputs[2].m_PlayerFlags = m_LatestPrevPrevInput.m_PlayerFlags;
+	pData->m_aLatestInputs[2].m_WantedWeapon = m_LatestPrevPrevInput.m_WantedWeapon;
+	pData->m_aLatestInputs[2].m_NextWeapon = m_LatestPrevPrevInput.m_NextWeapon;
+	pData->m_aLatestInputs[2].m_PrevWeapon = m_LatestPrevPrevInput.m_PrevWeapon;
+
+	//furo bomb
 	pData->m_aLatestInputs[0].m_Fire = m_LatestInput.m_Fire;
 	pData->m_aLatestInputs[0].m_TargetX = m_LatestInput.m_TargetX;
 	pData->m_aLatestInputs[0].m_TargetY = m_LatestInput.m_TargetY;
@@ -1376,15 +1572,13 @@ void CCharacter::FillAntibot(CAntibotCharacterData *pData)
 	pData->m_aLatestInputs[1].m_TargetX = m_LatestPrevInput.m_TargetX;
 	pData->m_aLatestInputs[1].m_TargetY = m_LatestPrevInput.m_TargetY;
 	pData->m_aLatestInputs[2].m_Fire = m_LatestPrevPrevInput.m_Fire;
-	pData->m_aLatestInputs[2].m_TargetX = m_LatestPrevPrevInput.m_TargetX;
-	pData->m_aLatestInputs[2].m_TargetY = m_LatestPrevPrevInput.m_TargetY;
 }
 
 void CCharacter::HandleBroadcast()
 {
 	CPlayerData *pData = GameServer()->Score()->PlayerData(m_pPlayer->GetCid());
 
-	if(m_DDRaceState == DDRACE_STARTED && m_pPlayer->GetClientVersion() == VERSION_VANILLA &&
+	if(m_DDRaceState == ERaceState::STARTED && m_pPlayer->GetClientVersion() == VERSION_VANILLA &&
 		m_LastTimeCpBroadcasted != m_LastTimeCp && m_LastTimeCp > -1 &&
 		m_TimeCpBroadcastEndTick > Server()->Tick() && pData->m_BestTime && pData->m_aBestTimeCp[m_LastTimeCp] != 0)
 	{
@@ -1395,7 +1589,7 @@ void CCharacter::HandleBroadcast()
 		m_LastTimeCpBroadcasted = m_LastTimeCp;
 		m_LastBroadcast = Server()->Tick();
 	}
-	else if((m_pPlayer->m_TimerType == CPlayer::TIMERTYPE_BROADCAST || m_pPlayer->m_TimerType == CPlayer::TIMERTYPE_GAMETIMER_AND_BROADCAST) && m_DDRaceState == DDRACE_STARTED && m_LastBroadcast + Server()->TickSpeed() * g_Config.m_SvTimeInBroadcastInterval <= Server()->Tick())
+	else if((m_pPlayer->m_TimerType == CPlayer::TIMERTYPE_BROADCAST || m_pPlayer->m_TimerType == CPlayer::TIMERTYPE_GAMETIMER_AND_BROADCAST) && m_DDRaceState == ERaceState::STARTED && m_LastBroadcast + Server()->TickSpeed() * g_Config.m_SvTimeInBroadcastInterval <= Server()->Tick())
 	{
 		char aBuf[32];
 		int Time = (int64_t)100 * ((float)(Server()->Tick() - m_StartTime) / ((float)Server()->TickSpeed()));
@@ -1413,14 +1607,28 @@ void CCharacter::HandleSkippableTiles(int Index)
 		   Collision()->GetCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
 		   Collision()->GetCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
 		   Collision()->GetCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
-		   Collision()->GetFCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
-		   Collision()->GetFCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
-		   Collision()->GetFCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
-		   Collision()->GetFCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH) &&
+		   Collision()->GetFrontCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+		   Collision()->GetFrontCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
+		   Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+		   Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH) &&
 		!m_Core.m_Super && !m_Core.m_Invincible && !(Team() && Teams()->TeeFinished(m_pPlayer->GetCid())))
 	{
-		Die(m_pPlayer->GetCid(), WEAPON_WORLD);
-		return;
+		if(Teams()->IsPractice(Team()))
+		{
+			Freeze();
+			// Rate limit death effects to once per second
+			if(Server()->Tick() - m_pPlayer->m_DieTick >= Server()->TickSpeed())
+			{
+				m_pPlayer->m_DieTick = Server()->Tick();
+				GameServer()->CreateSound(m_Pos, SOUND_PLAYER_DIE, TeamMask());
+				GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
+			}
+		}
+		else
+		{
+			Die(m_pPlayer->GetCid(), WEAPON_WORLD);
+			return;
+		}
 	}
 
 	if(GameLayerClipped(m_Pos))
@@ -1436,54 +1644,77 @@ void CCharacter::HandleSkippableTiles(int Index)
 	if(Collision()->IsSpeedup(Index))
 	{
 		vec2 Direction, TempVel = m_Core.m_Vel;
-		int Force, MaxSpeed = 0;
-		float TeeAngle, SpeederAngle, DiffAngle, SpeedLeft, TeeSpeed;
-		Collision()->GetSpeedup(Index, &Direction, &Force, &MaxSpeed);
-		if(Force == 255 && MaxSpeed)
+		int Force, Type, MaxSpeed = 0;
+		Collision()->GetSpeedup(Index, &Direction, &Force, &MaxSpeed, &Type);
+
+		if(Type == TILE_SPEED_BOOST_OLD)
 		{
-			m_Core.m_Vel = Direction * (MaxSpeed / 5);
-		}
-		else
-		{
-			if(MaxSpeed > 0 && MaxSpeed < 5)
-				MaxSpeed = 5;
-			if(MaxSpeed > 0)
+			float TeeAngle, SpeederAngle, DiffAngle, SpeedLeft, TeeSpeed;
+			if(Force == 255 && MaxSpeed)
 			{
-				if(Direction.x > 0.0000001f)
-					SpeederAngle = -std::atan(Direction.y / Direction.x);
-				else if(Direction.x < 0.0000001f)
-					SpeederAngle = std::atan(Direction.y / Direction.x) + 2.0f * std::asin(1.0f);
-				else if(Direction.y > 0.0000001f)
-					SpeederAngle = std::asin(1.0f);
-				else
-					SpeederAngle = std::asin(-1.0f);
-
-				if(SpeederAngle < 0)
-					SpeederAngle = 4.0f * std::asin(1.0f) + SpeederAngle;
-
-				if(TempVel.x > 0.0000001f)
-					TeeAngle = -std::atan(TempVel.y / TempVel.x);
-				else if(TempVel.x < 0.0000001f)
-					TeeAngle = std::atan(TempVel.y / TempVel.x) + 2.0f * std::asin(1.0f);
-				else if(TempVel.y > 0.0000001f)
-					TeeAngle = std::asin(1.0f);
-				else
-					TeeAngle = std::asin(-1.0f);
-
-				if(TeeAngle < 0)
-					TeeAngle = 4.0f * std::asin(1.0f) + TeeAngle;
-
-				TeeSpeed = std::sqrt(std::pow(TempVel.x, 2) + std::pow(TempVel.y, 2));
-
-				DiffAngle = SpeederAngle - TeeAngle;
-				SpeedLeft = MaxSpeed / 5.0f - std::cos(DiffAngle) * TeeSpeed;
-				if(absolute((int)SpeedLeft) > Force && SpeedLeft > 0.0000001f)
-					TempVel += Direction * Force;
-				else if(absolute((int)SpeedLeft) > Force)
-					TempVel += Direction * -Force;
-				else
-					TempVel += Direction * SpeedLeft;
+				m_Core.m_Vel = Direction * (MaxSpeed / 5);
 			}
+			else
+			{
+				if(MaxSpeed > 0 && MaxSpeed < 5)
+					MaxSpeed = 5;
+				if(MaxSpeed > 0)
+				{
+					if(Direction.x > 0.0000001f)
+						SpeederAngle = -std::atan(Direction.y / Direction.x);
+					else if(Direction.x < 0.0000001f)
+						SpeederAngle = std::atan(Direction.y / Direction.x) + 2.0f * std::asin(1.0f);
+					else if(Direction.y > 0.0000001f)
+						SpeederAngle = std::asin(1.0f);
+					else
+						SpeederAngle = std::asin(-1.0f);
+
+					if(SpeederAngle < 0)
+						SpeederAngle = 4.0f * std::asin(1.0f) + SpeederAngle;
+
+					if(TempVel.x > 0.0000001f)
+						TeeAngle = -std::atan(TempVel.y / TempVel.x);
+					else if(TempVel.x < 0.0000001f)
+						TeeAngle = std::atan(TempVel.y / TempVel.x) + 2.0f * std::asin(1.0f);
+					else if(TempVel.y > 0.0000001f)
+						TeeAngle = std::asin(1.0f);
+					else
+						TeeAngle = std::asin(-1.0f);
+
+					if(TeeAngle < 0)
+						TeeAngle = 4.0f * std::asin(1.0f) + TeeAngle;
+
+					TeeSpeed = std::sqrt(std::pow(TempVel.x, 2) + std::pow(TempVel.y, 2));
+
+					DiffAngle = SpeederAngle - TeeAngle;
+					SpeedLeft = MaxSpeed / 5.0f - std::cos(DiffAngle) * TeeSpeed;
+					if(absolute((int)SpeedLeft) > Force && SpeedLeft > 0.0000001f)
+						TempVel += Direction * Force;
+					else if(absolute((int)SpeedLeft) > Force)
+						TempVel += Direction * -Force;
+					else
+						TempVel += Direction * SpeedLeft;
+				}
+				else
+					TempVel += Direction * Force;
+
+				m_Core.m_Vel = ClampVel(m_MoveRestrictions, TempVel);
+			}
+		}
+		else if(Type == TILE_SPEED_BOOST)
+		{
+			constexpr float MaxSpeedScale = 5.0f;
+			if(MaxSpeed == 0)
+			{
+				float MaxRampSpeed = GetTuning(m_TuneZone)->m_VelrampRange / (50 * log(maximum((float)GetTuning(m_TuneZone)->m_VelrampCurvature, 1.01f)));
+				MaxSpeed = maximum(MaxRampSpeed, GetTuning(m_TuneZone)->m_VelrampStart / 50) * MaxSpeedScale;
+			}
+
+			// (signed) length of projection
+			float CurrentDirectionalSpeed = dot(Direction, m_Core.m_Vel);
+			float TempMaxSpeed = MaxSpeed / MaxSpeedScale;
+			if(CurrentDirectionalSpeed + Force > TempMaxSpeed)
+				TempVel += Direction * (TempMaxSpeed - CurrentDirectionalSpeed);
 			else
 				TempVel += Direction * Force;
 
@@ -1501,7 +1732,7 @@ bool CCharacter::IsSwitchActiveCb(int Number, void *pUser)
 
 void CCharacter::SetTimeCheckpoint(int TimeCheckpoint)
 {
-	if(TimeCheckpoint > -1 && m_DDRaceState == DDRACE_STARTED && m_aCurrentTimeCp[TimeCheckpoint] == 0.0f && m_Time != 0.0f)
+	if(TimeCheckpoint > -1 && m_DDRaceState == ERaceState::STARTED && m_aCurrentTimeCp[TimeCheckpoint] == 0.0f && m_Time != 0.0f)
 	{
 		m_LastTimeCp = TimeCheckpoint;
 		m_aCurrentTimeCp[m_LastTimeCp] = m_Time;
@@ -1527,7 +1758,7 @@ void CCharacter::HandleTiles(int Index)
 	int MapIndex = Index;
 	//int PureMapIndex = Collision()->GetPureMapIndex(m_Pos);
 	m_TileIndex = Collision()->GetTileIndex(MapIndex);
-	m_TileFIndex = Collision()->GetFTileIndex(MapIndex);
+	m_TileFIndex = Collision()->GetFrontTileIndex(MapIndex);
 	m_MoveRestrictions = Collision()->GetMoveRestrictions(IsSwitchActiveCb, this, m_Pos, 18.0f, MapIndex);
 	if(Index < 0)
 	{
@@ -1537,7 +1768,7 @@ void CCharacter::HandleTiles(int Index)
 		return;
 	}
 	SetTimeCheckpoint(Collision()->IsTimeCheckpoint(MapIndex));
-	SetTimeCheckpoint(Collision()->IsFTimeCheckpoint(MapIndex));
+	SetTimeCheckpoint(Collision()->IsFrontTimeCheckpoint(MapIndex));
 	int TeleCheckpoint = Collision()->IsTeleCheckpoint(MapIndex);
 	if(TeleCheckpoint)
 		m_TeleCheckpoint = TeleCheckpoint;
@@ -2013,9 +2244,12 @@ void CCharacter::HandleTuneLayer()
 {
 	m_TuneZoneOld = m_TuneZone;
 	int CurrentIndex = Collision()->GetMapIndex(m_Pos);
-	m_TuneZone = Collision()->IsTune(CurrentIndex);
+	if(!m_ForcedTuneKZ && m_TuneZoneOverrideKZ < 0) //+KZ
+		m_TuneZone = Collision()->IsTune(CurrentIndex);
 
-	if(m_TuneZone)
+	if(m_TuneZoneOverrideKZ >= 0 && !m_TuneZone) //+KZ
+		m_Core.m_Tuning = TuningList()[m_TuneZoneOverrideKZ];
+	else if(m_TuneZone)
 		m_Core.m_Tuning = TuningList()[m_TuneZone]; // throw tunings from specific zone into gamecore
 	else
 		m_Core.m_Tuning = *Tuning();
@@ -2148,17 +2382,25 @@ void CCharacter::DDRaceTick()
 	int Index = Collision()->GetPureMapIndex(m_Pos);
 	const int aTiles[] = {
 		Collision()->GetTileIndex(Index),
-		Collision()->GetFTileIndex(Index),
+		Collision()->GetFrontTileIndex(Index),
 		Collision()->GetSwitchType(Index)};
 	m_Core.m_IsInFreeze = false;
 	for(const int Tile : aTiles)
 	{
-		if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+		if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE || Tile == TILE_DEATH)
 		{
 			m_Core.m_IsInFreeze = true;
 			break;
 		}
 	}
+	m_Core.m_IsInFreeze |= (Collision()->GetCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetFrontCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetFrontCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+				Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH);
 
 	// look for save position for rescue feature
 	// always update auto rescue
@@ -2201,9 +2443,9 @@ void CCharacter::DDRacePostCoreTick()
 		m_Core.m_Jumped = 1;
 	}
 
-	if((m_Core.m_Super || m_Core.m_Invincible || m_Core.m_EndlessJump) && m_Core.m_Jumped > 1)
+	if((m_Core.m_Super || m_Core.m_EndlessJump) && m_Core.m_Jumped > 1)
 	{
-		// Super players, invincible players and players with infinite jumps always have light feet
+		// Super players and players with infinite jumps always have light feet
 		m_Core.m_Jumped = 1;
 	}
 
@@ -2229,6 +2471,8 @@ void CCharacter::DDRacePostCoreTick()
 		if(!m_Alive)
 			return;
 	}
+
+	HandleKZTiles();
 
 	// teleport gun
 	if(m_TeleGunTeleport)
@@ -2270,7 +2514,7 @@ bool CCharacter::UnFreeze()
 	if(m_FreezeTime > 0)
 	{
 		m_Armor = 10;
-		if(!m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Got)
+		if(m_Core.m_ActiveWeapon < NUM_WEAPONS ? !m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Got : !m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
 			m_Core.m_ActiveWeapon = WEAPON_GUN;
 		m_FreezeTime = 0;
 		m_Core.m_FreezeStart = 0;
@@ -2288,26 +2532,47 @@ void CCharacter::ResetJumps()
 
 void CCharacter::GiveWeapon(int Weapon, bool Remove)
 {
-	if(Weapon == WEAPON_NINJA)
+	if(Weapon >= 0 && Weapon < NUM_WEAPONS)
 	{
+		if(Weapon == WEAPON_NINJA)
+		{
+			if(Remove)
+				RemoveNinja();
+			else
+				GiveNinja();
+			return;
+		}
+
 		if(Remove)
-			RemoveNinja();
+		{
+			if(GetActiveWeapon() == Weapon)
+				SetActiveWeapon(WEAPON_GUN);
+		}
 		else
-			GiveNinja();
-		return;
-	}
+		{
+			m_Core.m_aWeapons[Weapon].m_Ammo = -1;
+		}
 
-	if(Remove)
-	{
-		if(GetActiveWeapon() == Weapon)
-			SetActiveWeapon(WEAPON_GUN);
-	}
-	else
-	{
-		m_Core.m_aWeapons[Weapon].m_Ammo = -1;
-	}
+		m_Core.m_aWeapons[Weapon].m_Got = !Remove;
 
-	m_Core.m_aWeapons[Weapon].m_Got = !Remove;
+
+
+	}
+	else if(Weapon >= KZ_CUSTOM_WEAPONS_START && Weapon < KZ_NUM_CUSTOM_WEAPONS)
+	{
+		m_aCustomWeapons[Weapon-KZ_CUSTOM_WEAPONS_START].m_Got = !Remove;
+
+
+		if(Remove)
+		{
+			if(GetActiveWeapon() == Weapon)
+				SetActiveWeapon(WEAPON_GUN);
+		}
+		else
+		{
+			m_aCustomWeapons[Weapon-KZ_CUSTOM_WEAPONS_START].m_Ammo = -1;
+		}
+	}
 }
 
 void CCharacter::GiveAllWeapons()
@@ -2344,7 +2609,7 @@ void CCharacter::Pause(bool Pause)
 	m_Paused = Pause;
 	if(Pause)
 	{
-		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCid()] = 0;
+		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCid()] = nullptr;
 		GameServer()->m_World.RemoveEntity(this);
 
 		if(m_Core.HookedPlayer() != -1) // Keeping hook would allow cheats
@@ -2369,7 +2634,7 @@ void CCharacter::Pause(bool Pause)
 void CCharacter::DDRaceInit()
 {
 	m_Paused = false;
-	m_DDRaceState = DDRACE_NONE;
+	m_DDRaceState = ERaceState::NONE;
 	m_PrevPos = m_Pos;
 	for(bool &Set : m_SetSavePos)
 		Set = false;
@@ -2393,7 +2658,6 @@ void CCharacter::DDRaceInit()
 		m_Core.m_LaserHitDisabled = true;
 	}
 	m_Core.m_Jumps = 2;
-	m_FreezeHammer = false;
 
 	int Team = Teams()->m_Core.Team(m_Core.m_Id);
 
@@ -2433,7 +2697,7 @@ void CCharacter::Rescue()
 		}
 
 		m_LastRescue = Server()->Tick();
-		float StartTime = m_StartTime;
+		int StartTime = m_StartTime;
 		m_RescueTee[GetPlayer()->m_RescueMode].Load(this, Team());
 		// Don't load these from saved tee:
 		m_Core.m_Vel = vec2(0, 0);
@@ -2496,4 +2760,330 @@ void CCharacter::SwapClients(int Client1, int Client2)
 {
 	const int HookedPlayer = m_Core.HookedPlayer();
 	m_Core.SetHookedPlayer(HookedPlayer == Client1 ? Client2 : HookedPlayer == Client2 ? Client1 : HookedPlayer);
+}
+
+void CCharacter::HandleKZTiles()
+{
+	CKZTile *pKZTile = Collision()->GetKZGameTile(m_Pos);
+	CKZTile *pKZTileFront = Collision()->GetKZFrontTile(m_Pos);
+
+	if(!pKZTile && !pKZTileFront)
+		return;
+
+	if((pKZTile && pKZTile->m_Index == KZ_TILE_PORTAL_RESET) || (pKZTileFront && pKZTileFront->m_Index == KZ_TILE_PORTAL_RESET))
+	{
+		for(CPortalKZ* p = (CPortalKZ*)GameWorld()->FindFirst(CGameWorld::CUSTOM_ENTTYPE_PORTAL);p;p = (CPortalKZ*)p->TypeNext())
+		{
+			if(p->m_Owner == m_pPlayer->GetCid())
+			{
+				p->Reset();
+				CPortalKZ* p2 = p->GetOtherPortal();
+				if(p2)
+				{
+					p2->Reset();
+				}
+				break;
+			}
+		}
+	}
+
+	if(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY && m_LastSoundPlayed != pKZTile->m_Value1 && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+	{
+		GameServer()->CreateMapSoundEvent(m_Pos, pKZTile->m_Value1, TeamMask());
+		m_LastSoundPlayed = pKZTile->m_Value1;
+	}
+	else if(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_SOUND_PLAY && m_LastSoundPlayed != pKZTileFront->m_Value1 && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+	{
+		GameServer()->CreateMapSoundEvent(m_Pos, pKZTileFront->m_Value1, TeamMask());
+		m_LastSoundPlayed = pKZTileFront->m_Value1;
+	}
+	else if(!(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY) && !(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_SOUND_PLAY))
+	{
+		m_LastSoundPlayed = -1;
+	}
+
+	if(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY_LOCAL && m_LastLocalSoundPlayed != pKZTile->m_Value1 && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+	{
+		CNetMsg_Sv_MapSoundGlobal Msg;
+		Msg.m_SoundId = (int)pKZTile->m_Value1;
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, m_pPlayer->GetCid());
+		m_LastLocalSoundPlayed = pKZTile->m_Value1;
+	}
+	else if(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_SOUND_PLAY_LOCAL && m_LastLocalSoundPlayed != pKZTileFront->m_Value1 && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+	{
+		CNetMsg_Sv_MapSoundGlobal Msg;
+		Msg.m_SoundId = (int)pKZTileFront->m_Value1;
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, m_pPlayer->GetCid());
+		m_LastLocalSoundPlayed = pKZTileFront->m_Value1;
+	}
+	else if(!(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY_LOCAL) && !(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_SOUND_PLAY_LOCAL))
+	{
+		m_LastLocalSoundPlayed = -1;
+	}
+
+	if(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY_LOCAL_IN_POS && m_LastLocalInPosSoundPlayed != pKZTile->m_Value1 && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+	{
+		GameServer()->CreateMapSoundEventForClient(m_Pos, pKZTile->m_Value1, m_pPlayer->GetCid(), TeamMask());
+		m_LastLocalInPosSoundPlayed = pKZTile->m_Value1;
+	}
+	else if(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_SOUND_PLAY_LOCAL_IN_POS && m_LastLocalInPosSoundPlayed != pKZTileFront->m_Value1 && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+	{
+		GameServer()->CreateMapSoundEventForClient(m_Pos, pKZTileFront->m_Value1, m_pPlayer->GetCid(), TeamMask());
+		m_LastLocalInPosSoundPlayed = pKZTileFront->m_Value1;
+	}
+	else if(!(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY_LOCAL_IN_POS) && !(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_SOUND_PLAY_LOCAL_IN_POS))
+	{
+		m_LastLocalInPosSoundPlayed = -1;
+	}
+
+	if(pKZTile && pKZTile->m_Index == KZ_TILE_HEALTH_ZONE && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true) && Server()->Tick() % Server()->TickSpeed() == 0)
+	{
+		IncreaseHealth((int)pKZTile->m_Value1 + 1);
+		GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, TeamMask());
+	}
+	else if(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_HEALTH_ZONE && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true) && Server()->Tick() % Server()->TickSpeed() == 0)
+	{
+		IncreaseHealth((int)pKZTileFront->m_Value1 + 1);
+		GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, TeamMask());
+	}
+
+	if(pKZTile && pKZTile->m_Index == KZ_TILE_DAMAGE_ZONE && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true) && Server()->Tick() % Server()->TickSpeed() == 0)
+	{
+		TakeDamageVanilla(vec2(0,0),(int)pKZTile->m_Value1 + 1,m_pPlayer ? m_pPlayer->GetCid() : -1, WEAPON_WORLD);
+	}
+	else if(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_DAMAGE_ZONE && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true) && Server()->Tick() % Server()->TickSpeed() == 0)
+	{
+		TakeDamageVanilla(vec2(0,0),(int)pKZTile->m_Value1 + 1,m_pPlayer ? m_pPlayer->GetCid() : -1, WEAPON_WORLD);
+	}
+
+	//+KZ Game Only Tiles
+	if(pKZTile)
+	{
+		if(!m_NODAMAGE && pKZTile->m_Index == KZ_GAMETILE_NO_DAMAGE && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+		{
+			m_NODAMAGE = true;
+			GameServer()->SendChatTarget(m_pPlayer->GetCid(),"Now you can not take damage");
+		}
+
+		if(!IsSuper() && pKZTile->m_Index == KZ_GAMETILE_HITTABLE_SWITCH && pKZTile->m_Number)
+		{
+			if(!(Server()->Tick() % Server()->TickSpeed()))
+			{
+				GameServer()->SendBroadcast("Hammer the button to use it", m_pPlayer->GetCid(), false);
+			}
+
+			if(m_Core.m_ActiveWeapon == WEAPON_HAMMER && !BitWiseAndInt64(pKZTile->m_Value3,KZ_HITTABLE_SWITCH_FLAG_NO_HAMMER) && (m_Input.m_Fire & 1) && !m_StillPressingFire)
+			{
+				switch(pKZTile->m_Value1) //Type
+				{
+					case 0: //switch deactivate
+						{
+							Switchers()[pKZTile->m_Number].m_aStatus[Team()] = true;
+							Switchers()[pKZTile->m_Number].m_aEndTick[Team()] = 0;
+							Switchers()[pKZTile->m_Number].m_aType[Team()] = TILE_SWITCHOPEN;
+							Switchers()[pKZTile->m_Number].m_aLastUpdateTick[Team()] = Server()->Tick();
+						}
+						break;
+					case 1: //switch timed deactivate
+						{
+							Switchers()[pKZTile->m_Number].m_aStatus[Team()] = true;
+							Switchers()[pKZTile->m_Number].m_aEndTick[Team()] = Server()->Tick() + 1 + pKZTile->m_Value2 * Server()->TickSpeed();
+							Switchers()[pKZTile->m_Number].m_aType[Team()] = TILE_SWITCHTIMEDOPEN;
+							Switchers()[pKZTile->m_Number].m_aLastUpdateTick[Team()] = Server()->Tick();
+						}
+						break;
+					case 2: //switch timed activate
+						{
+							Switchers()[pKZTile->m_Number].m_aStatus[Team()] = false;
+							Switchers()[pKZTile->m_Number].m_aEndTick[Team()] = Server()->Tick() + 1 + pKZTile->m_Value2 * Server()->TickSpeed();
+							Switchers()[pKZTile->m_Number].m_aType[Team()] = TILE_SWITCHTIMEDCLOSE;
+							Switchers()[pKZTile->m_Number].m_aLastUpdateTick[Team()] = Server()->Tick();
+						}
+						break;
+					case 3: //switch activate
+						{
+							Switchers()[pKZTile->m_Number].m_aStatus[Team()] = false;
+							Switchers()[pKZTile->m_Number].m_aEndTick[Team()] = 0;
+							Switchers()[pKZTile->m_Number].m_aType[Team()] = TILE_SWITCHCLOSE;
+							Switchers()[pKZTile->m_Number].m_aLastUpdateTick[Team()] = Server()->Tick();
+						}
+						break;
+					case 4: // +KZ switch toggle
+						{
+							Switchers()[pKZTile->m_Number].m_aStatus[Team()] = !Switchers()[pKZTile->m_Number].m_aStatus[Team()];
+							if(Switchers()[pKZTile->m_Number].m_aStatus[Team()])
+							{
+								Switchers()[pKZTile->m_Number].m_aType[Team()] = TILE_SWITCHOPEN;
+							}
+							else
+							{
+								Switchers()[pKZTile->m_Number].m_aType[Team()] = TILE_SWITCHCLOSE;
+							}
+							Switchers()[pKZTile->m_Number].m_aEndTick[Team()] = 0;
+							Switchers()[pKZTile->m_Number].m_aLastUpdateTick[Team()] = Server()->Tick();
+						}
+						break;
+
+					default:
+						break;
+				}
+
+				vec2 HitPos = m_Pos;
+
+				HitPos.x += 16 - ((int)HitPos.x % 32);
+				HitPos.y += 16 - ((int)HitPos.y % 32);
+
+				GameServer()->CreateHammerHit(HitPos,TeamMask());
+			}
+		}
+
+		if(!m_SpecTile && pKZTile->m_Index == KZ_GAMETILE_SPEC_POS && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+		{
+			m_SpecTile = true;
+			m_SpecTilePos.x = (float)pKZTile->m_Value1 * 32 + 16;
+			m_SpecTilePos.y = (float)pKZTile->m_Value2 * 32 + 16;
+		}
+		else if(m_SpecTile && pKZTile->m_Index != KZ_GAMETILE_SPEC_POS && (pKZTile->m_Number ? !(Switchers()[pKZTile->m_Number].m_aStatus[Team()]) : true))
+		{
+			m_SpecTile = false;
+		}
+	}
+
+	//+KZ Front Only Tiles
+	if(pKZTileFront)
+	{
+		if(pKZTileFront->m_Index == KZ_FRONTTILE_FORCE_POS && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+		{
+			
+			//Value 1 = Angle
+			int Angle = std::clamp((int)pKZTileFront->m_Value1,0,360);
+			float RadAngle = Angle * 3.14159f/180.f;
+			vec2 Dir;
+			Dir.y = sin(RadAngle);
+			Dir.x = cos(RadAngle);
+			Dir = normalize(Dir);
+
+			//Value 2 = Force
+			//Add Coordinates to Position without caring about anything muahahahaha
+			int Force = pKZTileFront->m_Value2;
+			m_Core.m_Pos += Dir * Force;
+			m_Pos += Dir * Force;
+			
+
+			//Value 3 = Speed Limiter
+			vec2 TempVel = m_Core.m_Vel;
+			int MaxSpeed = pKZTileFront->m_Value3;
+
+			constexpr float MaxSpeedScale = 5.0f;
+			if(MaxSpeed < 0)
+			{
+				float MaxRampSpeed = GetTuning(m_TuneZone)->m_VelrampRange / (50 * log(maximum((float)GetTuning(m_TuneZone)->m_VelrampCurvature, 1.01f)));
+				MaxSpeed = maximum(MaxRampSpeed, GetTuning(m_TuneZone)->m_VelrampStart / 50) * MaxSpeedScale;
+			}
+
+			// (signed) length of projection
+			float CurrentDirectionalSpeed = dot(Dir, m_Core.m_Vel);
+			float TempMaxSpeed = MaxSpeed / MaxSpeedScale;
+			if(CurrentDirectionalSpeed + Force > TempMaxSpeed)
+				TempVel += Dir * (TempMaxSpeed - CurrentDirectionalSpeed);
+			else
+				TempVel += Dir * Force;
+
+			m_Core.m_Vel = ClampVel(m_MoveRestrictions, TempVel);
+		}
+
+		if(!IsSuper() && !m_Core.m_Invincible && pKZTileFront->m_Index == KZ_FRONTTILE_KZ_PLAYER_TELEPORT && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+		{
+			int TeleNumber = std::clamp((int)pKZTileFront->m_Value2,1,255);
+			int TeleOut = 0;
+
+			switch (pKZTileFront->m_Value1) //Type
+			{
+			case 0: //Red Teleport
+				TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleOuts(TeleNumber - 1).size());
+				m_Core.m_Pos = Collision()->TeleOuts(TeleNumber - 1)[TeleOut];
+				
+				m_Core.m_Vel = vec2(0, 0);
+
+				if(!g_Config.m_SvTeleportHoldHook)
+				{
+					ResetHook();
+					GameWorld()->ReleaseHooked(GetPlayer()->GetCid());
+				}
+				if(g_Config.m_SvTeleportLoseWeapons)
+				{
+					ResetPickups();
+				}
+				
+				break;
+			case 1:
+				TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleOuts(TeleNumber - 1).size());
+				m_Core.m_Pos = Collision()->TeleOuts(TeleNumber - 1)[TeleOut];
+				if(!g_Config.m_SvTeleportHoldHook)
+				{
+					ResetHook();
+				}
+				if(g_Config.m_SvTeleportLoseWeapons)
+					ResetPickups();
+				break;
+			default:
+				break;
+			}
+		}
+
+		if(!m_ForcedTuneKZ && pKZTileFront->m_Index == KZ_FRONTTILE_TUNE_SWITCHABLE && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+		{
+			m_TuneZone = std::clamp((int)pKZTileFront->m_Value1,0,255);
+			m_ForcedTuneKZ = true;
+		}
+		else if(m_ForcedTuneKZ && pKZTileFront->m_Index != KZ_FRONTTILE_TUNE_SWITCHABLE && (pKZTileFront->m_Number ? !(Switchers()[pKZTileFront->m_Number].m_aStatus[Team()]) : true))
+		{
+			m_ForcedTuneKZ = false;
+		}
+
+		if(pKZTileFront->m_Index == KZ_FRONTTILE_TUNE_LOCK && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+		{
+			m_TuneZoneOverrideKZ = std::clamp((int)pKZTileFront->m_Value1,-1,255);
+		}
+	}
+}
+
+bool CCharacter::TakeDamageVanilla(vec2 Force, int Dmg, int From, int Weapon)
+{
+	m_Core.m_Vel += Force;
+
+	if(m_NODAMAGE || IsSuper() || m_Core.m_Invincible)
+		return false;
+
+	// m_pPlayer only inflicts half damage on self //+KZ no
+	//if(From == m_pPlayer->GetCid())
+	//	Dmg = maximum(1, Dmg/2);
+
+	int OldHealth = m_Health;
+	if(Dmg)
+	{
+
+		m_Health -= Dmg;
+	}
+
+	// create healthmod indicator
+	GameServer()->CreateDamageInd(m_Pos, Server()->Tick(), OldHealth-m_Health, TeamMask());
+
+	// do damage Hit sound
+		GameServer()->CreateSound(m_Pos, SOUND_HIT, TeamMask());
+
+	// check for death
+	if(m_Health <= 0)
+	{
+		Die(From, Weapon);
+	}
+
+	if(Dmg > 2)
+		GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG);
+	else
+		GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_SHORT);
+
+	SetEmote(EMOTE_PAIN, Server()->Tick() + 500 * Server()->TickSpeed() / 1000);
+
+	return true;
 }

@@ -307,7 +307,8 @@ public:
 	CServerBrowserHttp(IEngine *pEngine, IHttp *pHttp, const char **ppUrls, int NumUrls, int PreviousBestIndex);
 	~CServerBrowserHttp() override;
 	void Update() override;
-	bool IsRefreshing() override { return m_State != STATE_DONE; }
+	bool IsRefreshing() const override { return m_State != STATE_DONE && m_State != STATE_NO_MASTER; }
+	bool IsError() const override { return m_State == STATE_NO_MASTER; }
 	void Refresh() override;
 	bool GetBestUrl(const char **pBestUrl) const override { return m_pChooseMaster->GetBestUrl(pBestUrl); }
 
@@ -334,7 +335,7 @@ private:
 
 	IHttp *m_pHttp;
 
-	int m_State = STATE_DONE;
+	int m_State = STATE_WANTREFRESH;
 	std::shared_ptr<CHttpRequest> m_pGetServers;
 	std::unique_ptr<CChooseMaster> m_pChooseMaster;
 
@@ -345,7 +346,7 @@ CServerBrowserHttp::CServerBrowserHttp(IEngine *pEngine, IHttp *pHttp, const cha
 	m_pHttp(pHttp),
 	m_pChooseMaster(new CChooseMaster(pEngine, pHttp, Validate, ppUrls, NumUrls, PreviousBestIndex))
 {
-	m_pChooseMaster->Refresh();
+	Refresh();
 }
 
 CServerBrowserHttp::~CServerBrowserHttp()
@@ -422,7 +423,7 @@ void CServerBrowserHttp::Refresh()
 		m_State = STATE_WANTREFRESH;
 	Update();
 }
-bool ServerbrowserParseUrl(NETADDR *pOut, const char *pUrl)
+static bool ServerbrowserParseUrl(NETADDR *pOut, const char *pUrl)
 {
 	int Failure = net_addr_from_url(pOut, pUrl, nullptr, 0);
 	if(Failure || pOut->port == 0)
@@ -465,7 +466,6 @@ bool CServerBrowserHttp::Parse(json_value *pJson, std::vector<CServerInfo> *pvSe
 		}
 		if(CServerInfo2::FromJson(&ParsedInfo, &Info))
 		{
-			log_debug("serverbrowser_http", "skipped due to info, i=%d", i);
 			// Only skip the current server on parsing
 			// failure; the server info is "user input" by
 			// the game server and can be set to arbitrary
@@ -503,7 +503,6 @@ bool CServerBrowserHttp::Parse(json_value *pJson, std::vector<CServerInfo> *pvSe
 			NETADDR ParsedAddr;
 			if(ServerbrowserParseUrl(&ParsedAddr, Addresses[a]))
 			{
-				// log_debug("serverbrowser_http", "unknown address, i=%d a=%d", i, a);
 				// Skip unknown addresses.
 				continue;
 			}
@@ -532,7 +531,7 @@ static const char *DEFAULT_SERVERLIST_URLS[] = {
 IServerBrowserHttp *CreateServerBrowserHttp(IEngine *pEngine, IStorage *pStorage, IHttp *pHttp, const char *pPreviousBestUrl)
 {
 	char aaUrls[CChooseMaster::MAX_URLS][256];
-	const char *apUrls[CChooseMaster::MAX_URLS] = {0};
+	const char *apUrls[CChooseMaster::MAX_URLS] = {nullptr};
 	const char **ppUrls = apUrls;
 	int NumUrls = 0;
 	CLineReader LineReader;

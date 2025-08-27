@@ -4,9 +4,7 @@
 #define GAME_SERVER_PLAYER_H
 
 #include <base/vmath.h>
-
 #include <engine/shared/protocol.h>
-
 #include <game/alloc.h>
 #include <game/server/save.h>
 
@@ -20,13 +18,6 @@ class CGameContext;
 class IServer;
 struct CNetObj_PlayerInput;
 struct CScorePlayerResult;
-
-enum
-{
-	WEAPON_GAME = -3, // team switching etc
-	WEAPON_SELF = -2, // console kill command
-	WEAPON_WORLD = -1, // death tiles etc
-};
 
 // player object
 class CPlayer
@@ -57,9 +48,9 @@ public:
 	void Snap(int SnappingClient);
 	void FakeSnap();
 
-	void OnDirectInput(CNetObj_PlayerInput *pNewInput);
-	void OnPredictedInput(CNetObj_PlayerInput *pNewInput);
-	void OnPredictedEarlyInput(CNetObj_PlayerInput *pNewInput);
+	void OnDirectInput(const CNetObj_PlayerInput *pNewInput);
+	void OnPredictedInput(const CNetObj_PlayerInput *pNewInput);
+	void OnPredictedEarlyInput(const CNetObj_PlayerInput *pNewInput);
 	void OnDisconnect();
 
 	void KillCharacter(int Weapon = WEAPON_GAME, bool SendKillMsg = true);
@@ -82,8 +73,8 @@ public:
 
 	int m_SentSnaps = 0;
 
-	// used for spectator mode
-	int m_SpectatorId;
+	int SpectatorId() const { return m_SpectatorId; }
+	void SetSpectatorId(int Id);
 
 	bool m_IsReady;
 
@@ -113,7 +104,6 @@ public:
 	int m_PreviousDieTick;
 	std::optional<int> m_Score;
 	int m_JoinTick;
-	bool m_ForceBalanced;
 	int m_LastActionTick;
 	int m_TeamChangeTick;
 
@@ -142,6 +132,9 @@ private:
 	bool m_WeakHookSpawn;
 	int m_ClientId;
 	int m_Team;
+
+	// used for spectator mode
+	int m_SpectatorId;
 
 	int m_Paused;
 	int64_t m_ForcePauseTime;
@@ -184,12 +177,27 @@ public:
 
 	bool IsPlaying() const;
 	int64_t m_Last_KickVote;
-	int64_t m_Last_Team;
+	int64_t m_LastDDRaceTeamChange;
 	int m_ShowOthers;
 	bool m_ShowAll;
 	vec2 m_ShowDistance;
 	bool m_SpecTeam;
 	bool m_NinjaJetpack;
+
+	// camera info is used sparingly for converting aim target to absolute world coordinates
+	class CCameraInfo
+	{
+		friend class CPlayer;
+		bool m_HasCameraInfo;
+		float m_Zoom;
+		int m_Deadzone;
+		int m_FollowFactor;
+
+	public:
+		vec2 ConvertTargetToWorld(vec2 Position, vec2 Target) const;
+		void Write(const CNetMsg_Cl_CameraInfo *pMsg);
+		void Reset();
+	} m_CameraInfo;
 
 	int m_ChatScore;
 
@@ -230,6 +238,12 @@ public:
 	int m_RescueMode;
 
 	CSaveTee m_LastTeleTee;
+	std::optional<CSaveTee> m_LastDeath;
+
+	// KZ
+
+	bool m_SentKZWelcomeMsg = false;
+	bool m_SendCrowns = true;
 };
 
 #endif

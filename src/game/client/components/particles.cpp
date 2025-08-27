@@ -47,7 +47,7 @@ void CParticles::Add(int Group, CParticle *pPart, float TimePassed)
 	}
 	else
 	{
-		if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED)
+		if(GameClient()->m_Snap.m_pGameInfoObj && GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED)
 			return;
 	}
 
@@ -107,7 +107,7 @@ void CParticles::Update(float TimePassed)
 			vec2 Vel = m_aParticles[i].m_Vel * TimePassed;
 			if(m_aParticles[i].m_Collides)
 			{
-				Collision()->MovePoint(&m_aParticles[i].m_Pos, &Vel, random_float(0.1f, 1.0f), NULL);
+				Collision()->MovePoint(&m_aParticles[i].m_Pos, &Vel, random_float(0.1f, 1.0f), nullptr);
 			}
 			else
 			{
@@ -159,7 +159,7 @@ void CParticles::OnRender()
 	}
 	else
 	{
-		if(m_pClient->m_Snap.m_pGameInfoObj && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
+		if(GameClient()->m_Snap.m_pGameInfoObj && !(GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
 			Update((float)((t - m_LastRenderTime) / (double)time_freq()));
 	}
 

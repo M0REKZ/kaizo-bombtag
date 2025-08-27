@@ -12,8 +12,9 @@
 #include <game/client/component.h>
 #include <game/client/lineinput.h>
 #include <game/client/render.h>
-#include <game/client/skin.h>
 #include <game/generated/protocol7.h>
+
+constexpr auto SAVES_FILE = "ddnet-saves.txt";
 
 class CChat : public CComponent
 {
@@ -28,8 +29,12 @@ class CChat : public CComponent
 	};
 
 	CLineInputBuffered<MAX_LINE_LENGTH> m_Input;
-	struct CLine
+	class CLine
 	{
+	public:
+		CLine();
+		void Reset(CChat &This);
+
 		int64_t m_Time;
 		float m_aYOffset[2];
 		int m_ClientId;
@@ -46,9 +51,7 @@ class CChat : public CComponent
 		STextContainerIndex m_TextContainerIndex;
 		int m_QuadContainerIndex;
 
-		char m_aSkinName[std::size(g_Config.m_ClPlayerSkin)];
-		bool m_HasRenderTee;
-		CTeeRenderInfo m_TeeRenderInfo;
+		std::shared_ptr<CManagedTeeRenderInfo> m_pManagedTeeRenderInfo;
 
 		float m_TextYOffset;
 
@@ -85,10 +88,11 @@ class CChat : public CComponent
 	int m_PlaceholderOffset;
 	int m_PlaceholderLength;
 	static char ms_aDisplayText[MAX_LINE_LENGTH];
-	struct CRateablePlayer
+	class CRateablePlayer
 	{
-		int ClientId;
-		int Score;
+	public:
+		int m_ClientId;
+		int m_Score;
 	};
 	CRateablePlayer m_aPlayerCompletionList[MAX_CLIENTS];
 	int m_PlayerCompletionListLength;
@@ -112,8 +116,8 @@ class CChat : public CComponent
 		bool operator==(const CCommand &Other) const { return str_comp(m_aName, Other.m_aName) == 0; }
 	};
 
-	std::vector<CCommand> m_vCommands;
-	bool m_CommandsNeedSorting;
+	std::vector<CCommand> m_vServerCommands;
+	bool m_ServerCommandsNeedSorting;
 
 	struct CHistoryEntry
 	{
@@ -162,7 +166,6 @@ public:
 	void OnWindowResize() override;
 	void OnConsoleInit() override;
 	void OnStateChange(int NewState, int OldState) override;
-	void OnRefreshSkins() override;
 	void OnRender() override;
 	void OnPrepareLines(float y);
 	void Reset();
