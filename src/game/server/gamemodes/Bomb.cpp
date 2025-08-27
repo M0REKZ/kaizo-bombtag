@@ -80,6 +80,7 @@ void CGameControllerBomb::OnPlayerConnect(CPlayer *pPlayer)
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()));
 		GameServer()->SendChat(-1, TEAM_ALL, aBuf);
+		GameServer()->SendDiscordChatMessage(-1,aBuf); //+KZ
 		GameServer()->SendChatTarget(ClientId, "BOMB Mod (Merged with Kaizo Network by +KZ). Website: m0rekz.github.io");
 		GameServer()->SendChatTarget(ClientId, "Original source code: https://git.ddstats.tw/furo/ddnet-bombtag");
 	}
