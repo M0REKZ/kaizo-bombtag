@@ -4102,7 +4102,7 @@ void CGameContext::OnInit(const void *pPersistentData)
 	else
 		m_pController = new CGameControllerDDRace(this);
 	*/
-	m_pController = new CGameControllerKZ(this);
+	m_pController = new CGameControllerBomb(this);
 
 	ReadCensorList();
 

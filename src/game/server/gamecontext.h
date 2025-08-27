@@ -560,6 +560,7 @@ private:
 	static void ConReloadCensorlist(IConsole::IResult *pResult, void *pUserData);
 
 	// Bombtag
+	static void ConReloadAnnouncement(IConsole::IResult *pResult, void *pUserData);
 	static void ConReloadMysteryRounds(IConsole::IResult *pResult, void *pUserData);
 	static void ConEnqueueMap(IConsole::IResult *pResult, void *pUserData);
 	static void ConStats(IConsole::IResult *pResult, void *pUserData);

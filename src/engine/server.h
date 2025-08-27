@@ -275,7 +275,7 @@ public:
 	virtual bool DnsblPending(int ClientId) = 0;
 	virtual bool DnsblBlack(int ClientId) = 0;
 	virtual const char *GetAnnouncementLine() = 0;
-	virtual void ReadAnnouncementsFile(const char *pFileName) = 0;
+	virtual void ReadAnnouncementsFile() = 0;
 	virtual const char *GetMysteryRoundLine() = 0;
 	virtual void ReadMysteryRoundsFile(const char *pFileName) = 0;
 	virtual size_t GetMysteryRoundsSize() = 0;

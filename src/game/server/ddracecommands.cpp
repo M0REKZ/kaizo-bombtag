@@ -586,7 +586,7 @@ void CGameContext::ConReloadCensorlist(IConsole::IResult *pResult, void *pUserDa
 void CGameContext::ConReloadAnnouncement(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	pSelf->Server()->ReadAnnouncementsFile(g_Config.m_SvAnnouncementFileName);
+	pSelf->Server()->ReadAnnouncementsFile();
 }
 
 void CGameContext::ConReloadMysteryRounds(IConsole::IResult *pResult, void *pUserData)

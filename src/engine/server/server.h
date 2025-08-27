@@ -505,7 +505,7 @@ public:
 
 	int m_aPrevStates[MAX_CLIENTS];
 	const char *GetAnnouncementLine() override;
-	void ReadAnnouncementsFile();
+	virtual void ReadAnnouncementsFile() override;
 
 	static int MaplistEntryCallback(const char *pFilename, int IsDir, int DirType, void *pUser);
 	void InitMaplist();
