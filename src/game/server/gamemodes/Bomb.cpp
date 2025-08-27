@@ -78,7 +78,9 @@ void CGameControllerBomb::OnPlayerConnect(CPlayer *pPlayer)
 	if(!Server()->ClientPrevIngame(ClientId))
 	{
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()));
+		char aClientName[64];
+		GameServer()->IdentifyClientName(ClientId, aClientName, sizeof(aClientName));
+		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s using %s", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), aClientName);
 		GameServer()->SendChat(-1, TEAM_ALL, aBuf);
 		GameServer()->SendDiscordChatMessage(-1,aBuf); //+KZ
 		GameServer()->SendChatTarget(ClientId, "BOMB Mod (Merged with Kaizo Network by +KZ). Website: m0rekz.github.io");
