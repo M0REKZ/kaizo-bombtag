@@ -2,6 +2,7 @@
 #define GAME_SERVER_GAMEMODES_BOMB_H
 
 #include <game/server/gamecontroller.h>
+#include <game/server/entities/kz/flag.h>
 
 class CGameControllerBomb : public IGameController
 {
@@ -76,5 +77,19 @@ public:
 	void OnTakeDamage(int Dmg, int From, int To, int Weapon) override;
 	void OnSkinChange(const char *pSkin, bool UseCustomColor, int ColorBody, int ColorFeet, int ClientId) override;
 	bool m_WasMysteryRound = false;
+
+	//+KZ
+	bool OnEntityKZ(int Index, int x, int y, int Layer, int Flags, bool Initial, unsigned char Number = 0, int64_t Value1 = 0, int64_t Value2 = 0, int64_t Value3 = 0) override;
+
+	bool OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number = 0) override;
+	virtual void Snap(int SnappingClient) override;
+
+	class CFlag *m_apFlags[2];
+
+	int m_flagstand_temp_i_0; //+KZ from tw_plus
+	int m_flagstand_temp_i_1; //same
+
+	void FlagTick();
+
 };
 #endif // GAME_SERVER_GAMEMODES_BOMB_H

@@ -12,6 +12,11 @@
 #include <game/server/score.h>
 #include <random>
 
+#include <game/server/entities/kz/kz_pickup.h>
+#include <game/server/entities/kz/kz_gun.h>
+#include <game/server/entities/kz/kz_light.h>
+#include <game/server/entities/kz/mine.h>
+
 // Exchange this to a string that identifies your game mode.
 // DM, TDM and CTF are reserved for teeworlds original modes.
 // DDraceNetwork and TestDDraceNetwork are used by DDNet.
@@ -28,6 +33,12 @@ CGameControllerBomb::CGameControllerBomb(class CGameContext *pGameServer) :
 		aPlayer.m_State = STATE_NONE;
 		aPlayer.m_Bomb = false;
 	}
+
+	m_apFlags[0] = 0;
+	m_apFlags[1] = 0;
+
+	m_flagstand_temp_i_0 = 0;
+	m_flagstand_temp_i_1 = 0; 
 }
 
 CGameControllerBomb::~CGameControllerBomb() = default;
@@ -64,7 +75,29 @@ int CGameControllerBomb::OnCharacterDeath(CCharacter *pVictim, CPlayer *pKiller,
 		GameServer()->SendBroadcast("You will automatically rejoin the game when the round is over", ClientId);
 		m_aPlayers[ClientId].m_State = STATE_ACTIVE;
 	}
-	return 0;
+	
+	int HadFlag = 0;
+
+	// drop flags
+	for(CFlag *pFlag : m_apFlags)
+	{
+		if(pFlag && pKiller && pKiller->GetCharacter() && pFlag->GetCarrier() == pKiller->GetCharacter())
+			HadFlag |= 2;
+		if(pFlag && pFlag->GetCarrier() == pVictim)
+		{
+			GameServer()->CreateSoundGlobal(SOUND_CTF_DROP);
+			GameServer()->SendGameMsg(protocol7::GAMEMSG_CTF_DROP, -1);
+			pFlag->Drop();
+			// https://github.com/ddnet-insta/ddnet-insta/issues/156
+			pFlag->m_pLastCarrier = nullptr;
+
+			HadFlag |= 1;
+		}
+		if(pFlag && pFlag->GetCarrier() == pVictim)
+			pFlag->SetCarrier(0);
+	}
+
+	return HadFlag;
 }
 
 void CGameControllerBomb::OnPlayerConnect(CPlayer *pPlayer)
@@ -165,6 +198,7 @@ void CGameControllerBomb::DoAfkLogic()
 void CGameControllerBomb::Tick()
 {
 	IGameController::Tick();
+	FlagTick(); //+KZ
 	DoAfkLogic();
 
 	// Change to enqueued map
@@ -694,4 +728,273 @@ void CGameControllerBomb::OnSkinChange(const char *pSkin, bool UseCustomColor, i
 	pRealSkin->m_UseCustomColor = UseCustomColor;
 	pRealSkin->m_aSkinBodyColor = ColorBody;
 	pRealSkin->m_aSkinFeetColor = ColorFeet;
+}
+
+bool CGameControllerBomb::OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number)
+{
+	IGameController::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
+
+	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
+	int Team = -1;
+	if(Index == ENTITY_FLAGSTAND_RED)
+		Team = TEAM_RED;
+	if(Index == ENTITY_FLAGSTAND_BLUE)
+		Team = TEAM_BLUE;
+
+	//twplus begin +KZ
+	if(!(Team == -1 || m_apFlags[Team]))
+	{
+		CFlag *F = new CFlag(&GameServer()->m_World, Team);
+		//F->m_StandPos = Pos;
+		F->m_Pos = Pos;
+		m_apFlags[Team] = F;
+		GameServer()->m_World.InsertEntity(F);
+	}
+	
+	if (Team == TEAM_RED && m_flagstand_temp_i_0 < 10) {
+		//m_flagstands_0[m_flagstand_temp_i_0] = Pos;
+		m_apFlags[Team]->m_StandPositions[m_flagstand_temp_i_0] = Pos;
+		m_flagstand_temp_i_0++;
+		m_apFlags[Team]->m_no_stands = m_flagstand_temp_i_0;
+	}
+	if (Team == TEAM_BLUE && m_flagstand_temp_i_1 < 10) {
+		//m_flagstands_1[m_flagstand_temp_i_1] = Pos;
+		m_apFlags[Team]->m_StandPositions[m_flagstand_temp_i_1] = Pos;
+		m_flagstand_temp_i_1++;
+		m_apFlags[Team]->m_no_stands = m_flagstand_temp_i_1;
+	}
+	if (Team == -1)
+	{
+		return IGameController::OnEntity(Index, x, y, Layer, Flags, Initial, Number);;
+	}
+
+	return true;
+}
+
+void CGameControllerBomb::Snap(int SnappingClient)
+{
+	IGameController::Snap(SnappingClient);
+
+	int FlagCarrierRed = FLAG_MISSING;
+	if(m_apFlags[TEAM_RED])
+	{
+		if(m_apFlags[TEAM_RED]->m_AtStand)
+			FlagCarrierRed = FLAG_ATSTAND;
+		else if(m_apFlags[TEAM_RED]->GetCarrier() && m_apFlags[TEAM_RED]->GetCarrier()->GetPlayer())
+			FlagCarrierRed = m_apFlags[TEAM_RED]->GetCarrier()->GetPlayer()->GetCid();
+		else
+			FlagCarrierRed = FLAG_TAKEN;
+	}
+
+	int FlagCarrierBlue = FLAG_MISSING;
+	if(m_apFlags[TEAM_BLUE])
+	{
+		if(m_apFlags[TEAM_BLUE]->m_AtStand)
+			FlagCarrierBlue = FLAG_ATSTAND;
+		else if(m_apFlags[TEAM_BLUE]->GetCarrier() && m_apFlags[TEAM_BLUE]->GetCarrier()->GetPlayer())
+			FlagCarrierBlue = m_apFlags[TEAM_BLUE]->GetCarrier()->GetPlayer()->GetCid();
+		else
+			FlagCarrierBlue = FLAG_TAKEN;
+	}
+
+	if(Server()->IsSixup(SnappingClient))
+	{
+		protocol7::CNetObj_GameDataFlag *pGameDataObj = Server()->SnapNewItem<protocol7::CNetObj_GameDataFlag>(0);
+		if(!pGameDataObj)
+			return;
+
+		pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
+		pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+	}
+	else
+	{
+		CNetObj_GameData *pGameDataObj = Server()->SnapNewItem<CNetObj_GameData>(0);
+		if(!pGameDataObj)
+			return;
+
+		pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
+		pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+
+		pGameDataObj->m_TeamscoreRed = 0;
+		pGameDataObj->m_TeamscoreBlue = 0;
+	}
+}
+
+void CGameControllerBomb::FlagTick()
+{
+	if(GameServer()->m_World.m_ResetRequested || GameServer()->m_World.m_Paused)
+		return;
+
+	for(int FlagColor = 0; FlagColor < 2; FlagColor++)
+	{
+		CFlag *pFlag = m_apFlags[FlagColor];
+
+		if(!pFlag)
+			continue;
+
+		//
+		if(pFlag->GetCarrier())
+		{
+			// forbid holding flags in ddrace teams
+			if(!g_Config.m_SvSoloServer && GameServer()->GetDDRaceTeam(pFlag->GetCarrier()->GetPlayer()->GetCid()))
+			{
+				GameServer()->CreateSoundGlobal(SOUND_CTF_DROP);
+				GameServer()->SendGameMsg(protocol7::GAMEMSG_CTF_DROP, -1);
+				pFlag->Drop();
+				continue;
+			}
+
+		}
+		else
+		{
+			CCharacter *apCloseCCharacters[MAX_CLIENTS];
+			int Num = GameServer()->m_World.FindEntities(pFlag->GetPos(), CFlag::ms_PhysSize, (CEntity **)apCloseCCharacters, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
+			for(int i = 0; i < Num; i++)
+			{
+				if(!apCloseCCharacters[i]->IsAlive() || apCloseCCharacters[i]->GetPlayer()->GetTeam() == TEAM_SPECTATORS || GameServer()->Collision()->IntersectLine(pFlag->GetPos(), apCloseCCharacters[i]->GetPos(), NULL, NULL))
+					continue;
+
+				// only allow flag grabs in team 0
+				if(!g_Config.m_SvSoloServer && GameServer()->GetDDRaceTeam(apCloseCCharacters[i]->GetPlayer()->GetCid()))
+					continue;
+
+				if(pFlag->GetOtherFlag() && pFlag->GetOtherFlag()->m_pCarrier == apCloseCCharacters[i]) //+KZ dont grab flag if he is already with a flag
+					continue;
+
+				// cooldown for recollect after dropping the flag
+				if(pFlag->m_pLastCarrier == apCloseCCharacters[i] && (pFlag->m_DropTick + Server()->TickSpeed()) > Server()->Tick())
+					continue;
+
+				{
+					// take the flag
+
+					pFlag->Grab(apCloseCCharacters[i]);
+
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "flag_grab player='%d:%s' team=%d",
+						pFlag->GetCarrier()->GetPlayer()->GetCid(),
+						Server()->ClientName(pFlag->GetCarrier()->GetPlayer()->GetCid()),
+						pFlag->GetCarrier()->GetPlayer()->GetTeam());
+					GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+					GameServer()->SendGameMsg(protocol7::GAMEMSG_CTF_GRAB, FlagColor, -1);
+					break;
+				}
+			}
+		}
+	}
+}
+
+bool CGameControllerBomb::OnEntityKZ(int Index, int x, int y, int Layer, int Flags, bool Initial, unsigned char Number, int64_t Value1, int64_t Value2, int64_t Value3)
+{
+	int PickupType = -1;
+	int PickupSubtype = -1;
+
+	int aSides[8] = {0,0,0,0,0,0,0,0};
+	if(GameServer()->Collision()->DDNetLayerExists(Layer))
+	{
+		aSides[0] = GameServer()->Collision()->Entity(x, y + 1, Layer);
+		aSides[1] = GameServer()->Collision()->Entity(x + 1, y + 1, Layer);
+		aSides[2] = GameServer()->Collision()->Entity(x + 1, y, Layer);
+		aSides[3] = GameServer()->Collision()->Entity(x + 1, y - 1, Layer);
+		aSides[4] = GameServer()->Collision()->Entity(x, y - 1, Layer);
+		aSides[5] = GameServer()->Collision()->Entity(x - 1, y - 1, Layer);
+		aSides[6] = GameServer()->Collision()->Entity(x - 1, y, Layer);
+		aSides[7] = GameServer()->Collision()->Entity(x - 1, y + 1, Layer);
+	}
+
+	if(Index == KZ_TILE_PORTAL_GUN)
+	{
+		PickupType = POWERUP_WEAPON;
+		PickupSubtype = KZ_CUSTOM_WEAPON_PORTAL_GUN;
+	}
+
+	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
+
+	if(Index == KZ_TILE_TURRET)
+	{
+		new CKZGun(&GameServer()->m_World,Pos,true,false,Layer,Number);
+		m_ShowHealth = true;
+		return true;
+	}
+
+	if(Index == KZ_TILE_TURRET_EXPLOSIVE)
+	{
+		new CKZGun(&GameServer()->m_World,Pos,true,true,Layer,Number);
+		m_ShowHealth = true;
+		return true;
+	}
+
+	if(Index == KZ_TILE_DAMAGE_LASER)
+	{
+		int aSides2[8] = {0,0,0,0,0,0,0,0};
+		if(GameServer()->Collision()->DDNetLayerExists(Layer))
+		{
+			aSides2[0] = GameServer()->Collision()->Entity(x, y + 2, Layer);
+			aSides2[1] = GameServer()->Collision()->Entity(x + 2, y + 2, Layer);
+			aSides2[2] = GameServer()->Collision()->Entity(x + 2, y, Layer);
+			aSides2[3] = GameServer()->Collision()->Entity(x + 2, y - 2, Layer);
+			aSides2[4] = GameServer()->Collision()->Entity(x, y - 2, Layer);
+			aSides2[5] = GameServer()->Collision()->Entity(x - 2, y - 2, Layer);
+			aSides2[6] = GameServer()->Collision()->Entity(x - 2, y, Layer);
+			aSides2[7] = GameServer()->Collision()->Entity(x - 2, y + 2, Layer);
+		}
+
+		float AngularSpeed = 0.0f;
+		
+		AngularSpeed = (pi / 360) * Value1;
+
+		for(int i = 0; i < 8; i++)
+		{
+			if(aSides[i] >= ENTITY_LASER_SHORT && aSides[i] <= ENTITY_LASER_LONG)
+			{
+				CKZLight *pLight = new CKZLight(&GameServer()->m_World, Pos, pi / 4 * i, 32 * 3 + 32 * (aSides[i] - ENTITY_LASER_SHORT) * 3, Layer, Number);
+				pLight->m_AngularSpeed = AngularSpeed;
+				m_ShowHealth = true;
+				if(aSides2[i] >= ENTITY_LASER_C_SLOW && aSides2[i] <= ENTITY_LASER_C_FAST)
+				{
+					pLight->m_Speed = 1 + (aSides2[i] - ENTITY_LASER_C_SLOW) * 2;
+					pLight->m_CurveLength = pLight->m_Length;
+				}
+				else if(aSides2[i] >= ENTITY_LASER_O_SLOW && aSides2[i] <= ENTITY_LASER_O_FAST)
+				{
+					pLight->m_Speed = 1 + (aSides2[i] - ENTITY_LASER_O_SLOW) * 2;
+					pLight->m_CurveLength = 0;
+				}
+				else
+					pLight->m_CurveLength = pLight->m_Length;
+			}
+		}
+	}
+
+	if(Index == KZ_TILE_MINE)
+	{
+		new CMine(&GameServer()->m_World, Pos, Number);
+		m_ShowHealth = true;
+	}
+
+	if(Index == KZ_TILE_DAMAGE_ZONE || Index == KZ_TILE_HEALTH_ZONE)
+	{
+		m_ShowHealth = true;
+	}
+
+	if(PickupType != -1)
+	{
+		if(PickupSubtype != -1)
+		{
+			switch (PickupSubtype)
+			{
+				case KZ_CUSTOM_WEAPON_PORTAL_GUN:
+				{
+					CKZPickup *pPickup = new CKZPickup(&GameServer()->m_World, PickupType, PickupSubtype, Layer, (int)Number, Flags);
+					pPickup->m_Pos = Pos;
+					return true;
+				}
+				break;
+			
+
+			}
+		}
+	}
+
+	return false;
 }
