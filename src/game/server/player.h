@@ -249,6 +249,10 @@ public:
 	int m_ScoreKZ = 0;
 	bool m_IsDead = false;
 	void HandleKZBot(CNetObj_PlayerInput &Input);
+	// Enabled rollback for this player
+	bool m_RollbackEnabled = false;
+	// Rollback LastAckedSnapshot
+	int m_LastAckedSnapshot = -1;
 };
 
 #endif

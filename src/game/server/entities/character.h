@@ -10,6 +10,7 @@
 #include <game/mapitems.h>
 
 #include <game/server/entities/kz/kz_bot_ai/base_ai.h>
+#include <game/server/kz/rollback.h>
 
 class CGameTeams;
 class CGameWorld;
@@ -317,6 +318,7 @@ public:
 	//+KZ for bot AI:
 	void HandleKZBot(CNetObj_PlayerInput &Input);
 	CBaseKZBotAI* m_pKZBotAI = nullptr;
+	CRollbackPositionHistory m_Positions[ROLLBACK_POSITION_HISTORY];
 };
 
 #endif

@@ -4196,6 +4196,7 @@ void CGameContext::OnInit(const void *pPersistentData)
 
 	m_pAntibot->RoundStart(this);
 	m_pHttp = Kernel()->RequestInterface<IHttp>();
+	m_Rollback.Init(this); // +KZ rollback
 }
 
 void CGameContext::CreateAllEntities(bool Initial)
@@ -5373,4 +5374,79 @@ void CGameContext::ConMoveKZBot(IConsole::IResult *pResult, void *pUserData)
 	}
 
     return;
+}
+
+void CGameContext::SetPlayerLastAckedSnapshot(int ClientId, int Tick)
+{
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return;
+
+	if(!m_apPlayers[ClientId])
+		return;
+
+	m_apPlayers[ClientId]->m_LastAckedSnapshot = Tick;
+}
+
+void CGameContext::ConRollback(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+
+	if(!pSelf->m_pController)
+		return;
+
+	/*if(pSelf->m_pController->IsDDRaceGameType())
+	{
+		pSelf->SendChatTarget(pResult->m_ClientId, "This command is not available in ddrace gametypes.");
+		return;
+	}*/
+
+	if(!g_Config.m_SvRollback)
+	{
+		pSelf->SendChatTarget(pResult->m_ClientId, "Rollback is not allowed on this server.");
+		return;
+	}
+
+	if(!pSelf->m_apPlayers[pResult->m_ClientId])
+		return;
+
+	if(!pSelf->m_apPlayers[pResult->m_ClientId]->m_RollbackEnabled)
+	{
+		pSelf->m_apPlayers[pResult->m_ClientId]->m_RollbackEnabled = true;
+		pSelf->SendChatTarget(pResult->m_ClientId, "Rollback enabled.");
+
+		if(pSelf->GetClientVersion(pResult->m_ClientId) >= VERSION_DDNET_ANTIPING_PROJECTILE)
+		{
+			pSelf->SendChatTarget(pResult->m_ClientId, "DDNet Client detected, for correct rollback experience please set the following Antiping settings:");
+			pSelf->SendChatTarget(pResult->m_ClientId, "* Antiping: ON");
+			pSelf->SendChatTarget(pResult->m_ClientId, "* Antiping: predict other players: OFF");
+			pSelf->SendChatTarget(pResult->m_ClientId, "* Antiping: predict weapons: ON");
+			pSelf->SendChatTarget(pResult->m_ClientId, "* Antiping: predict grenade paths: ON");
+		}
+	}
+	else
+	{
+		pSelf->m_apPlayers[pResult->m_ClientId]->m_RollbackEnabled = false;
+		pSelf->SendChatTarget(pResult->m_ClientId, "Rollback disabled.");
+	}
+}
+
+void CGameContext::ConchainRollback(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	pfnCallback(pResult, pCallbackUserData);
+
+	//Dont keep rollback enabled if server does not allow it
+
+	if(!g_Config.m_SvRollback)
+	{
+		for(CPlayer *pPlayer : pSelf->m_apPlayers)
+		{
+			if(!pPlayer)
+				continue;
+
+			pPlayer->m_RollbackEnabled = false;
+		}
+	}
 }

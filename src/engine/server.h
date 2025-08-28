@@ -402,6 +402,7 @@ public:
 
 	//+KZ
 	virtual void HandleKZBot(int CID, CNetObj_PlayerInput &Input) {}; //+KZ
+	virtual void SetPlayerLastAckedSnapshot(int ClientId, int Tick){}; //+KZ rollback
 };
 
 extern IGameServer *CreateGameServer();

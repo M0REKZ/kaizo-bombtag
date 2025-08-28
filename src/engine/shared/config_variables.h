@@ -785,6 +785,9 @@ MACRO_CONFIG_INT(SvDamageLaserDmg, sv_damage_laser_dmg, 2, 0, 10000, CFGFLAG_SER
 MACRO_CONFIG_INT(SvDamageTurretDmg, sv_damage_turret_dmg, 1, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Plasma turret damage")
 MACRO_CONFIG_INT(SvDamageTurretExplosiveDmg, sv_damage_turret_explosive_dmg, 3, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Explosive plasma turret damage")
 MACRO_CONFIG_INT(SvDamageMineDmg, sv_damage_mine_dmg, 3, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Mines damage")
+MACRO_CONFIG_INT(SvAllowZoom, sv_allow_zoom, 0, 0, 1, CFGFLAG_SERVER, "Allow Zoom")
+MACRO_CONFIG_INT(SvSpecPause, sv_spec_pause, 0, 0, 1, CFGFLAG_SERVER, "Allow /spec & /pause")
+MACRO_CONFIG_INT(SvRollback, sv_rollback, 1, 0, 1, CFGFLAG_SERVER, "Allow /rollback")
 
 MACRO_CONFIG_INT(SvKZBots, sv_kzbots, 0, 0, MAX_CLIENTS, CFGFLAG_SERVER, "Add KZ Bots")
 MACRO_CONFIG_INT(SvKZBotsAI, sv_kzbots_ai, 0, 0, 99, CFGFLAG_SERVER, "KZ Bots AI (0 = +KZ AI, 1 = Pointer AI)")

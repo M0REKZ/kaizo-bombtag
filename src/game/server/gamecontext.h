@@ -21,6 +21,7 @@
 #include <string>
 
 #include <engine/http.h>
+#include <game/server/kz/rollback.h>
 
 /*
 	Tick
@@ -618,6 +619,8 @@ private:
 	//+KZ
 
 	static void ConMoveKZBot(IConsole::IResult *pResult, void *pUserData);
+	static void ConchainRollback(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConRollback(IConsole::IResult *pResult, void *pUserData);
 
 public:
 	CLayers *Layers() { return &m_Layers; }
@@ -671,6 +674,8 @@ public:
 	void IdentifyClientName(int ClientId, char *pName, int StrSize);
 	virtual void HandleKZBot(int CID, CNetObj_PlayerInput &Input) override; //+KZ
 	int CountPlayersKZ();
+	CRollback m_Rollback; //+KZ
+	virtual void SetPlayerLastAckedSnapshot(int ClientId, int Tick) override; //+KZ
 };
 
 static inline bool CheckClientId(int ClientId)

@@ -46,6 +46,13 @@ void CGameContext::RegisterKZCommands()
 	Console()->Register("resetportals", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConResetPortals, this, "Reset both Portals");
 	Console()->Register("showcrowns", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConShowCrowns, this, "Toggle crowns");
 
+	//rollback command
+	Console()->Register("rollback", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
+	Console()->Register("antilag", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
+	Console()->Register("nolag", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
+
+	Console()->Chain("sv_rollback", ConchainRollback, this);
+
 	Console()->Register("move_kzbot", "s[blue/red]", CFGFLAG_SERVER, ConMoveKZBot, this, "Move KZBot to blue or red team");
 }
 
