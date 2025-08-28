@@ -4671,7 +4671,7 @@ bool CGameContext::IsClientReady(int ClientId) const
 
 bool CGameContext::IsClientPlayer(int ClientId) const
 {
-	if(!str_comp(g_Config.m_SvGametype, "bomb"))
+	if(!str_comp(g_Config.m_SvGametype, "bomb") && !((CServer*)Server())->m_aClients[ClientId].m_KZBot)
 	{
 		CGameControllerBomb *pController = (CGameControllerBomb *)m_pController;
 		return m_apPlayers[ClientId] && pController->m_aPlayers[ClientId].m_State >= CGameControllerBomb::STATE_ACTIVE;
