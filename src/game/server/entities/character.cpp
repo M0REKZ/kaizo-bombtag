@@ -76,10 +76,7 @@ CCharacter::~CCharacter()
 	{
 		Server()->SnapFreeId(m_PortalKindId);
 	}
-}
 
-CCharacter::~CCharacter()
-{
 	if(m_pKZBotAI)
 	{
 		delete m_pKZBotAI;

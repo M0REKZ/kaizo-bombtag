@@ -4,6 +4,7 @@
 #include <engine/shared/config.h>
 #include <engine/shared/linereader.h>
 #include <engine/shared/protocol.h>
+#include <engine/server/server.h>
 #include <game/gamecore.h>
 #include <game/generated/protocol.h>
 #include <game/server/entities/character.h>
@@ -256,13 +257,51 @@ void CGameControllerBomb::SetSkin(CPlayer *pPlayer)
 			pPlayer->m_TeeInfos.m_ColorBody = color_cast<ColorHSLA>(Color).PackAlphaLast(false);
 		}
 	}
-	else
+	else if(!((CServer*)Server())->m_aClients[pPlayer->GetCid()].m_KZBot)
 	{
 		CSkinInfo *pRealSkin = &m_aPlayers[pPlayer->GetCid()].m_RealSkin;
 		str_copy(pPlayer->m_TeeInfos.m_aSkinName, pRealSkin->m_aSkinName, sizeof(pPlayer->m_TeeInfos.m_aSkinName));
 		pPlayer->m_TeeInfos.m_UseCustomColor = pRealSkin->m_UseCustomColor;
 		pPlayer->m_TeeInfos.m_ColorBody = pRealSkin->m_aSkinBodyColor;
 		pPlayer->m_TeeInfos.m_ColorFeet = pRealSkin->m_aSkinFeetColor;
+	}
+	else
+	{
+		str_copy(pPlayer->m_TeeInfos.m_aSkinName, "0_Cyborg Greyfox_KZ", sizeof(pPlayer->m_TeeInfos.m_aSkinName));
+		for(int p = 0; p < protocol7::NUM_SKINPARTS; p++)
+		{
+			pPlayer->m_TeeInfos.m_aUseCustomColors[p] = true;
+
+			if(p==0)
+			{
+				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "fox", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				pPlayer->m_TeeInfos.m_aSkinPartColors[p] = 1769560;
+				continue;
+			}
+
+			if(p==1)
+			{
+				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "warpaint", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				pPlayer->m_TeeInfos.m_aSkinPartColors[p] = 4278190080;
+				continue;
+			}
+			
+			if(p==2)
+			{
+				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "hair", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				continue;
+			}
+
+			if(p==5)
+			{
+				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "negative", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				pPlayer->m_TeeInfos.m_aSkinPartColors[p] = 65408;
+				continue;
+			}
+			
+
+			str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "standard", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+        }
 	}
 }
 

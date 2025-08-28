@@ -1,7 +1,5 @@
 #include "kz_ai.h"
 #include <game/mapitems.h>
-#include <game/server/entities/kz/flag.h>
-#include <game/server/entities/kz/pickup_pvp.h>
 #include <game/server/gamecontext.h>
 #include <game/server/player.h>
 #include <game/server/gamecontroller.h>
@@ -17,9 +15,9 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 	//Spaghetti yummy
 	
 	CCharacter *pClosestChar = nullptr;
-	CPickupPvP *pClosestPickup = nullptr;
-	CFlag *pEnemyFlag = nullptr;
-	CFlag *pTeamFlag = nullptr;
+	//CPickupPvP *pClosestPickup = nullptr;
+	//CFlag *pEnemyFlag = nullptr;
+	//CFlag *pTeamFlag = nullptr;
 	bool targetisup = false;
 	bool dontjump = false;
 	bool butjumpifwall = false;
@@ -32,7 +30,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 	Input.m_Fire = false;
 	
 	//if(str_find_nocase(GameServer()->m_pController->m_pGameType, "CTF"))
-	{
+	/*{
 		CFlag *p = (CFlag *)GameServer()->m_World.FindFirst(CGameWorld::ENTTYPE_FLAG);
 		for(; p; p = (CFlag *)p->TypeNext())
 		{
@@ -79,7 +77,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 		}
 		
 		pClosestPickup = pClosest;
-	}
+	}*/
 	
 	{
 		float ClosestRange = 100000.0f;
@@ -108,7 +106,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 		pClosestChar = pClosest;
 	}
 	
-	if(pEnemyFlag)
+	/*if(pEnemyFlag)
 	{
 		if(pTeamFlag && pEnemyFlag->m_pCarrier == GetCharacter())
 		{
@@ -135,15 +133,15 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 		/*if((pClosestPickup->m_Pos->y + pClosestPickup->GetProximityRadius() * 2.f) < m_pPos->y && !(Collision()->GetCollisionAt(m_pPos->x , m_pPos->y - GetProximityRadius() / 3.f) == TILE_DEATH))
 		{
 			targetisup = true;
-		}*/
-	}
+		}
+	}*/
 	
 	if(pClosestChar)
 	{
 		Input.m_TargetX = pClosestChar->m_Pos.x - m_pPos->x; // aim
 		Input.m_TargetY = pClosestChar->m_Pos.y - m_pPos->y;
 		
-		if(!pClosestPickup && !(pTeamFlag && pEnemyFlag && (pEnemyFlag->m_pCarrier == GetCharacter() || !pEnemyFlag->m_pCarrier)))
+		if(!false && !(false && false && (nullptr == GetCharacter() || !false)))
 		{
 			TargetPos = pClosestChar->m_Pos;
 			TargetPosSet = true;
@@ -170,7 +168,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 			GetCharacter()->SetWeapon(WEAPON_GUN);
 		}
 		
-		if((m_pCore->m_ActiveWeapon == WEAPON_LASER ? (!Collision()->FastIntersectLine(*m_pPos,pClosestChar->m_Pos,nullptr,nullptr) && distance(*m_pPos, pClosestChar->m_Pos) < GameServer()->Tuning()->m_LaserReach) : !Collision()->FastIntersectLine(*m_pPos,pClosestChar->m_Pos,nullptr,nullptr)) || m_pCore->m_aWeapons[WEAPON_NINJA].m_Got)
+		if((m_pCore->m_ActiveWeapon == WEAPON_LASER ? (!Collision()->FastIntersectLine(*m_pPos,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && distance(*m_pPos, pClosestChar->m_Pos) < GameServer()->Tuning()->m_LaserReach) : !Collision()->FastIntersectLine(*m_pPos,pClosestChar->m_Pos,nullptr,nullptr, nullptr)) || m_pCore->m_aWeapons[WEAPON_NINJA].m_Got)
 		{
 			if(!GetCharacter()->GetLatestInputKZ().m_Fire)
 				Input.m_Fire = true;
@@ -187,7 +185,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 			}
 		}
 		
-		if(Collision()->FastIntersectLine(*m_pPos,pClosestChar->m_Pos,nullptr,nullptr) && m_pCore->m_ActiveWeapon == WEAPON_LASER)
+		if(Collision()->FastIntersectLine(*m_pPos,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && m_pCore->m_ActiveWeapon == WEAPON_LASER)
 		{
 			bool fire = false;
 			
@@ -200,26 +198,26 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 			vec2 At, tempvar;
 			
 			//try y first
-			if(Collision()->FastIntersectLine(vec2(m_pPos->x + GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar))
+			if(Collision()->FastIntersectLine(vec2(m_pPos->x + GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar, nullptr))
 			{
 				Collision()->UnIntersectLineKZ(vec2(m_pPos->x + GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),&BouncePos_Right,nullptr);
 				if(!Collision()->IntersectLine(*m_pPos,BouncePos_Right,nullptr,nullptr) && tempvar.x > BouncePos_Right.x)
 					Bounced_Right = true;
 			}
-			if(Collision()->FastIntersectLine(vec2(m_pPos->x - GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar))
+			if(Collision()->FastIntersectLine(vec2(m_pPos->x - GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar, nullptr))
 			{
 				Collision()->UnIntersectLineKZ(vec2(m_pPos->x - GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),&BouncePos_Left,nullptr);
 				if(!Collision()->IntersectLine(*m_pPos,BouncePos_Left,nullptr,nullptr) && tempvar.x < BouncePos_Left.x)
 					Bounced_Left = true;
 			}
 			//try x now
-			if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y + GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&tempvar))
+			if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y + GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&tempvar, nullptr))
 			{
 				Collision()->UnIntersectLineKZ(vec2(halfx + m_pPos->x,m_pPos->y + GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),&BouncePos_Down,nullptr);
 				if(!Collision()->IntersectLine(*m_pPos,BouncePos_Down,nullptr,nullptr) && tempvar.y > BouncePos_Down.y)
 					Bounced_Down = true;
 			}
-			if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y - GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&BouncePos_Up))
+			if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y - GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&BouncePos_Up, nullptr))
 			{
 				Collision()->UnIntersectLineKZ(vec2(halfx + m_pPos->x,m_pPos->y - GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),&BouncePos_Up,nullptr);
 				if(!Collision()->IntersectLine(*m_pPos,BouncePos_Up,nullptr,nullptr) && tempvar.y < BouncePos_Up.y)
@@ -227,13 +225,13 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 			}
 			
 			//try y
-			if(Bounced_Right && (BouncePos_Right.y > (halfy + m_pPos->y) - 5.f && BouncePos_Right.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Right,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Right, vec2(m_pPos->x,m_pPos->y + (BouncePos_Right.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
+			if(Bounced_Right && (BouncePos_Right.y > (halfy + m_pPos->y) - 5.f && BouncePos_Right.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Right,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Right, vec2(m_pPos->x,m_pPos->y + (BouncePos_Right.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
 			{
 				Input.m_TargetX = BouncePos_Right.x - m_pPos->x; // aim
 				Input.m_TargetY = BouncePos_Right.y - m_pPos->y;
 				fire = true;
 			}
-			else if(Bounced_Left && (BouncePos_Left.y > (halfy + m_pPos->y) - 5.f && BouncePos_Left.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Left,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Left, vec2(m_pPos->x,m_pPos->y + (BouncePos_Left.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
+			else if(Bounced_Left && (BouncePos_Left.y > (halfy + m_pPos->y) - 5.f && BouncePos_Left.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Left,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Left, vec2(m_pPos->x,m_pPos->y + (BouncePos_Left.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
 			{
 				Input.m_TargetX = BouncePos_Left.x - m_pPos->x; // aim
 				Input.m_TargetY = BouncePos_Left.y - m_pPos->y;
@@ -241,13 +239,13 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 			}
 				
 			//try x
-			if(Bounced_Up && (BouncePos_Up.x > (halfx + m_pPos->x) - 5.f && BouncePos_Up.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Up,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Up, vec2(m_pPos->x + (BouncePos_Up.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
+			if(Bounced_Up && (BouncePos_Up.x > (halfx + m_pPos->x) - 5.f && BouncePos_Up.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Up,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Up, vec2(m_pPos->x + (BouncePos_Up.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
 			{
 				Input.m_TargetX = BouncePos_Up.x - m_pPos->x; // aim
 				Input.m_TargetY = BouncePos_Up.y - m_pPos->y;
 				fire = true;
 			}
-			else if(Bounced_Down && (BouncePos_Down.x > (halfx + m_pPos->x) - 5.f && BouncePos_Down.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Down,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Down, vec2(m_pPos->x + (BouncePos_Down.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
+			else if(Bounced_Down && (BouncePos_Down.x > (halfx + m_pPos->x) - 5.f && BouncePos_Down.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Down,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Down, vec2(m_pPos->x + (BouncePos_Down.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
 			{
 				Input.m_TargetX = BouncePos_Down.x - m_pPos->x; // aim
 				Input.m_TargetY = BouncePos_Down.y - m_pPos->y;
@@ -301,26 +299,26 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				//vec2 At, tempvar;
 				
 				//try y first
-				if(Collision()->FastIntersectLine(vec2(m_pPos->x + GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar))
+				if(Collision()->FastIntersectLine(vec2(m_pPos->x + GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar, nullptr))
 				{
 					Collision()->UnIntersectLineKZ(vec2(m_pPos->x + GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),&BouncePos_Right,nullptr);
 					if(!Collision()->IntersectLine(*m_pPos,BouncePos_Right,nullptr,nullptr) && tempvar.x > BouncePos_Right.x)
 						Bounced_Right = true;
 				}
-				if(Collision()->FastIntersectLine(vec2(m_pPos->x - GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar))
+				if(Collision()->FastIntersectLine(vec2(m_pPos->x - GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),nullptr,&tempvar, nullptr))
 				{
 					Collision()->UnIntersectLineKZ(vec2(m_pPos->x - GameServer()->Tuning()->m_LaserReach / 2.f,halfy + m_pPos->y),vec2(m_pPos->x,halfy + m_pPos->y),&BouncePos_Left,nullptr);
 					if(!Collision()->IntersectLine(*m_pPos,BouncePos_Left,nullptr,nullptr) && tempvar.x < BouncePos_Left.x)
 						Bounced_Left = true;
 				}
 				//try x now
-				if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y + GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&tempvar))
+				if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y + GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&tempvar, nullptr))
 				{
 					Collision()->UnIntersectLineKZ(vec2(halfx + m_pPos->x,m_pPos->y + GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),&BouncePos_Down,nullptr);
 					if(!Collision()->IntersectLine(*m_pPos,BouncePos_Down,nullptr,nullptr) && tempvar.y > BouncePos_Down.y)
 						Bounced_Down = true;
 				}
-				if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y - GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&BouncePos_Up))
+				if(Collision()->FastIntersectLine(vec2(halfx + m_pPos->x,m_pPos->y - GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),nullptr,&BouncePos_Up, nullptr))
 				{
 					Collision()->UnIntersectLineKZ(vec2(halfx + m_pPos->x,m_pPos->y - GameServer()->Tuning()->m_LaserReach / 2.f),vec2(halfx + m_pPos->x,m_pPos->y),&BouncePos_Up,nullptr);
 					if(!Collision()->IntersectLine(*m_pPos,BouncePos_Up,nullptr,nullptr) && tempvar.y < BouncePos_Up.y)
@@ -328,13 +326,13 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				}
 				
 				//try y
-				if(Bounced_Right && (BouncePos_Right.y > (halfy + m_pPos->y) - 5.f && BouncePos_Right.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Right,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Right, vec2(m_pPos->x,m_pPos->y + (BouncePos_Right.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
+				if(Bounced_Right && (BouncePos_Right.y > (halfy + m_pPos->y) - 5.f && BouncePos_Right.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Right,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Right, vec2(m_pPos->x,m_pPos->y + (BouncePos_Right.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
 				{
 					Input.m_TargetX = BouncePos_Right.x - m_pPos->x; // aim
 					Input.m_TargetY = BouncePos_Right.y - m_pPos->y;
 					fire = true;
 				}
-				else if(Bounced_Left && (BouncePos_Left.y > (halfy + m_pPos->y) - 5.f && BouncePos_Left.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Left,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Left, vec2(m_pPos->x,m_pPos->y + (BouncePos_Left.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
+				else if(Bounced_Left && (BouncePos_Left.y > (halfy + m_pPos->y) - 5.f && BouncePos_Left.y < (halfy + m_pPos->y) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Left,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Left, vec2(m_pPos->x,m_pPos->y + (BouncePos_Left.y - m_pPos->y)*2), 0.f, At, GetCharacter()))
 				{
 					Input.m_TargetX = BouncePos_Left.x - m_pPos->x; // aim
 					Input.m_TargetY = BouncePos_Left.y - m_pPos->y;
@@ -342,13 +340,13 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				}
 					
 				//try x
-				if(Bounced_Up && (BouncePos_Up.x > (halfx + m_pPos->x) - 5.f && BouncePos_Up.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Up,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Up, vec2(m_pPos->x + (BouncePos_Up.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
+				if(Bounced_Up && (BouncePos_Up.x > (halfx + m_pPos->x) - 5.f && BouncePos_Up.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Up,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Up, vec2(m_pPos->x + (BouncePos_Up.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
 				{
 					Input.m_TargetX = BouncePos_Up.x - m_pPos->x; // aim
 					Input.m_TargetY = BouncePos_Up.y - m_pPos->y;
 					fire = true;
 				}
-				else if(Bounced_Down && (BouncePos_Down.x > (halfx + m_pPos->x) - 5.f && BouncePos_Down.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Down,pClosestChar->m_Pos,nullptr,nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Down, vec2(m_pPos->x + (BouncePos_Down.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
+				else if(Bounced_Down && (BouncePos_Down.x > (halfx + m_pPos->x) - 5.f && BouncePos_Down.x < (halfx + m_pPos->x) + 5.f) && !Collision()->FastIntersectLine(BouncePos_Down,pClosestChar->m_Pos,nullptr,nullptr, nullptr) && GameServer()->m_World.IntersectCharacter(BouncePos_Down, vec2(m_pPos->x + (BouncePos_Down.x - m_pPos->x)*2,m_pPos->y), 0.f, At, GetCharacter()))
 				{
 					Input.m_TargetX = BouncePos_Down.x - m_pPos->x; // aim
 					Input.m_TargetY = BouncePos_Down.y - m_pPos->y;
@@ -384,7 +382,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 					dontjump = true;
 					butjumpifwall = true;
 				}
-				if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr)))
+				if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr,nullptr)))
 				{
 					//danger no floor, remove directionsmart
 					m_TryingOppositeSmart = m_TryingDirectionSmart = 0;
@@ -398,11 +396,11 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				
 				if(TargetPos.y < m_pPos->y)
 				{
-					left = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-400.f,-400.f),nullptr,nullptr);
+					left = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-400.f,-400.f),nullptr,nullptr, nullptr);
 					//middle = Collision()->IntersectLine(*m_pPos,*m_pPos + vec2(0,-350.f),nullptr,nullptr);
-					right = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(400.f,-400.f),nullptr,nullptr);
+					right = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(400.f,-400.f),nullptr,nullptr, nullptr);
 					
-					if(left && right && !m_TryingDirectionSmart && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0,-350.f),nullptr,nullptr))//middle
+					if(left && right && !m_TryingDirectionSmart && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0,-350.f),nullptr,nullptr, nullptr))//middle
 					{
 						Input.m_Direction = TargetPos.x > m_pPos->x ? 1 : -1;
 						targetisup = true;
@@ -467,11 +465,11 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				}
 				else
 				{
-					left = Collision()->FastIntersectLine(*m_pPos + vec2(-100.f,0),*m_pPos + vec2(-100.f,-100.f),nullptr,nullptr);
+					left = Collision()->FastIntersectLine(*m_pPos + vec2(-100.f,0),*m_pPos + vec2(-100.f,-100.f),nullptr,nullptr, nullptr);
 					//middle = Collision()->IntersectLine(*m_pPos + vec2(0,0),*m_pPos + vec2(0,-100.f),nullptr,nullptr);
-					right = Collision()->FastIntersectLine(*m_pPos + vec2(100.f,0),*m_pPos + vec2(100.f,-100.f),nullptr,nullptr);
+					right = Collision()->FastIntersectLine(*m_pPos + vec2(100.f,0),*m_pPos + vec2(100.f,-100.f),nullptr,nullptr, nullptr);
 					
-					if(left && right && !m_TryingDirectionSmart && !Collision()->FastIntersectLine(*m_pPos + vec2(0,0),*m_pPos + vec2(0,-100.f),nullptr,nullptr))//middle
+					if(left && right && !m_TryingDirectionSmart && !Collision()->FastIntersectLine(*m_pPos + vec2(0,0),*m_pPos + vec2(0,-100.f),nullptr,nullptr, nullptr))//middle
 					{
 						m_TryingDirectionSmart = TargetPos.x > m_pPos->x ? 1 : -1;
 					}
@@ -495,11 +493,11 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 						
 						if(!m_TryingDirectionSmart)
 						{
-							if(!(leftside = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-1000.f,0),nullptr,&leftcol)))
+							if(!(leftside = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-1000.f,0),nullptr,&leftcol, nullptr)))
 							{
 								m_TryingDirectionSmart = -1;
 							}
-							else if(!(rightside = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(1000.f,0),nullptr,&rightcol)))
+							else if(!(rightside = Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(1000.f,0),nullptr,&rightcol, nullptr)))
 							{
 								m_TryingDirectionSmart = 1;
 							}
@@ -538,21 +536,21 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 					//middle = Collision()->IntersectLine(*m_pPos,*m_pPos + vec2(150.f,0),nullptr,nullptr);
 					//down = Collision()->IntersectLine(*m_pPos,*m_pPos + vec2(100.f,100.f),nullptr,nullptr)  || Collision()->IntersectLine(*m_pPos + vec2(0,100.f),*m_pPos + vec2(50.f,150.f),nullptr,nullptr);
 					
-					if(!Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(100.f,0),nullptr,nullptr))//middle
+					if(!Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(100.f,0),nullptr,nullptr, nullptr))//middle
 					{
 						Input.m_Direction = 1;
 						dontjump = true;
 						jumpifgoingtofall = true;
 						butjumpifwall = true;
 					}
-					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(50.f,50.f),nullptr,nullptr))  || !(Collision()->IntersectLine(*m_pPos + vec2(0,100.f),*m_pPos + vec2(50.f,150.f),nullptr,nullptr)))//down
+					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(50.f,50.f),nullptr,nullptr, nullptr))  || !(Collision()->IntersectLine(*m_pPos + vec2(0,100.f),*m_pPos + vec2(50.f,150.f),nullptr,nullptr)))//down
 					{
 						Input.m_Direction = 1;
 						jumpifgoingtofall = true;
 						dontjump = true;
 						butjumpifwall = true;
 					}
-					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(50.f,-50.f),nullptr,nullptr)) || !(Collision()->IntersectLine(*m_pPos + vec2(0,-100.f),*m_pPos + vec2(50.f,-150.f),nullptr,nullptr)))//up
+					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(50.f,-50.f),nullptr,nullptr, nullptr)) || !(Collision()->IntersectLine(*m_pPos + vec2(0,-100.f),*m_pPos + vec2(50.f,-150.f),nullptr,nullptr)))//up
 					{
 						Input.m_Direction = 1;
 						targetisup = true;
@@ -562,8 +560,8 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 						if(!m_TryingDirectionSmart)
 						{
 							bool upside = false, downside = false;
-							downside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/2,0),*m_pPos + vec2(0,300.f),nullptr,nullptr);
-							upside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/2,0),*m_pPos + vec2(0,-150.f),nullptr,nullptr);
+							downside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/2,0),*m_pPos + vec2(0,300.f),nullptr,nullptr,nullptr);
+							upside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/2,0),*m_pPos + vec2(0,-150.f),nullptr,nullptr,nullptr);
 							if(!upside)
 							{
 								targetisup = true;
@@ -583,21 +581,21 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 					//middle = Collision()->IntersectLine(*m_pPos,*m_pPos + vec2(-150.f,0),nullptr,nullptr);
 					//down = Collision()->IntersectLine(*m_pPos,*m_pPos + vec2(-100.f,100.f),nullptr,nullptr)  || Collision()->IntersectLine(*m_pPos + vec2(0,100.f),*m_pPos + vec2(-50.f,150.f),nullptr,nullptr);
 					
-					if(!Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-100.f,0),nullptr,nullptr))//middle
+					if(!Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-100.f,0),nullptr,nullptr, nullptr))//middle
 					{
 						Input.m_Direction = -1;
 						jumpifgoingtofall = true;
 						dontjump = true;
 						butjumpifwall = true;
 					}
-					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-50.f,100.f),nullptr,nullptr))  || !(Collision()->FastIntersectLine(*m_pPos + vec2(0,100.f),*m_pPos + vec2(-50.f,150.f),nullptr,nullptr)))//down
+					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-50.f,100.f),nullptr,nullptr, nullptr))  || !(Collision()->FastIntersectLine(*m_pPos + vec2(0,100.f),*m_pPos + vec2(-50.f,150.f),nullptr,nullptr, nullptr)))//down
 					{
 						Input.m_Direction = -1;
 						jumpifgoingtofall = true;
 						dontjump = true;
 						butjumpifwall = true;
 					}
-					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-50.f,-100.f),nullptr,nullptr)) || !(Collision()->FastIntersectLine(*m_pPos + vec2(0,-100.f),*m_pPos + vec2(-50.f,-150.f),nullptr,nullptr)))//up
+					else if(!(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-50.f,-100.f),nullptr,nullptr, nullptr)) || !(Collision()->FastIntersectLine(*m_pPos + vec2(0,-100.f),*m_pPos + vec2(-50.f,-150.f),nullptr,nullptr, nullptr)))//up
 					{
 						Input.m_Direction = -1;
 						targetisup = true;
@@ -607,8 +605,8 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 						if(!m_TryingDirectionSmart)
 						{
 							bool upside = false, downside = false;
-							downside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/-2,0),*m_pPos + vec2(0,300.f),nullptr,nullptr);
-							upside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/-2,0),*m_pPos + vec2(0,-150.f),nullptr,nullptr);
+							downside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/-2,0),*m_pPos + vec2(0,300.f),nullptr,nullptr, nullptr);
+							upside = Collision()->FastIntersectLine(*m_pPos + vec2(GetCharacter()->GetProximityRadius()/-2,0),*m_pPos + vec2(0,-150.f),nullptr,nullptr, nullptr);
 							if(!upside)
 							{
 								targetisup = true;
@@ -657,7 +655,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 
 		if(((GetCharacter()->GetWeaponGot(WEAPON_GRENADE) && GetCharacter()->GetWeaponAmmo(WEAPON_GRENADE)) || (/*g_Config.m_SvLaserJump && */false && GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))) && (/*GameServer()->m_pController->m_IsInstagibKZ || */GetCharacter()->GetHealthKZ() >= 10 || (GetCharacter()->GetHealthKZ() >= 5 && GetCharacter()->GetArmor() >= 5)))
 		{
-			if(m_pCore->m_Jumps > 0 && TargetPos.x > m_pPos->x - 300.f && TargetPos.x < m_pPos->x + 300.f && TargetPos.y < m_pPos->y - 150.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,-300.f),nullptr,nullptr))
+			if(m_pCore->m_Jumps > 0 && TargetPos.x > m_pPos->x - 300.f && TargetPos.x < m_pPos->x + 300.f && TargetPos.y < m_pPos->y - 150.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,-300.f),nullptr,nullptr, nullptr))
 			{
 				m_DoGrenadeJump = true;
 				Input.m_Jump = true;
@@ -666,7 +664,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				//else if(g_Config.m_SvLaserJump && GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))
 				//	GetCharacter()->SetActiveWeapon(WEAPON_LASER);
 			}
-			else if(TargetPos.x < m_pPos->x - 700.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-300.f,0.f),nullptr,nullptr))
+			else if(TargetPos.x < m_pPos->x - 700.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-300.f,0.f),nullptr,nullptr, nullptr))
 			{
 				Input.m_TargetX = 1;
 				Input.m_TargetY = 1;
@@ -676,7 +674,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 				//else if(g_Config.m_SvLaserJump && GetCharacter()->GetWeaponGot(WEAPON_LASER) && GetCharacter()->GetWeaponAmmo(WEAPON_LASER))
 				//	GetCharacter()->SetActiveWeapon(WEAPON_LASER);
 			}
-			else if(TargetPos.x > m_pPos->x + 700.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(300.f,0.f),nullptr,nullptr))
+			else if(TargetPos.x > m_pPos->x + 700.f && GetCharacter()->IsGrounded() && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(300.f,0.f),nullptr,nullptr, nullptr))
 			{
 				Input.m_TargetX = -1;
 				Input.m_TargetY = 1;
@@ -689,7 +687,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 		}
 	}
 	
-	if(m_TryingDirectionSmart && !Collision()->FastIntersectLine(*m_pPos,TargetPos,nullptr,nullptr))
+	if(m_TryingDirectionSmart && !Collision()->FastIntersectLine(*m_pPos,TargetPos,nullptr,nullptr, nullptr))
 	{
 		m_TryingOppositeSmart = m_TryingDirectionSmart = 0;
 		m_StopUntilTouchGround = true;
@@ -714,12 +712,12 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 		}
 	}
 
-	if(!m_pCore->m_Jumps && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr))
+	if(!m_pCore->m_Jumps && !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr, nullptr))
 	{
 		vec2 right,left;
 
-		Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(1000.f,1000.f),&right,nullptr);
-		Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-1000.f,1000.f),&left,nullptr);
+		Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(1000.f,1000.f),&right,nullptr, nullptr);
+		Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(-1000.f,1000.f),&left,nullptr, nullptr);
 
 		float rightlength = right.x - m_pPos->x;
 		float leftlength = m_pPos->x - left.x;
@@ -740,7 +738,7 @@ void CKZBotAI::HandleInput(CNetObj_PlayerInput &Input)
 	
 	
 	//HELP
-	if(!m_DoGrenadeJump && ((jumpifgoingtofall ? !(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr)) : false) || (butjumpifwall ? m_pCore->m_Colliding : false) || (!dontjump && ((Collision()->GetCollisionAt(m_pPos->x , m_pPos->y + GetCharacter()->GetProximityRadius() / 3.f) == TILE_DEATH) || !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr) || m_pCore->m_Colliding || (((Collision()->CheckPoint(m_pPos->x + GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)) && !(Collision()->CheckPoint(m_pPos->x - GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)))) || ((!(Collision()->CheckPoint(m_pPos->x + GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)) && (Collision()->CheckPoint(m_pPos->x - GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)))) || targetisup))))
+	if(!m_DoGrenadeJump && ((jumpifgoingtofall ? !(Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr, nullptr)) : false) || (butjumpifwall ? m_pCore->m_Colliding : false) || (!dontjump && ((Collision()->GetCollisionAt(m_pPos->x , m_pPos->y + GetCharacter()->GetProximityRadius() / 3.f) == TILE_DEATH) || !Collision()->FastIntersectLine(*m_pPos,*m_pPos + vec2(0.f,1000.f),nullptr,nullptr, nullptr) || m_pCore->m_Colliding || (((Collision()->CheckPoint(m_pPos->x + GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)) && !(Collision()->CheckPoint(m_pPos->x - GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)))) || ((!(Collision()->CheckPoint(m_pPos->x + GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)) && (Collision()->CheckPoint(m_pPos->x - GetCharacter()->GetProximityRadius() / 2, m_pPos->y + GetCharacter()->GetProximityRadius() / 2 + 5)))) || targetisup))))
 	{
 		if(GetCharacter()->IsGrounded() || (m_pCore->m_Jumps > 0 && m_pCore->m_Vel.y > 0))
 			Input.m_Jump = true;

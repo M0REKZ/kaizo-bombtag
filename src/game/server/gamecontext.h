@@ -654,6 +654,21 @@ public:
 	void SendGameMsg(int GameMsgId, int ParaI1, int ClientId) const;
 	void SendGameMsg(int GameMsgId, int ParaI1, int ParaI2, int ParaI3, int ClientId) const;
 
+	void CreateMapSoundEvent(vec2 Pos, int Id, CClientMask Mask = CClientMask().set());
+	void CreateMapSoundEventForClient(vec2 Pos, int Id, int ClientId, CClientMask Mask = CClientMask().set());
+
+	void RegisterKZCommands();
+
+	static void ConRejoinShutdown(IConsole::IResult *pResult, void *pUserData);
+	static void ConPortalGun(IConsole::IResult *pResult, void *pUserData);
+	static void ConUnPortalGun(IConsole::IResult *pResult, void *pUserData);
+	static void ConGetPortalGun(IConsole::IResult *pResult, void *pUserData);
+	static void ConOrangePortal(IConsole::IResult *pResult, void *pUserData);
+	static void ConBluePortal(IConsole::IResult *pResult, void *pUserData);
+	static void ConResetPortals(IConsole::IResult *pResult, void *pUserData);
+	static void ConShowCrowns(IConsole::IResult *pResult, void *pUserData);
+
+	void IdentifyClientName(int ClientId, char *pName, int StrSize);
 	virtual void HandleKZBot(int CID, CNetObj_PlayerInput &Input) override; //+KZ
 	int CountPlayersKZ();
 };
