@@ -1394,6 +1394,24 @@ void CCharacter::Snap(int SnappingClient)
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
 	bool Sixup = Server()->IsSixup(SnappingClient);
 
+	if(Id == SnappingClient && m_Core.m_pHookedQuad && !m_DidHookedQuadSound)
+	{
+		switch (Collision()->QuadTypeToTileId(m_Core.m_pHookedQuad->m_Type))
+		{
+		case TILE_SOLID:
+			GameServer()->CreateSound(m_Pos, SOUND_HOOK_ATTACH_GROUND, TeamMask());
+			break;
+		case TILE_NOHOOK:
+			GameServer()->CreateSound(m_Pos, SOUND_HOOK_NOATTACH, TeamMask());
+			break;
+		}
+		m_DidHookedQuadSound = true;
+	}
+	else if(!m_Core.m_pHookedQuad)
+	{
+		m_DidHookedQuadSound = false;
+	}
+
 	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
 	{
 				vec2 postemp;

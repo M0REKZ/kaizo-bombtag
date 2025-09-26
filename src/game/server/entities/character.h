@@ -296,6 +296,7 @@ public:
 	bool m_StillPressingFire = false;
 	bool m_SpecTile = false;
 	vec2 m_SpecTilePos = vec2(0,0);
+	bool m_DidHookedQuadSound = false;
 
 	struct
 	{
