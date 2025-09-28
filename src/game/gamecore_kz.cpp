@@ -98,6 +98,7 @@ bool CCharacterCore::HandleKZTileOnMoveBox(vec2 *pMoveBoxPos, vec2 *pMoveBoxVel,
 
 			m_SendCoreThisTick = true;
 			m_DontCheckPlayerCollisionOnThisMove = true;
+			m_ServerResetPrevPos = true;
 		}
 	}
 

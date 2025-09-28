@@ -904,7 +904,9 @@ bool CCollision::HandlePortalCollision(vec2 &InOutPos, vec2 &InOutVel, CCharacte
 			{
 				InOutPos = OutPos;
 				InOutVel = OutVel;
+				pCore->m_SendCoreThisTick = true;
 				pCore->m_DontCheckPlayerCollisionOnThisMove = true;
+				pCore->m_ServerResetPrevPos = true;
                 return true;
 			}
         }

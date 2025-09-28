@@ -973,6 +973,12 @@ void CCharacter::TickDeferred()
 	bool StuckAfterQuant = Collision()->TestBox(m_Core.m_Pos, CCharacterCore::PhysicalSizeVec2());
 	m_Pos = m_Core.m_Pos;
 
+	if(m_Core.m_ServerResetPrevPos)
+	{
+		m_PrevPos = m_Pos;
+		m_Core.m_ServerResetPrevPos = false;
+	}
+
 	if(!StuckBefore && (StuckAfterMove || StuckAfterQuant))
 	{
 		// Hackish solution to get rid of strict-aliasing warning
