@@ -775,10 +775,16 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
  * Add config variables for mods below this comment to avoid merge conflicts.
  */
 
+//Kaizo Network config variables by +KZ
+//Starting all configs with sv_kaizo_ to avoid conflicts with DDNet
+//The ones that does not start with sv_kaizo_ are kept for compatibility with old Kaizo Network versions
+//sv_kog_ variables are for compatibility with Gores maps
+
+//Old configs
+
 MACRO_CONFIG_STR(SvChatDiscordWebhook, sv_chat_discord_webhook, 512, "", CFGFLAG_SERVER, "Where to send chat messages written by players")
 MACRO_CONFIG_STR(SvRecordsDiscordWebhook, sv_records_discord_webhook, 512, "", CFGFLAG_SERVER, "Where to send new records notifications")
-MACRO_CONFIG_INT(SvPortalMode, sv_portal_mode, 1, 0, 2, CFGFLAG_SERVER | CFGFLAG_GAME, "Portal spawning behavior (0 = on every tile, 1 = only on allow portal tile, 2 = pprace compatibility)")
-MACRO_CONFIG_INT(SvPortalProjectile, sv_portal_projectile, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Use Kaizo-Insta Portal Projectile instead of Laser")
+MACRO_CONFIG_INT(SvPortalMode, sv_portal_mode, 1, 0, 2, CFGFLAG_SERVER | CFGFLAG_GAME, "Portal spawning behavior (0 = on every tile, 1 = only on allow portal tile, 2 = PPRace compatibility)")
 MACRO_CONFIG_INT(SvPortalLaserReach, sv_portal_laser_reach, 9999, 0, 9999, CFGFLAG_SERVER | CFGFLAG_GAME, "Portal gun laser reach")
 MACRO_CONFIG_INT(SvMaxHealth, sv_max_health, 10, 1, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Max amount of life")
 MACRO_CONFIG_INT(SvDamageLaserCooldown, sv_damage_laser_cooldown, 4, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Cooldown for damage laser")
@@ -787,5 +793,14 @@ MACRO_CONFIG_INT(SvDamageTurretDmg, sv_damage_turret_dmg, 1, 0, 10000, CFGFLAG_S
 MACRO_CONFIG_INT(SvDamageTurretExplosiveDmg, sv_damage_turret_explosive_dmg, 3, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Explosive plasma turret damage")
 MACRO_CONFIG_INT(SvDamageMineDmg, sv_damage_mine_dmg, 3, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Mines damage")
 
+//New configs
+
+MACRO_CONFIG_STR(SvKaizoNetworkName, sv_kaizo_network_name, 32, "Kaizo Network", CFGFLAG_SERVER, "Network name for \"--- Welcome to ? ---\" message")
+MACRO_CONFIG_STR(SvKaizoSecretMap, sv_kaizo_secret_map, 16, "", CFGFLAG_SERVER, "If set, replaces map name in server browser")
+
+//Compat configs
+
+//SvPortalMode has a PPRace compatibility option
+MACRO_CONFIG_INT(SvPortalProjectile, sv_portal_projectile, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Kaizo-Insta compatibility: Use Portal Projectile instead of Laser")
 MACRO_CONFIG_INT(SvGoresQuadsEnable, sv_kog_qquads_enable, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Gores compatibility: Moving tiles")
 MACRO_CONFIG_INT(SvGoresGrenadeTele, sv_kog_grenade_tele, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Gores compatibility: Teleport grenade")

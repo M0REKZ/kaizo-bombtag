@@ -2696,7 +2696,7 @@ void CServer::UpdateRegisterServerInfo()
 	JsonWriter.WriteAttribute("map");
 	JsonWriter.BeginObject();
 	JsonWriter.WriteAttribute("name");
-	JsonWriter.WriteStrValue(GetMapName());
+	JsonWriter.WriteStrValue(Config()->m_SvKaizoSecretMap[0] ? Config()->m_SvKaizoSecretMap : GetMapName());
 	JsonWriter.WriteAttribute("sha256");
 	JsonWriter.WriteStrValue(aMapSha256);
 	JsonWriter.WriteAttribute("size");

@@ -21,12 +21,21 @@
 #include <game/server/entities/kz/mine.h>
 
 #define GAME_TYPE_NAME "Kaizo"
-#define TEST_TYPE_NAME "TestKaizo"
+#define TEST_TYPE_NAME "Kaizo (Test)"
+#define GORES_TYPE_NAME "K-Gores"
+#define TEST_GORES_TYPE_NAME "K-Gores (Test)"
 
 CGameControllerKZ::CGameControllerKZ(class CGameContext *pGameServer) :
 	CGameControllerDDRace(pGameServer)
 {
-	m_pGameType = g_Config.m_SvTestingCommands ? TEST_TYPE_NAME : GAME_TYPE_NAME;
+	if(!str_comp_nocase(Config()->m_SvGametype, "gores") || !str_comp_nocase(Config()->m_SvGametype, "k-gores") || !str_comp_nocase(Config()->m_SvGametype, "kgores"))
+	{
+		m_pGameType = g_Config.m_SvTestingCommands ? TEST_GORES_TYPE_NAME : GORES_TYPE_NAME;
+	}
+	else
+	{
+		m_pGameType = g_Config.m_SvTestingCommands ? TEST_TYPE_NAME : GAME_TYPE_NAME;
+	}
 	m_GameFlags = protocol7::GAMEFLAG_RACE | protocol7::GAMEFLAG_FLAGS;
 
 	m_apFlags[0] = 0;
@@ -94,7 +103,9 @@ void CGameControllerKZ::OnCharacterSpawn(class CCharacter *pChr)
 	if(pChr && pChr->GetPlayer() && !pChr->GetPlayer()->m_SentKZWelcomeMsg)
 	{
 		pChr->GetPlayer()->m_SentKZWelcomeMsg = true;
-		GameServer()->SendBroadcast("--- Welcome to Kaizo Network! ---", pChr->GetPlayer()->GetCid());
+		char aWelcome[70] = {'\0'};
+		str_format(aWelcome, sizeof(aWelcome), "--- Welcome to %s! ---", g_Config.m_SvKaizoNetworkName);
+		GameServer()->SendBroadcast(aWelcome, pChr->GetPlayer()->GetCid());
 	}
 }
 
