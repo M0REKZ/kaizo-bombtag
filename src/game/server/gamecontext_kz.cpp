@@ -324,19 +324,10 @@ void CGameContext::ConResetPortals(IConsole::IResult *pResult, void *pUserData)
 		return;
 
 
-	for(CPortalKZ* p = (CPortalKZ*)pSelf->m_World.FindFirst(CGameWorld::CUSTOM_ENTTYPE_PORTAL);p;p = (CPortalKZ*)p->TypeNext())
-	{
-		if(p->m_Owner == ClientID)
-		{
-			p->Reset();
-			CPortalKZ* p2 = p->GetOtherPortal();
-			if(p2)
-			{
-				p2->Reset();
-			}
-			return;
-		}
-	}
+	if(!pSelf->m_apPlayers[ClientID]->GetCharacter())
+		return;
+
+	pSelf->m_apPlayers[ClientID]->GetCharacter()->ResetPortals();
 }
 
 void CGameContext::ConShowCrowns(IConsole::IResult *pResult, void *pUserData)

@@ -1837,6 +1837,12 @@ void CCharacter::HandleTiles(int Index)
 		m_Core.m_LiveFrozen = false;
 	}
 
+	//+KZ PPRace compat
+	if(g_Config.m_SvPortalMode == 2 && (m_TileIndex == TILE_LUNFREEZE || m_TileFIndex == TILE_LUNFREEZE))
+	{
+		ResetPortals();
+	}
+
 	// endless hook
 	if(((m_TileIndex == TILE_EHOOK_ENABLE) || (m_TileFIndex == TILE_EHOOK_ENABLE)))
 	{
@@ -2810,19 +2816,7 @@ void CCharacter::HandleKZTiles()
 
 	if((pKZTile && pKZTile->m_Index == KZ_TILE_PORTAL_RESET) || (pKZTileFront && pKZTileFront->m_Index == KZ_TILE_PORTAL_RESET))
 	{
-		for(CPortalKZ* p = (CPortalKZ*)GameWorld()->FindFirst(CGameWorld::CUSTOM_ENTTYPE_PORTAL);p;p = (CPortalKZ*)p->TypeNext())
-		{
-			if(p->m_Owner == m_pPlayer->GetCid())
-			{
-				p->Reset();
-				CPortalKZ* p2 = p->GetOtherPortal();
-				if(p2)
-				{
-					p2->Reset();
-				}
-				break;
-			}
-		}
+		ResetPortals();
 	}
 
 	if(pKZTile && pKZTile->m_Index == KZ_TILE_SOUND_PLAY && m_LastSoundPlayed != pKZTile->m_Value1 && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
@@ -3139,6 +3133,23 @@ void CCharacter::HandleQuads()
 					}
 				}
 				return;
+			}
+			break;
+		}
+	}
+}
+
+void CCharacter::ResetPortals()
+{
+	for(CPortalKZ *p = (CPortalKZ *)GameWorld()->FindFirst(CGameWorld::CUSTOM_ENTTYPE_PORTAL); p; p = (CPortalKZ *)p->TypeNext())
+	{
+		if(p->m_Owner == m_pPlayer->GetCid())
+		{
+			p->Reset();
+			CPortalKZ *p2 = p->GetOtherPortal();
+			if(p2)
+			{
+				p2->Reset();
 			}
 			break;
 		}
