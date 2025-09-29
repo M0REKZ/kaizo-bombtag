@@ -3090,7 +3090,7 @@ void CCharacter::HandleQuads()
 {
 	std::vector<SKZQuadData *> apQuads = Collision()->GetQuadsAt(m_Pos);
 
-	for(int i = 0; i < apQuads.size(); i++)
+	for(std::vector<SKZQuadData *>::size_type i = 0; i < apQuads.size(); i++)
 	{
 		switch (Collision()->QuadTypeToTileId(apQuads[i]->m_Type))
 		{

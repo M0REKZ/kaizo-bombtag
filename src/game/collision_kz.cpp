@@ -1072,7 +1072,7 @@ bool CCollision::TestBoxKZ(vec2 OrigPos, vec2 *pInOutPos, vec2 *pInOutVel, vec2 
 
 void CCollision::UpdateQuadCache()
 {
-	for(int i = 0; i < m_aKZQuads.size(); i++)
+	for(std::vector<SKZQuadData>::size_type i = 0; i < m_aKZQuads.size(); i++)
 	{
 
 		//Get moved quad pos
@@ -1105,7 +1105,7 @@ std::vector<SKZQuadData *> CCollision::GetQuadsAt(vec2 Pos)
 {
 	std::vector<SKZQuadData *> apQuads;
 
-	for(int i = 0; i < m_aKZQuads.size(); i++)
+	for(std::vector<SKZQuadData>::size_type i = 0; i < m_aKZQuads.size(); i++)
 	{
 		if(OutOfRange(Pos.x, m_aKZQuads[i].m_CachedPos[0].x, m_aKZQuads[i].m_CachedPos[1].x, m_aKZQuads[i].m_CachedPos[2].x, m_aKZQuads[i].m_CachedPos[3].x))
 			continue;
@@ -1157,7 +1157,7 @@ void CCollision::PushBoxOutsideQuads(vec2 *pPos, vec2 *pInOutVel, vec2 Size, CCh
 	do
 	{
 		bool docontinue;
-		for(int i = 0; i < m_aKZQuads.size(); i++)
+		for(std::vector<SKZQuadData>::size_type i = 0; i < m_aKZQuads.size(); i++)
 		{
 			if(needboxupdate)
 			{
@@ -1227,19 +1227,19 @@ void CCollision::PushBoxOutsideQuads(vec2 *pPos, vec2 *pInOutVel, vec2 Size, CCh
 			
 				int found = -1;
 
-				for(int i = 0; i < 4; i++)
+				for(int k = 0; k < 4; k++)
 				{
-					if(!intersected[i])
+					if(!intersected[k])
 						continue;
 
-					if(intersected[i] && found == -1)
+					if(intersected[k] && found == -1)
 					{
-						found = i;
+						found = k;
 					}
 
-					if(found != -1 && intersected[i] && distance(*pPos, intersect[found]) > distance(*pPos, intersect[i]))
+					if(found != -1 && intersected[k] && distance(*pPos, intersect[found]) > distance(*pPos, intersect[k]))
 					{
-						found = i;
+						found = k;
 					}
 				}
 
@@ -1572,7 +1572,7 @@ SKZQuadData * CCollision::IntersectQuad(vec2 From, vec2 To, vec2 *pOut, vec2 *pL
 {
 	SKZQuadData * pQuad = nullptr;
 
-	for(int i = 0; i < m_aKZQuads.size(); i++)
+	for(std::vector<SKZQuadData>::size_type i = 0; i < m_aKZQuads.size(); i++)
 	{
 		if(m_aKZQuads[i].m_Type != KZQUADTYPE_HOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_UNHOOK)
 			continue;
@@ -1772,7 +1772,9 @@ void CCollision::GetAnimationTransform(float GlobalTime, int Env, vec2 &Position
 	
 	int Start, Num;
 	m_pLayers->Map()->GetType(MAPITEMTYPE_ENVELOPE, &Start, &Num);
-	if(Env >= Num)
+	if(Env >= Num || Env < 0)
+		return;
+	if(Num <= 0)
 		return;
 	CMapItemEnvelope *pItem = (CMapItemEnvelope *)m_pLayers->Map()->GetItem(Start+Env, 0, 0);
 	
