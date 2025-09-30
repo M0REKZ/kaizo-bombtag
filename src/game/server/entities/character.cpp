@@ -2906,7 +2906,7 @@ void CCharacter::HandleKZTiles()
 
 		if(!IsSuper() && pKZTile->m_Index == KZ_GAMETILE_HITTABLE_SWITCH && pKZTile->m_Number)
 		{
-			if(!(Server()->Tick() % Server()->TickSpeed()))
+			if(!(Server()->Tick() % Server()->TickSpeed()) && !BitWiseAndInt64(pKZTile->m_Value3,KZ_HITTABLE_SWITCH_FLAG_NO_HAMMER))
 			{
 				GameServer()->SendBroadcast("Hammer the button to use it", m_pPlayer->GetCid(), false);
 			}

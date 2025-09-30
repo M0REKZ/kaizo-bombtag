@@ -1355,11 +1355,11 @@ void CCollision::PushBoxOutsideQuads(vec2 *pPos, vec2 *pInOutVel, vec2 Size, CCh
 						pPos->y = finalaltdown - Size.y;
 						if(pInOutVel->y > 0)
 							pInOutVel->y = 0;
+					}
 
-						if(pGrounded && m_aKZQuads[i].m_Type != KZQUADTYPE_STOPA) // set grounded if not stopper quad
-						{
-							*pGrounded = true;
-						}
+					if(pGrounded && m_aKZQuads[i].m_Type != KZQUADTYPE_STOPA) // set grounded if not stopper quad
+					{
+						*pGrounded = true;
 					}
 					needboxupdate = true;
 				}
