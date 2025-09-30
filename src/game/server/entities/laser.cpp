@@ -220,6 +220,8 @@ void CLaser::DoBounce()
 		if(m_Bounces > BounceNum)
 			m_Energy = -1;
 
+		m_ZeroEnergyBounceInLastTick = Distance == 0.0f;
+
 		GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, m_TeamMask);
 		return;
 	}
