@@ -150,25 +150,47 @@ void CProjectile::Tick()
 	vec2 QuadColPos;
 
 	if(g_Config.m_SvGoresQuadsEnable)
-		pQuadData = Collision()->IntersectQuad(PrevPos, CurPos, &QuadColPos);
+		pQuadData = Collision()->IntersectQuadTeleWeapon(PrevPos, CurPos, &QuadColPos);
 	int Collide = GameServer()->Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos, &ParamsKZ); // KZ
+
+	int z = 0; // for teleporting +KZ
 
 	if(ParamsKZ.m_DoResetTick)
 		m_StartTick = Server()->Tick();
+
+	bool handlequad = false;
 
 	//+KZ Quads:
 	if(pQuadData && Collide)
 	{
 		if(distance(PrevPos, QuadColPos) < distance(PrevPos, ColPos))
 		{
-			Collide = TILE_NOHOOK;
-			ColPos = NewPos = QuadColPos;
+			handlequad = true;
 		}
 	}
 	else if(pQuadData)
 	{
-		Collide = TILE_NOHOOK;
-		ColPos = NewPos = QuadColPos;
+		handlequad = true;
+	}
+
+	if(handlequad)
+	{
+		int Index = GameServer()->Collision()->QuadTypeToTileId(pQuadData);
+
+		if(Index == -1) //Kaizo-Insta Quad
+		{
+			Index = pQuadData->m_pQuad->m_ColorEnvOffset;
+		}
+
+		if(pQuadData->m_pQuad && (g_Config.m_SvOldTeleportWeapons ? (Index == TILE_TELEIN) : (Index == TILE_TELEINWEAPON)))
+		{
+			z = pQuadData->m_pQuad->m_aColors[0].r;
+		}
+		else
+		{
+			Collide = TILE_NOHOOK;
+			ColPos = NewPos = QuadColPos;
+		}
 	}
 
 	CCharacter *pTargetChr = nullptr;
@@ -324,11 +346,13 @@ void CProjectile::Tick()
 	}
 
 	int x = GameServer()->Collision()->GetIndex(PrevPos, CurPos);
-	int z;
-	if(g_Config.m_SvOldTeleportWeapons)
-		z = GameServer()->Collision()->IsTeleport(x);
-	else
-		z = GameServer()->Collision()->IsTeleportWeapon(x);
+	if(!z) //+KZ added if(!z)
+	{
+		if(g_Config.m_SvOldTeleportWeapons)
+			z = GameServer()->Collision()->IsTeleport(x);
+		else
+			z = GameServer()->Collision()->IsTeleportWeapon(x);
+	}
 	if(z && !GameServer()->Collision()->TeleOuts(z - 1).empty())
 	{
 		int TeleOut = GameServer()->m_World.m_Core.RandomOr0(GameServer()->Collision()->TeleOuts(z - 1).size());

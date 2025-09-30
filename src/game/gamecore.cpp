@@ -352,7 +352,7 @@ void CCharacterCore::Tick(bool UseInput, bool DoDeferredTick)
 		if(m_pHookedQuad)
 		{
 			m_SendCoreThisTick = true;
-			if(m_pHookedQuad->m_Type == KZQUADTYPE_HOOK)
+			if(m_pHookedQuad->m_Type == KZQUADTYPE_HOOK || (m_pHookedQuad->m_Type == KZQUADTYPE_KAIZOINSTA && m_pHookedQuad->m_pQuad && m_pHookedQuad->m_pQuad->m_ColorEnvOffset == TILE_SOLID))
 			{
 				GoingToHitGround = true;
 				m_HookedQuadPos = NewPos - m_pHookedQuad->m_CachedPos[4];

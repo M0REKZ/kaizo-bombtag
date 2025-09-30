@@ -1121,9 +1121,12 @@ std::vector<SKZQuadData *> CCollision::GetQuadsAt(vec2 Pos)
 	return apQuads;
 }
 
-int CCollision::QuadTypeToTileId(int Type)
+int CCollision::QuadTypeToTileId(SKZQuadData * pQuadData)
 {
-	switch (Type)
+	if(!pQuadData)
+		return TILE_AIR;
+
+	switch (pQuadData->m_Type)
 	{
 	case KZQUADTYPE_FREEZE:
 		return TILE_FREEZE;
@@ -1139,6 +1142,12 @@ int CCollision::QuadTypeToTileId(int Type)
 		return TILE_DEATH;
 	case KZQUADTYPE_CFRM:
 		return TILE_TELECHECKINEVIL;
+	case KZQUADTYPE_KAIZOINSTA: //This one is more complex
+	{
+		if(pQuadData->m_pQuad)
+			return pQuadData->m_pQuad->m_ColorEnvOffset;
+		return -1;
+	}
 	}
 	return TILE_AIR;
 }
@@ -1192,7 +1201,11 @@ void CCollision::PushBoxOutsideQuads(vec2 *pPos, vec2 *pInOutVel, vec2 Size, CCh
 				needboxupdate = false;
 			}
 
-			if(m_aKZQuads[i].m_Type != KZQUADTYPE_HOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_UNHOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_STOPA)
+			if(m_aKZQuads[i].m_Type != KZQUADTYPE_HOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_UNHOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_STOPA && m_aKZQuads[i].m_Type != KZQUADTYPE_KAIZOINSTA)
+				continue;
+			
+			//Kaizo Quads
+			if(m_aKZQuads[i].m_Type == KZQUADTYPE_KAIZOINSTA ? !(m_aKZQuads[i].m_pQuad && (m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_SOLID || m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_NOHOOK || m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_STOPA)) : false)
 				continue;
 
 			docontinue = true;
@@ -1571,16 +1584,53 @@ bool CCollision::IntersectQuad(vec2 From, vec2 To, vec2 *pOut, vec2 *pLineStart,
 SKZQuadData * CCollision::IntersectQuad(vec2 From, vec2 To, vec2 *pOut, vec2 *pLineStart, vec2 *pLineEnd)
 {
 	SKZQuadData * pQuad = nullptr;
+	vec2 CollidePoint = To;
+	float dist = -1;
 
 	for(std::vector<SKZQuadData>::size_type i = 0; i < m_aKZQuads.size(); i++)
 	{
-		if(m_aKZQuads[i].m_Type != KZQUADTYPE_HOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_UNHOOK)
+		if(m_aKZQuads[i].m_Type != KZQUADTYPE_HOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_UNHOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_KAIZOINSTA)
+			continue;
+		
+		//Kaizo Quads
+		if(m_aKZQuads[i].m_Type == KZQUADTYPE_KAIZOINSTA ? !(m_aKZQuads[i].m_pQuad && (m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_SOLID || m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_NOHOOK)) : false)
 			continue;
 
-		if(IntersectQuad(From,To,pOut,pLineStart,pLineEnd,m_aKZQuads[i].m_CachedPos[0],m_aKZQuads[i].m_CachedPos[1],m_aKZQuads[i].m_CachedPos[2],m_aKZQuads[i].m_CachedPos[3]))
+		if(IntersectQuad(From,To,&CollidePoint,pLineStart,pLineEnd,m_aKZQuads[i].m_CachedPos[0],m_aKZQuads[i].m_CachedPos[1],m_aKZQuads[i].m_CachedPos[2],m_aKZQuads[i].m_CachedPos[3]) && (dist == -1 || distance(From,CollidePoint) < dist))
 		{
 			pQuad = &m_aKZQuads[i];
-			break;
+			dist = distance(From,CollidePoint);
+			if(pOut)
+				*pOut = CollidePoint;
+			continue;
+		}
+	}
+
+	return pQuad;
+}
+
+SKZQuadData * CCollision::IntersectQuadTeleWeapon(vec2 From, vec2 To, vec2 *pOut, vec2 *pLineStart, vec2 *pLineEnd)
+{
+	SKZQuadData * pQuad = nullptr;
+	vec2 CollidePoint = To;
+	float dist = -1;
+
+	for(std::vector<SKZQuadData>::size_type i = 0; i < m_aKZQuads.size(); i++)
+	{
+		if(m_aKZQuads[i].m_Type != KZQUADTYPE_HOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_UNHOOK && m_aKZQuads[i].m_Type != KZQUADTYPE_KAIZOINSTA)
+			continue;
+
+		//Kaizo Quads (added teleinweapon)
+		if(m_aKZQuads[i].m_Type == KZQUADTYPE_KAIZOINSTA ? !(m_aKZQuads[i].m_pQuad && (m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_SOLID || m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_NOHOOK || (g_Config.m_SvOldTeleportWeapons ? m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_TELEIN : m_aKZQuads[i].m_pQuad->m_ColorEnvOffset == TILE_TELEINWEAPON))) : false)
+			continue;
+
+		if(IntersectQuad(From,To,&CollidePoint,pLineStart,pLineEnd,m_aKZQuads[i].m_CachedPos[0],m_aKZQuads[i].m_CachedPos[1],m_aKZQuads[i].m_CachedPos[2],m_aKZQuads[i].m_CachedPos[3]) && (dist == -1 || distance(From,CollidePoint) < dist))
+		{
+			pQuad = &m_aKZQuads[i];
+			dist = distance(From,CollidePoint);
+			if(pOut)
+				*pOut = CollidePoint;
+			continue;
 		}
 	}
 

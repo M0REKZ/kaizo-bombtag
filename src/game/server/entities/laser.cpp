@@ -157,7 +157,7 @@ void CLaser::DoBounce()
 	vec2 LineStart;
 
 	if(g_Config.m_SvGoresQuadsEnable)
-		pQuadData = Collision()->IntersectQuad(m_Pos,To, &QuadColPos, &LineStart);
+		pQuadData = Collision()->IntersectQuadTeleWeapon(m_Pos,To, &QuadColPos, &LineStart);
 	Res = GameServer()->Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To, &z, &ParamsKZ); // KZ added ParamsKZ
 
 	bool quadbounce = false;
@@ -176,8 +176,25 @@ void CLaser::DoBounce()
 
 	if(quadbounce)
 	{
+		int Index = GameServer()->Collision()->QuadTypeToTileId(pQuadData);
+
+		if(Index == -1) //Kaizo-Insta Quad
+		{
+			Index = pQuadData->m_pQuad->m_ColorEnvOffset;
+		}
+
+		if(pQuadData->m_pQuad && (g_Config.m_SvOldTeleportWeapons ? (Index == TILE_TELEIN) : (Index == TILE_TELEINWEAPON)) && !GameServer()->Collision()->TeleOuts(pQuadData->m_pQuad->m_aColors[0].r - 1).empty())
+		{
+			int TeleOut = GameServer()->m_World.m_Core.RandomOr0(GameServer()->Collision()->TeleOuts(pQuadData->m_pQuad->m_aColors[0].r - 1).size());
+			m_TelePos = GameServer()->Collision()->TeleOuts(pQuadData->m_pQuad->m_aColors[0].r - 1)[TeleOut];
+			m_WasTele = true;
+		}
+
 		Res = 0;
+		vec2 OldDir = m_Dir;
 		m_Dir = normalize(Collision()->ReflexLineOnLine(m_Pos, QuadColPos, LineStart));
+		if(m_WasTele)
+			m_Dir = OldDir;
 		m_From = m_Pos;
 		m_Pos = QuadColPos + normalize(m_Pos - QuadColPos);
 

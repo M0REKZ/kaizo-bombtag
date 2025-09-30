@@ -37,7 +37,7 @@ void CLayers::Init(IMap *pMap, bool GameOnly)
 					CMapItemLayerQuads *pQuadLayer = reinterpret_cast<CMapItemLayerQuads *>(pLayer);
 					IntsToStr(pQuadLayer->m_aName, std::size(pQuadLayer->m_aName), aBuf, std::size(aBuf));
 					bool IsEntities = false;
-					if(!str_comp_nocase("QFr", aBuf) || !str_comp_nocase("QUnFr", aBuf) || !str_comp_nocase("QHook", aBuf) || !str_comp_nocase("QUnHook", aBuf) || !str_comp_nocase("QStopa", aBuf) || !str_comp_nocase("QDeath", aBuf) || !str_comp_nocase("QCfrm", aBuf))
+					if(!str_comp_nocase("QFr", aBuf) || !str_comp_nocase("QUnFr", aBuf) || !str_comp_nocase("QHook", aBuf) || !str_comp_nocase("QUnHook", aBuf) || !str_comp_nocase("QStopa", aBuf) || !str_comp_nocase("QDeath", aBuf) || !str_comp_nocase("QCfrm", aBuf) || !str_comp_nocase("KaizoQuads", aBuf))
 					{
 						m_apKZQuadLayers.push_back(pQuadLayer);
 					}

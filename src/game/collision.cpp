@@ -78,7 +78,7 @@ void CCollision::Init(class CLayers *pLayers)
 
 	if(m_pLayers->m_apKZQuadLayers.size())
 	{
-		for(int i = 0; i < m_pLayers->m_apKZQuadLayers.size(); i++)
+		for(std::vector<CMapItemLayerQuads *>::size_type i = 0; i < m_pLayers->m_apKZQuadLayers.size(); i++)
 		{
 
 			CQuad *pQuads = (CQuad*) m_pLayers->Map()->GetDataSwapped(m_pLayers->m_apKZQuadLayers[i]->m_Data);
@@ -122,6 +122,10 @@ void CCollision::Init(class CLayers *pLayers)
 				else if(!str_comp_nocase("QCfrm", aBuf))
 				{
 					p.m_Type = KZQuadType::KZQUADTYPE_CFRM;
+				}
+				else if(!str_comp_nocase("KaizoQuads", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_KAIZOINSTA;
 				}
 
 				m_aKZQuads.push_back(p);
