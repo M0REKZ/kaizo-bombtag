@@ -42,7 +42,7 @@ void CLayerKZFront::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
 		m_pEditor->m_KZFrontValue3 = pSwitchLayer->m_Value3;
 	}
 
-	bool Destructive = m_pEditor->m_BrushDrawDestructive || IsEmpty(pSwitchLayer);
+	bool Destructive = m_pEditor->m_BrushDrawDestructive || pSwitchLayer->IsEmpty();
 
 	for(int y = 0; y < pSwitchLayer->m_Height; y++)
 		for(int x = 0; x < pSwitchLayer->m_Width; x++)
@@ -142,7 +142,7 @@ void CLayerKZFront::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CU
 
 	std::shared_ptr<CLayerKZGame> pLt = std::static_pointer_cast<CLayerKZGame>(pBrush);
 
-	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || IsEmpty(pLt);
+	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || pLt->IsEmpty();
 
 	for(int y = 0; y < h; y++)
 	{

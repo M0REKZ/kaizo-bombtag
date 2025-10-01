@@ -3288,6 +3288,9 @@ void CGameClient::UpdatePrediction()
 {
 	//+KZ
 	m_GameWorld.m_Core.m_WorldTickKZ = m_GameWorld.GameTick();
+	m_Collision.SetTime(static_cast<double>(m_GameWorld.GameTick() - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
+	if(g_Config.m_SvGoresQuadsEnable)
+		m_Collision.UpdateQuadCache();
 
 	m_GameWorld.m_WorldConfig.m_IsVanilla = m_GameInfo.m_PredictVanilla;
 	m_GameWorld.m_WorldConfig.m_IsDDRace = m_GameInfo.m_PredictDDRace;

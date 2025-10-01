@@ -427,25 +427,25 @@ SEditResult<int64_t> CEditor::DoPropertiesWithStateLongLong(CUIRect *pToolBox, C
 			Ui()->DoLabel(&Shifter, "Y", 10.0f, TEXTALIGN_MC);
 			if(DoButton_FontIcon(&pIds[i], FONT_ICON_MINUS, 0, &Left, BUTTONFLAG_LEFT, "Shift left.", IGraphics::CORNER_L, 7.0f))
 			{
-				*pNewVal = DIRECTION_LEFT;
+				*pNewVal = (int)EShiftDirection::LEFT;
 				Change = i;
 				State = EEditState::ONE_GO;
 			}
 			if(DoButton_FontIcon(((char *)&pIds[i]) + 3, FONT_ICON_PLUS, 0, &Right, BUTTONFLAG_LEFT, "Shift right.", IGraphics::CORNER_R, 7.0f))
 			{
-				*pNewVal = DIRECTION_RIGHT;
+				*pNewVal = (int)EShiftDirection::RIGHT;
 				Change = i;
 				State = EEditState::ONE_GO;
 			}
 			if(DoButton_FontIcon(((char *)&pIds[i]) + 1, FONT_ICON_MINUS, 0, &Up, BUTTONFLAG_LEFT, "Shift up.", IGraphics::CORNER_L, 7.0f))
 			{
-				*pNewVal = DIRECTION_UP;
+				*pNewVal = (int)EShiftDirection::UP;
 				Change = i;
 				State = EEditState::ONE_GO;
 			}
 			if(DoButton_FontIcon(((char *)&pIds[i]) + 2, FONT_ICON_PLUS, 0, &Down, BUTTONFLAG_LEFT, "Shift down.", IGraphics::CORNER_R, 7.0f))
 			{
-				*pNewVal = DIRECTION_DOWN;
+				*pNewVal = (int)EShiftDirection::DOWN;
 				Change = i;
 				State = EEditState::ONE_GO;
 			}
@@ -494,7 +494,7 @@ SEditResult<int64_t> CEditor::DoPropertiesWithStateLongLong(CUIRect *pToolBox, C
 			if(pProps[i].m_Value < 0)
 				pName = "None";
 			else
-				pName = g_apAutoMapReferenceNames[pProps[i].m_Value];
+				pName = AUTOMAP_REFERENCE_NAMES[pProps[i].m_Value];
 
 			if(DoButton_Ex(&pIds[i], pName, 0, &Shifter, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL))
 				PopupSelectAutoMapReferenceInvoke(pProps[i].m_Value, Ui()->MouseX(), Ui()->MouseY());

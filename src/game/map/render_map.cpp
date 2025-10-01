@@ -1186,7 +1186,7 @@ void CRenderMap::RenderTunemap(CTuneTile *pTune, int w, int h, float Scale, Colo
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderKZGameOverlay(CKZTile *pKZ, int w, int h, float Scale, int OverlayRenderFlags, float Alpha) const
+void CRenderMap::RenderKZGameOverlay(CKZTile *pKZ, int w, int h, float Scale, int OverlayRenderFlags, float Alpha)
 {
 		float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -1256,7 +1256,7 @@ void CRenderTools::RenderKZGameOverlay(CKZTile *pKZ, int w, int h, float Scale, 
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderKZGameMap(CKZTile *pKZ, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+void CRenderMap::RenderKZGameMap(CKZTile *pKZ, int w, int h, float Scale, ColorRGBA Color, int RenderFlags)
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -1416,7 +1416,7 @@ void CRenderTools::RenderKZGameMap(CKZTile *pKZ, int w, int h, float Scale, Colo
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderKZFrontOverlay(CKZTile *pKZ, int w, int h, float Scale, int OverlayRenderFlags, float Alpha)
+void CRenderMap::RenderKZFrontOverlay(CKZTile *pKZ, int w, int h, float Scale, int OverlayRenderFlags, float Alpha)
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -1464,9 +1464,9 @@ void CRenderTools::RenderKZFrontOverlay(CKZTile *pKZ, int w, int h, float Scale,
 				Graphics()->TextureSet(g_pData->m_aImages[IMAGE_SPEEDUP_ARROW].m_Id);
 				Graphics()->QuadsBegin();
 				Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
-				SelectSprite(SPRITE_SPEEDUP_ARROW);
+				Graphics()->SelectSprite(SPRITE_SPEEDUP_ARROW);
 				Graphics()->QuadsSetRotation(Angle * (pi / 180.0f));
-				DrawSprite(mx * Scale + 16, my * Scale + 10, 25.0f);
+				Graphics()->DrawSprite(mx * Scale + 16, my * Scale + 10, 25.0f);
 				Graphics()->QuadsEnd();
 			}
 
@@ -1499,7 +1499,7 @@ void CRenderTools::RenderKZFrontOverlay(CKZTile *pKZ, int w, int h, float Scale,
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderKZFrontMap(CKZTile *pKZ, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+void CRenderMap::RenderKZFrontMap(CKZTile *pKZ, int w, int h, float Scale, ColorRGBA Color, int RenderFlags)
 {
 	RenderKZGameMap(pKZ, w, h, Scale, Color, RenderFlags);
 }

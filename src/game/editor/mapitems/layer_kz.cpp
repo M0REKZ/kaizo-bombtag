@@ -53,17 +53,17 @@ void CLayerKZGame::Resize(int NewW, int NewH)
 		m_pEditor->m_Map.m_pGameLayer->Resize(NewW, NewH);
 }
 
-void CLayerKZGame::Shift(int Direction)
+void CLayerKZGame::Shift(EShiftDirection Direction)
 {
 	CLayerTiles::Shift(Direction);
 	ShiftImpl(m_pKZTile, Direction, m_pEditor->m_ShiftBy);
 }
 
-bool CLayerKZGame::IsEmpty(const std::shared_ptr<CLayerTiles> &pLayer)
+bool CLayerKZGame::IsEmpty() const
 {
-	for(int y = 0; y < pLayer->m_Height; y++)
-		for(int x = 0; x < pLayer->m_Width; x++)
-			if(m_pEditor->IsAllowPlaceUnusedTiles() || IsValidSwitchTile(pLayer->GetTile(x, y).m_Index))
+	for(int y = 0; y < m_Height; y++)
+		for(int x = 0; x < m_Width; x++)
+			if(m_pEditor->IsAllowPlaceUnusedTiles() || IsValidSwitchTile(GetTile(x, y).m_Index))
 				return false;
 
 	return true;
@@ -85,7 +85,7 @@ void CLayerKZGame::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
 		m_pEditor->m_KZGameValue3 = pSwitchLayer->m_Value3;
 	}
 
-	bool Destructive = m_pEditor->m_BrushDrawDestructive || IsEmpty(pSwitchLayer);
+	bool Destructive = m_pEditor->m_BrushDrawDestructive || pSwitchLayer->IsEmpty();
 
 	for(int y = 0; y < pSwitchLayer->m_Height; y++)
 		for(int x = 0; x < pSwitchLayer->m_Width; x++)
@@ -243,7 +243,7 @@ void CLayerKZGame::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUI
 
 	std::shared_ptr<CLayerKZGame> pLt = std::static_pointer_cast<CLayerKZGame>(pBrush);
 
-	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || IsEmpty(pLt);
+	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || pLt->IsEmpty();
 
 	for(int y = 0; y < h; y++)
 	{
