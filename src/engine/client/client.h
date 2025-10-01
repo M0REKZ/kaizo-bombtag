@@ -539,6 +539,9 @@ public:
 	std::optional<int> ShowMessageBox(const IGraphics::CMessageBox &MessageBox) override;
 	void GetGpuInfoString(char (&aGpuInfo)[512]) override;
 	void SetLoggers(std::shared_ptr<ILogger> &&pFileLogger, std::shared_ptr<ILogger> &&pStdoutLogger);
+
+	//+KZ
+	void SendKaizoNetworkVersion(int Conn);
 };
 
 #endif

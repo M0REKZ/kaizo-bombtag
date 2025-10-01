@@ -519,6 +519,9 @@ public:
 
 		// 0.7 Skin
 		CSixup m_aSixup[NUM_DUMMIES];
+
+		//+KZ
+		int m_CrownTick = -1;
 	};
 
 	CClientData m_aClients[MAX_CLIENTS];

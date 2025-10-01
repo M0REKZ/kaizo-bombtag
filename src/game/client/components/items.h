@@ -39,6 +39,10 @@ private:
 	int m_DoorHeadOffset;
 	int m_PulleyHeadOffset;
 	int m_FreezeHeadOffset;
+
+	//+KZ Kaizo Network
+
+	void RenderCrown();
 };
 
 #endif

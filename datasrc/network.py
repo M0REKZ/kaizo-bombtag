@@ -623,4 +623,10 @@ Messages = [
 		NetIntRange("m_Owner", 0, 'MAX_CLIENTS-1'),
 		NetTick("m_IntendedTick"),
 	]),
+ 
+	# +KZ Kaizo Network
+ 
+	NetMessageEx("Sv_KaizoNetworkCrown", "kaizocrown@m0rekz.github.io", [
+		NetIntAny("m_ClientId"),
+	]),
 ]

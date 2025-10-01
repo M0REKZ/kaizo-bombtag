@@ -456,6 +456,14 @@ container.sprites.Add(Sprite("part_sparkle", set_extras, 2,0,2,2))
 container.sprites.Add(Sprite("part_pulley", set_extras, 4,0,1,1))
 container.sprites.Add(Sprite("part_hectagon", set_extras, 6,0,2,2))
 
+# +KZ Kaizo Network
+kz_image_crown = Image("kz_crown", "kz/crown.png")
+container.images.Add(kz_image_crown)
+set_kz_crown = SpriteSet("kz_crown", kz_image_crown, 1, 1)
+container.spritesets.Add(set_kz_crown)
+container.sprites.Add(Sprite("kz_crown", set_kz_crown, 0, 0, 1, 1))
+# end +KZ Kaizo Network
+
 anim = Animation("base")
 anim.body.frames.Add(AnimKeyframe(0, 0, -4, 0))
 anim.back_foot.frames.Add(AnimKeyframe(0, 0, 10, 0))

@@ -16,6 +16,7 @@
 
 #include <game/mapitems.h>
 #include <game/team_state.h>
+#include <game/version.h>
 
 #include <game/server/gamecontext.h>
 #include <game/server/gamecontroller.h>
@@ -1457,13 +1458,22 @@ void CCharacter::Snap(int SnappingClient)
 
 	if(m_EnableCrown && ((SnappingClient >= 0 && SnappingClient < SERVER_MAX_CLIENTS) ? (GameServer()->m_apPlayers[SnappingClient] && GameServer()->m_apPlayers[SnappingClient]->m_SendCrowns) : true))
 	{
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[0],vec2(Charpos.x,Charpos.y-100),vec2(Charpos.x+10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[1],vec2(Charpos.x,Charpos.y-100),vec2(Charpos.x-10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[2],vec2(Charpos.x + 20,Charpos.y-100),vec2(Charpos.x+10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[3],vec2(Charpos.x - 20,Charpos.y-100),vec2(Charpos.x-10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[4],vec2(Charpos.x + 20,Charpos.y-100),vec2(Charpos.x+20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[5],vec2(Charpos.x - 20,Charpos.y-100),vec2(Charpos.x-20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
-		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[6],vec2(Charpos.x-20,Charpos.y-60),vec2(Charpos.x+20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		if(Server()->GetKaizoNetworkVersion(SnappingClient) >= KAIZO_NETWORK_VERSION_CROWNS)
+		{
+			CNetMsg_Sv_KaizoNetworkCrown CrownMsg;
+			CrownMsg.m_ClientId = m_pPlayer->GetCid();
+			Server()->SendPackMsg(&CrownMsg, MSGFLAG_VITAL, SnappingClient);
+		}
+		else
+		{
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[0],vec2(Charpos.x,Charpos.y-100),vec2(Charpos.x+10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[1],vec2(Charpos.x,Charpos.y-100),vec2(Charpos.x-10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[2],vec2(Charpos.x + 20,Charpos.y-100),vec2(Charpos.x+10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[3],vec2(Charpos.x - 20,Charpos.y-100),vec2(Charpos.x-10,Charpos.y-80),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[4],vec2(Charpos.x + 20,Charpos.y-100),vec2(Charpos.x+20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[5],vec2(Charpos.x - 20,Charpos.y-100),vec2(Charpos.x-20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_aCrown[6],vec2(Charpos.x-20,Charpos.y-60),vec2(Charpos.x+20,Charpos.y-60),Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_RIFLE,0,0);
+		}
 	}
 
 	SnapCharacter(SnappingClient, Id);

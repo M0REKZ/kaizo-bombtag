@@ -295,6 +295,8 @@ public:
 	virtual bool IsSixup(int ClientId) const = 0;
 
 	//+KZ
+	virtual int GetKaizoNetworkVersion(int ClientId) { return 0; } //+KZ: identify kaizo network clients
+
 	virtual int GetClientInfclassVersion(int ClientId) { return 0; } //identify infclass clients
 	virtual bool IsTaterClient(int ClientId) { return false; } // identify tater clients
 	virtual bool IsQxdClient(int ClientId) { return false; } // identify qxd clients

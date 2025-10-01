@@ -2290,6 +2290,7 @@ if(CLIENT)
     blocklist_driver.cpp
     blocklist_driver.h
     checksum.h
+    client_kz.cpp
     client.cpp
     client.h
     demoedit.cpp
@@ -2748,6 +2749,7 @@ if(SERVER)
     name_ban.h
     register.cpp
     register.h
+    server_kz.cpp
     server.cpp
     server.h
     server_logger.cpp

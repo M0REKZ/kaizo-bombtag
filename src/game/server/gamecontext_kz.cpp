@@ -416,7 +416,6 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		{
 			const char* pClientString = "";
 			const char* pClientName = "";
-			int Sprite = -1;
 			switch (Client)
 			{
 			case 0:
@@ -451,6 +450,8 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 	}
 	else
 	{
+		int KaizoNetwork = Server()->GetKaizoNetworkVersion(ClientId);
+
 		int InfClass = Server()->GetClientInfclassVersion(ClientId);
 		bool Tater = Server()->IsTaterClient(ClientId);
 		bool Qxd = Server()->IsQxdClient(ClientId);
@@ -459,7 +460,11 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		bool AllTheHaxx = Server()->IsAllTheHaxxClient(ClientId);
 		bool Pulse = Server()->IsPulseClient(ClientId);
 
-		if(InfClass)
+		if(KaizoNetwork)
+		{
+			str_copy(aName, "Kaizo Network Client (0.6)", StrSize);
+		}
+		else if(InfClass)
 		{
 			str_copy(aName, "InfClass Client (0.6)", StrSize);
 		}

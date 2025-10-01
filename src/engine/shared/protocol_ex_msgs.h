@@ -47,6 +47,11 @@ UUID(NETMSG_MAPLIST_GROUP_START, "sv-maplist-start@ddnet.org")
 UUID(NETMSG_MAPLIST_GROUP_END, "sv-maplist-end@ddnet.org")
 
 //+KZ
+
+//Kaizo Network
+UUID(NETMSG_KZ_KAIZO_NETWORK_VERSION, "kaizoversion@m0rekz.github.io")
+
+//Other Clients
 UUID(NETMSG_CLIENTVER_INFCLASS, "clientver@infclass")
 UUID(NETMSG_IAMTATER, "iamtater@sjrc6.github.io")
 UUID(NETMSG_IAMQXD, "i-am-qxd@qxdFox.github.io")

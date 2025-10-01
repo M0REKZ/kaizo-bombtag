@@ -1,0 +1,10 @@
+// Copyright (C) Benjamín Gajardo (also known as +KZ)
+
+#ifndef GAME_VERSION_KZ_H
+#define GAME_VERSION_KZ_H
+
+#define KAIZO_NETWORK_VERSION_CROWNS 1
+
+#define KAIZO_NETWORK_VERSION_LATEST KAIZO_NETWORK_VERSION_CROWNS
+
+#endif

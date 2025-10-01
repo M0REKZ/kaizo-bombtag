@@ -599,6 +599,7 @@ int CServer::Init()
 		Client.m_Latency = 0;
 		Client.m_Sixup = false;
 		Client.m_RedirectDropTime = 0;
+		Client.m_KaizoNetworkVersion = 0; // +KZ Kaizo Network client version
 		Client.m_InfClassVersion = 0;
 		Client.m_IsTaterClient = false; //+KZ
 		Client.m_IsQxdClient = false;
@@ -1148,6 +1149,8 @@ int CServer::NewClientNoAuthCallback(int ClientId, void *pUser)
 {
 	CServer *pThis = (CServer *)pUser;
 
+	pThis->m_aClients[ClientId].m_KaizoNetworkVersion = 0; // +KZ Kaizo Network client version
+
 	pThis->m_aClients[ClientId].m_InfClassVersion = 0; //+KZ
 	pThis->m_aClients[ClientId].m_IsTaterClient = false; //+KZ
 	pThis->m_aClients[ClientId].m_IsQxdClient = false;
@@ -1190,6 +1193,8 @@ int CServer::NewClientNoAuthCallback(int ClientId, void *pUser)
 int CServer::NewClientCallback(int ClientId, void *pUser, bool Sixup)
 {
 	CServer *pThis = (CServer *)pUser;
+
+	pThis->m_aClients[ClientId].m_KaizoNetworkVersion = 0; // +KZ Kaizo Network client version
 
 	pThis->m_aClients[ClientId].m_InfClassVersion = 0; //+KZ
 	pThis->m_aClients[ClientId].m_IsTaterClient = false; //+KZ
@@ -1744,6 +1749,15 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				m_aClients[ClientId].m_GotDDNetVersionPacket = true;
 				m_aClients[ClientId].m_State = CClient::STATE_AUTH;
 			}
+		}
+		else if(Msg == NETMSG_KZ_KAIZO_NETWORK_VERSION) //+KZ for Kaizo Network Client
+		{
+			int KaizoNetworkVersion = Unpacker.GetInt();
+			if(Unpacker.Error() || KaizoNetworkVersion < 0)
+			{
+				return;
+			}
+			m_aClients[ClientId].m_KaizoNetworkVersion = KaizoNetworkVersion;
 		}
 		else if(Msg == NETMSG_CLIENTVER_INFCLASS)
 		{
@@ -4555,6 +4569,9 @@ bool CServer::SetTimedOut(int ClientId, int OrigId)
 	m_aClients[ClientId].m_DDNetVersionSettled = m_aClients[OrigId].m_DDNetVersionSettled;
 
 	//+KZ
+	m_aClients[ClientId].m_KaizoNetworkVersion = m_aClients[OrigId].m_KaizoNetworkVersion;
+
+	//Other Clients
 	m_aClients[ClientId].m_InfClassVersion = m_aClients[OrigId].m_InfClassVersion;
 	m_aClients[ClientId].m_IsTaterClient = m_aClients[OrigId].m_IsTaterClient;
 	m_aClients[ClientId].m_IsQxdClient = m_aClients[OrigId].m_IsQxdClient;
@@ -4574,20 +4591,4 @@ void CServer::SetLoggers(std::shared_ptr<ILogger> &&pFileLogger, std::shared_ptr
 {
 	m_pFileLogger = pFileLogger;
 	m_pStdoutLogger = pStdoutLogger;
-}
-
-//+KZ
-int CServer::GetClientInfclassVersion(int ClientId)
-{
-	if(ClientId == SERVER_DEMO_CLIENT)
-	{
-		return 1000;
-	}
-
-	if(m_aClients[ClientId].m_State == CClient::STATE_INGAME)
-	{
-		return m_aClients[ClientId].m_InfClassVersion;
-	}
-
-	return 0;
 }

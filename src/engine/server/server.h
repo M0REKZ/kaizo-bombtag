@@ -89,6 +89,9 @@ class CServer : public IServer
 	void UpdateDebugDummies(bool ForceDisconnect);
 #endif
 
+	virtual int GetKaizoNetworkVersion(int ClientId) override; // +KZ Kaizo Network client version
+
+	//Other Clients
 	virtual int GetClientInfclassVersion(int ClientId) override;
 	virtual bool IsTaterClient(int ClientId) override { return m_aClients[ClientId].m_IsTaterClient; }
 	virtual bool IsQxdClient(int ClientId) override { return m_aClients[ClientId].m_IsQxdClient; }
@@ -182,6 +185,8 @@ public:
 		std::array<char, NETADDR_MAXSTRSIZE> m_aDebugDummyAddrStringNoPort;
 
 		//+KZ
+		int m_KaizoNetworkVersion; // +KZ: Kaizo Network client version
+
 		int m_InfClassVersion; // to identify infclass clients
 		bool m_IsTaterClient; // to identify tater clients
 		bool m_IsQxdClient; // to identify qxd clients
