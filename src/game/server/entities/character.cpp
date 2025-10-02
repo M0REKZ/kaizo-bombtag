@@ -1468,9 +1468,12 @@ void CCharacter::Snap(int SnappingClient)
 	{
 		if(Server()->GetKaizoNetworkVersion(SnappingClient) >= KAIZO_NETWORK_VERSION_CROWNS)
 		{
-			CNetMsg_Sv_KaizoNetworkCrown CrownMsg;
-			CrownMsg.m_ClientId = m_pPlayer->GetCid();
-			Server()->SendPackMsg(&CrownMsg, MSGFLAG_VITAL, SnappingClient);
+			if(Server()->Tick() % (Server()->TickSpeed()/5) == 0) // dont spam crown every tick
+			{
+				CNetMsg_Sv_KaizoNetworkCrown CrownMsg;
+				CrownMsg.m_ClientId = m_pPlayer->GetCid();
+				Server()->SendPackMsg(&CrownMsg, MSGFLAG_VITAL, SnappingClient);
+			}
 		}
 		else
 		{
