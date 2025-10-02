@@ -2148,6 +2148,12 @@ set_src(ENGINE_GFX GLOB src/engine/gfx
   image_manipulation.cpp
   image_manipulation.h
 )
+
+set_src(GAME_KZ GLOB_RECURSE src/game/kz
+  envelopeaccess.cpp
+  envelopeaccess.h
+)
+
 set_src(GAME_SHARED GLOB src/game
   alloc.h
   collision.cpp
@@ -2180,10 +2186,9 @@ set_src(GAME_SHARED GLOB src/game
   version.h
   voting.h
 )
-set_src(GAME_KZ GLOB_RECURSE src/game/kz
-  envelopeaccess.cpp
-  envelopeaccess.h
-)
+
+list(APPEND GAME_SHARED ${GAME_KZ})
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "src/game/version.h")
 
 # A bit hacky, but these are needed to register all the UUIDs, even for stuff
@@ -2577,7 +2582,7 @@ if(CLIENT)
     src/generated/client_data7.cpp
     src/generated/client_data7.h
   )
-  set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_MAP} ${GAME_GENERATED_CLIENT} ${GAME_KZ})
+  set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_MAP} ${GAME_GENERATED_CLIENT})
 
   set(DEPS_CLIENT ${DEPS} ${GLEW_DEP} ${WAVPACK_DEP})
 
@@ -2847,7 +2852,7 @@ if(SERVER)
     "src/generated/server_data.h"
     "src/generated/wordlist.h"
   )
-  set(SERVER_SRC ${ENGINE_SERVER_WITHOUT_MAIN} ${GAME_SERVER} ${GAME_GENERATED_SERVER} ${GAME_KZ})
+  set(SERVER_SRC ${ENGINE_SERVER_WITHOUT_MAIN} ${GAME_SERVER} ${GAME_GENERATED_SERVER})
   if(TARGET_OS STREQUAL "windows")
     set(VERSION_EXECUTABLE "${SERVER_EXECUTABLE}")
     set(VERSION_COMPANY "${CLIENT_EXECUTABLE} Team")
