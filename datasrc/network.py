@@ -385,6 +385,14 @@ Objects = [
 	NetEventEx("MapSoundWorld:Common", "map-sound-world@netevent.ddnet.org", [
 		NetIntAny("m_SoundId"),
 	]),
+ 
+	# +KZ Kaizo Network
+ 
+	NetObjectEx("KaizoNetworkTurret", "kaizoturret@m0rekz.github.io", [
+		NetIntAny("m_X"),
+		NetIntAny("m_Y"),
+		NetIntRange("m_Type", 0, 'max_int'),
+	]),
 ]
 
 Messages = [
