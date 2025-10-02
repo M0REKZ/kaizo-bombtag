@@ -797,6 +797,7 @@ MACRO_CONFIG_INT(SvDamageMineDmg, sv_damage_mine_dmg, 3, 0, 10000, CFGFLAG_SERVE
 
 MACRO_CONFIG_STR(SvKaizoNetworkName, sv_kaizo_network_name, 32, "Kaizo Network", CFGFLAG_SERVER, "Network name for \"--- Welcome to ? ---\" message")
 MACRO_CONFIG_STR(SvKaizoSecretMap, sv_kaizo_secret_map, 16, "", CFGFLAG_SERVER, "If set, replaces map name in server browser")
+MACRO_CONFIG_INT(SvKaizoLaserRecoverJump, sv_kaizo_laser_recover_jump, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Player recovers jump when hit by laser")
 
 //Compat configs
 

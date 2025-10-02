@@ -7,6 +7,7 @@
 
 class CCharacterCore;
 
+//Collision params
 struct SKZColGenericParams
 {
 	CCharacterCore *pCore = nullptr;
@@ -48,6 +49,13 @@ struct SKZColIntersectLineParams : public SKZColCharCoreParams // IntersectLine
 	int Weapon = -1;
 	bool m_IsDDraceProjectile = false;
 	bool m_DoResetTick = false;
+};
+
+//Entities Params
+
+struct SKZLaserParams
+{
+	bool m_IsRecoverJump = false;
 };
 
 #endif

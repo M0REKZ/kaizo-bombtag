@@ -275,6 +275,8 @@ public:
 	CTuningParams *GetTuning(int Zone) { return Zone ? &TuningList()[Zone] : Tuning(); }
 
 	//+KZ
+	CCharacterCore &GetCoreKZ() { return m_Core; }
+
 	void HandleKZTiles();
 	void HandleQuads();
 	void ResetPortals();
@@ -298,6 +300,7 @@ public:
 	bool m_SpecTile = false;
 	vec2 m_SpecTilePos = vec2(0,0);
 	bool m_DidHookedQuadSound = false;
+	bool m_HasRecoverJumpLaser = false;
 
 	struct
 	{

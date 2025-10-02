@@ -11,7 +11,7 @@
 #include <game/server/gamecontext.h>
 #include <game/server/gamemodes/DDRace.h>
 
-CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type) :
+CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type, SKZLaserParams *pParams) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_LASER)
 {
 	m_Pos = Pos;
@@ -38,6 +38,11 @@ CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEner
 			m_TuneZone = pOwnerChar->m_TuneZoneOverrideKZ;
 		else if(pOwnerChar->m_ForcedTuneKZ)
 			m_TuneZone = pOwnerChar->m_TuneZone;
+	}
+
+	if(pParams)
+	{
+		m_IsRecoverJump = pParams->m_IsRecoverJump;
 	}
 
 	GameWorld()->InsertEntity(this);
@@ -104,6 +109,15 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 		pHit->UnFreeze();
 	}
 	pHit->TakeDamage(vec2(0, 0), 0, m_Owner, m_Type);
+
+	//+KZ Recover jump
+
+	if(m_IsRecoverJump)
+	{
+		pHit->GetCoreKZ().m_Jumped = 0;
+		pHit->GetCoreKZ().m_JumpedTotal = 0;
+	}
+
 	return true;
 }
 

@@ -18,6 +18,8 @@
 #include <game/team_state.h>
 #include <game/version.h>
 
+#include <game/params_kz.h> //+KZ
+
 #include <game/server/gamecontext.h>
 #include <game/server/gamecontroller.h>
 #include <game/server/player.h>
@@ -625,7 +627,10 @@ void CCharacter::FireWeapon()
 	{
 		float LaserReach = GetTuning(m_TuneZone)->m_LaserReach;
 
-		new CLaser(&GameServer()->m_World, m_Pos, Direction, LaserReach, m_pPlayer->GetCid(), WEAPON_SHOTGUN);
+		SKZLaserParams ShotgunParams;
+		ShotgunParams.m_IsRecoverJump = m_HasRecoverJumpLaser || g_Config.m_SvKaizoLaserRecoverJump;
+
+		new CLaser(&GameServer()->m_World, m_Pos, Direction, LaserReach, m_pPlayer->GetCid(), WEAPON_SHOTGUN, &ShotgunParams);
 		GameServer()->CreateSound(m_Pos, SOUND_SHOTGUN_FIRE, TeamMask()); // NOLINT(clang-analyzer-unix.Malloc)
 	}
 	break;
@@ -694,7 +699,10 @@ void CCharacter::FireWeapon()
 	{
 		float LaserReach = GetTuning(m_TuneZone)->m_LaserReach;
 
-		new CLaser(GameWorld(), m_Pos, Direction, LaserReach, m_pPlayer->GetCid(), WEAPON_LASER);
+		SKZLaserParams LaserParams;
+		LaserParams.m_IsRecoverJump = m_HasRecoverJumpLaser || g_Config.m_SvKaizoLaserRecoverJump;
+
+		new CLaser(GameWorld(), m_Pos, Direction, LaserReach, m_pPlayer->GetCid(), WEAPON_LASER, &LaserParams);
 		GameServer()->CreateSound(m_Pos, SOUND_LASER_FIRE, TeamMask()); // NOLINT(clang-analyzer-unix.Malloc)
 	}
 	break;
@@ -2903,6 +2911,28 @@ void CCharacter::HandleKZTiles()
 	else if(pKZTileFront && pKZTileFront->m_Index == KZ_TILE_DAMAGE_ZONE && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true) && Server()->Tick() % Server()->TickSpeed() == 0)
 	{
 		TakeDamageVanilla(vec2(0,0),(int)pKZTile->m_Value1 + 1,m_pPlayer ? m_pPlayer->GetCid() : -1, WEAPON_WORLD);
+	}
+
+	if(!m_HasRecoverJumpLaser && pKZTile && pKZTile->m_Index == KZ_TILE_LASER_RECOVER_JUMP_ON && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+	{
+		m_HasRecoverJumpLaser = true;
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can now recover your jumps by shooting youself with laser");
+	}
+	else if(!m_HasRecoverJumpLaser && pKZTileFront && pKZTileFront->m_Index == KZ_TILE_LASER_RECOVER_JUMP_ON && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+	{
+		m_HasRecoverJumpLaser = true;
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can now recover your jumps by shooting youself with laser");
+	}
+
+	if(m_HasRecoverJumpLaser && pKZTile && pKZTile->m_Index == KZ_TILE_LASER_RECOVER_JUMP_OFF && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
+	{
+		m_HasRecoverJumpLaser = false;
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can no longer recover your jumps by shooting youself with laser");
+	}
+	else if(m_HasRecoverJumpLaser && pKZTileFront && pKZTileFront->m_Index == KZ_TILE_LASER_RECOVER_JUMP_OFF && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
+	{
+		m_HasRecoverJumpLaser = false;
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can no longer recover your jumps by shooting youself with laser");
 	}
 
 	//+KZ Game Only Tiles
