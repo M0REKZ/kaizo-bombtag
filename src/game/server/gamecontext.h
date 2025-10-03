@@ -284,7 +284,7 @@ public:
 	void CreateSoundGlobal(int Sound, int Target = -1) const;
 
 	void SnapSwitchers(int SnappingClient);
-	bool SnapLaserObject(const CSnapContext &Context, int SnapId, const vec2 &To, const vec2 &From, int StartTick, int Owner = -1, int LaserType = -1, int Subtype = -1, int SwitchNumber = -1) const;
+	bool SnapLaserObject(const CSnapContext &Context, int SnapId, const vec2 &To, const vec2 &From, int StartTick, int Owner = -1, int LaserType = -1, int Subtype = -1, int SwitchNumber = -1, int FlagsKZ = 0) const; //+KZ modified: added FlagsKZ
 	bool SnapPickup(const CSnapContext &Context, int SnapId, const vec2 &Pos, int Type, int SubType, int SwitchNumber, int Flags) const;
 
 	enum
@@ -649,13 +649,21 @@ public:
 	void RegisterKZCommands();
 
 	static void ConRejoinShutdown(IConsole::IResult *pResult, void *pUserData);
+	static void ConShowCrowns(IConsole::IResult *pResult, void *pUserData);
+
+	//+KZ Weapons
+
+	//Portal Gun
 	static void ConPortalGun(IConsole::IResult *pResult, void *pUserData);
 	static void ConUnPortalGun(IConsole::IResult *pResult, void *pUserData);
 	static void ConGetPortalGun(IConsole::IResult *pResult, void *pUserData);
 	static void ConOrangePortal(IConsole::IResult *pResult, void *pUserData);
 	static void ConBluePortal(IConsole::IResult *pResult, void *pUserData);
 	static void ConResetPortals(IConsole::IResult *pResult, void *pUserData);
-	static void ConShowCrowns(IConsole::IResult *pResult, void *pUserData);
+
+	//Attractor Beam
+	static void ConAttractorBeam(IConsole::IResult *pResult, void *pUserData);
+	static void ConGetAttractorBeam(IConsole::IResult *pResult, void *pUserData);
 
 	void IdentifyClientName(int ClientId, char *pName, int StrSize);
 };

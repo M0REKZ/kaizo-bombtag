@@ -193,6 +193,9 @@ void CCharacterCore::Reset()
 	// never initialize both to 0
 	m_Input.m_TargetX = 0;
 	m_Input.m_TargetY = -1;
+
+	//+KZ
+	m_AttractorBeamPlayer = -1;
 }
 
 void CCharacterCore::Tick(bool UseInput, bool DoDeferredTick)
@@ -207,6 +210,8 @@ void CCharacterCore::Tick(bool UseInput, bool DoDeferredTick)
 	m_Vel.y += m_Tuning.m_Gravity;
 
 	Grounded |= m_QuadGrounded; //+KZ
+
+	PreTickKZ(); // +KZ too
 
 	float MaxSpeed = Grounded ? m_Tuning.m_GroundControlSpeed : m_Tuning.m_AirControlSpeed;
 	float Accel = Grounded ? m_Tuning.m_GroundControlAccel : m_Tuning.m_AirControlAccel;

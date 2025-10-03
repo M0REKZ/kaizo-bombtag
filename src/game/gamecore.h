@@ -310,6 +310,8 @@ public: // KZ
 	CKZTile *pTouchingKZTiles[4] = {nullptr, nullptr, nullptr, nullptr};
 	SKZColCharCoreParams m_CharCoreParams;
 	SKZColGenericParams m_GenericParams;
+	void PreTickKZ();
+	int m_AttractorBeamPlayer = -1;
 };
 
 // input count

@@ -396,6 +396,11 @@ bool CGameControllerKZ::OnEntityKZ(int Index, int x, int y, int Layer, int Flags
 		PickupType = POWERUP_WEAPON;
 		PickupSubtype = KZ_CUSTOM_WEAPON_PORTAL_GUN;
 	}
+	else if(Index == KZ_TILE_ATTRACTOR_BEAM)
+	{
+		PickupType = POWERUP_WEAPON;
+		PickupSubtype = KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM;
+	}
 
 	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
 
@@ -473,6 +478,7 @@ bool CGameControllerKZ::OnEntityKZ(int Index, int x, int y, int Layer, int Flags
 			switch (PickupSubtype)
 			{
 				case KZ_CUSTOM_WEAPON_PORTAL_GUN:
+				case KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM:
 				{
 					CKZPickup *pPickup = new CKZPickup(&GameServer()->m_World, PickupType, PickupSubtype, Layer, (int)Number, Flags);
 					pPickup->m_Pos = Pos;

@@ -104,3 +104,61 @@ bool CCharacterCore::HandleKZTileOnMoveBox(vec2 *pMoveBoxPos, vec2 *pMoveBoxVel,
 
 	return false;
 }
+
+void CCharacterCore::PreTickKZ()
+{
+	if(m_Input.m_Fire & 1)
+	{
+		if(m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+		{
+			vec2 Dir = vec2(m_Input.m_TargetX, m_Input.m_TargetY);
+			if(length(Dir) > 300.f)
+			{
+				Dir = normalize(Dir) * 300.f;
+			}
+
+			vec2 AttractorPos = m_Pos + (normalize(vec2(m_Input.m_TargetX,m_Input.m_TargetY)) * 82);
+
+			CCharacterCore * pCore = nullptr;
+			for(int i = 0; i < MAX_CLIENTS;i++)
+			{
+				if(i == m_Id)
+					continue;
+
+				vec2 TempPos;
+				pCore = Collision()->IntersectCharacterCore(AttractorPos, m_Pos + Dir, PhysicalSize(), TempPos, m_pWorld->m_apCharacters[i]);
+
+				if(pCore)
+					break;
+			}
+
+			if(pCore)
+			{
+				m_AttractorBeamPlayer = pCore->m_Id;
+			}
+		}
+		else
+		{
+			m_AttractorBeamPlayer = -1;
+		}
+	}
+	else
+	{
+		m_AttractorBeamPlayer = -1;
+	}
+
+	if(m_AttractorBeamPlayer >= 0 && m_AttractorBeamPlayer < MAX_CLIENTS)
+	{
+		vec2 AttractorPos = m_Pos + (normalize(vec2(m_Input.m_TargetX,m_Input.m_TargetY)) * 82);
+		CCharacterCore * pCore = m_pWorld->m_apCharacters[m_AttractorBeamPlayer];
+		if(pCore)
+		{
+			pCore->m_Vel = normalize(AttractorPos - pCore->m_Pos) * 4.f;
+			pCore->m_SendCoreThisTick = true;
+		}
+		else
+		{
+			m_AttractorBeamPlayer = -1;
+		}
+	}
+}

@@ -63,6 +63,7 @@ CCharacter::CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput) :
 	m_PortalKindId = Server()->SnapNewId();
 
 	m_aCustomWeapons[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START].m_Snap = WEAPON_LASER;
+	m_aCustomWeapons[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START].m_Snap = WEAPON_LASER;
 }
 
 CCharacter::~CCharacter()
@@ -186,7 +187,11 @@ void CCharacter::SetWeapon(int W)
 	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
 	{
 		GameServer()->SendBroadcast("Weapon: Portal Gun",m_pPlayer->GetCid());
-	}	
+	}
+	else if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+	{
+		GameServer()->SendBroadcast("Weapon: Attractor Beam",m_pPlayer->GetCid());
+	}
 }
 
 void CCharacter::SetJetpack(bool Active)
@@ -747,7 +752,7 @@ void CCharacter::FireWeapon()
 	}
 	else if(m_Core.m_ActiveWeapon < KZ_NUM_CUSTOM_WEAPONS)
 	{
-		if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+		if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN || m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
 		{
 			m_ReloadTimer = GetTuning(m_TuneZone)->m_LaserFireDelay * Server()->TickSpeed() / 1000;
 		}
@@ -1436,11 +1441,24 @@ void CCharacter::Snap(int SnappingClient)
 
 	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
 	{
-				vec2 postemp;
+		vec2 postemp;
 				
 		postemp = m_Pos + (normalize(vec2(m_Input.m_TargetX,m_Input.m_TargetY)) * 82);
 
 		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_PortalKindId,postemp,postemp,Server()->Tick(),m_pPlayer->GetCid(),m_BluePortal ? LASERTYPE_RIFLE : LASERTYPE_SHOTGUN);
+	}
+	else if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+	{
+		vec2 postemp;
+
+		postemp = m_Pos + (normalize(vec2(m_Input.m_TargetX,m_Input.m_TargetY)) * 82);
+
+		CCharacter *pChar = GameServer()->GetPlayerChar(m_Core.m_AttractorBeamPlayer);
+
+		if(pChar)
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_PortalKindId,pChar->m_Pos,postemp,Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_DRAGGER, -1, -1, LASERFLAG_NO_PREDICT);
+		else
+			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_PortalKindId,postemp,postemp,Server()->Tick(),m_pPlayer->GetCid(),LASERTYPE_DRAGGER, -1, -1, LASERFLAG_NO_PREDICT);
 	}
 
 	if(!Server()->Translate(Id, SnappingClient))

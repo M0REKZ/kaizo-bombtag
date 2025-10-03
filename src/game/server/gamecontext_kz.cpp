@@ -42,13 +42,21 @@
 void CGameContext::RegisterKZCommands()
 {
 	Console()->Register("rejoin_shutdown", "", CFGFLAG_SERVER, ConRejoinShutdown, this, "Make players rejoin after shutdown");
+	Console()->Register("showcrowns", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConShowCrowns, this, "Toggle crowns");
+
+	// Weapons
+
+	// Portal Gun
 	Console()->Register("portalgun", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConPortalGun, this, "Set Portal Gun as active weapon (if have it)");
 	Console()->Register("unportalgun", "?i[id]", CFGFLAG_SERVER, ConUnPortalGun, this, "Remove Portal Gun");
-	Console()->Register("getportalgun", "?i[id]", CFGFLAG_SERVER, ConGetPortalGun, this, "Get Portal Gun");
+	Console()->Register("getportalgun", "?i[id]", CFGFLAG_SERVER | CMDFLAG_PRACTICE, ConGetPortalGun, this, "Get Portal Gun");
 	Console()->Register("orangeportal", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConOrangePortal, this, "Use Orange Portal");
 	Console()->Register("blueportal", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConBluePortal, this, "Use Blue Portal");
 	Console()->Register("resetportals", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConResetPortals, this, "Reset both Portals");
-	Console()->Register("showcrowns", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConShowCrowns, this, "Toggle crowns");
+
+	// Attractor Beam
+	Console()->Register("attractorbeam", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConAttractorBeam, this, "Set Attractor Beam as active weapon (if have it)");
+	Console()->Register("getattractorbeam", "?i[id]", CFGFLAG_SERVER | CMDFLAG_PRACTICE, ConGetAttractorBeam, this, "Get Attractor Beam");
 }
 
 void CGameContext::SendGameMsg(int GameMsgId, int ClientId) const
@@ -307,6 +315,62 @@ void CGameContext::ConBluePortal(IConsole::IResult *pResult, void *pUserData)
 		return;
 
 	pSelf->m_apPlayers[ClientID]->GetCharacter()->m_BluePortal = true;
+}
+
+void CGameContext::ConAttractorBeam(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	int ClientID = pResult->m_ClientId;
+
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID])
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID]->GetCharacter())
+		return;
+
+	bool got = pSelf->m_apPlayers[ClientID]->GetCharacter()->GetWeaponGot(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+
+	if(got)
+		pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeapon(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+}
+
+void CGameContext::ConGetAttractorBeam(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	int ClientID;
+
+	if(pResult->NumArguments())
+	{
+		ClientID = pResult->GetInteger(0);
+	}
+	else
+	{
+		ClientID = pResult->m_ClientId;
+	}
+
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID])
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID]->GetCharacter())
+		return;
+
+	bool got = pSelf->m_apPlayers[ClientID]->GetCharacter()->GetWeaponGot(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+
+	if(!got)
+	{
+		pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeaponGot(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM, true);
+		pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeaponAmmo(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM, 10);
+	}
+
+	pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeapon(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
 }
 
 void CGameContext::ConResetPortals(IConsole::IResult *pResult, void *pUserData)
