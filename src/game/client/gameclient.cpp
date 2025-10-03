@@ -3302,8 +3302,8 @@ void CGameClient::UpdateLocalTuning()
 void CGameClient::UpdatePrediction()
 {
 	//+KZ
-	m_GameWorld.m_Core.m_WorldTickKZ = Client()->PredGameTick(g_Config.m_ClDummy);
-	m_Collision.SetTime(static_cast<double>(Client()->PredGameTick(g_Config.m_ClDummy) - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
+	m_GameWorld.m_Core.m_WorldTickKZ = m_GameWorld.GameTick();
+	m_Collision.SetTime(static_cast<double>(m_GameWorld.GameTick() - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
 	if(g_Config.m_SvGoresQuadsEnable)
 		m_Collision.UpdateQuadCache();
 
