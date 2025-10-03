@@ -42,7 +42,15 @@ private:
 
 	//+KZ Kaizo Network
 
+	void OnInitKZ();
+
 	void RenderCrown();
+	void HandleKaizoSnapItem(const IClient::CSnapItem &Item, bool Front);
+	void RenderTurret(CNetObj_KaizoNetworkTurret *pTurret);
+
+	int m_CrownOffset;
+	int m_TurretOffset_1;
+	int m_TurretOffset_2;
 };
 
 #endif

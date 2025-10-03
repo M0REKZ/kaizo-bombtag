@@ -2375,6 +2375,7 @@ if(CLIENT)
     components/hud.h
     components/infomessages.cpp
     components/infomessages.h
+    components/items_kz.cpp
     components/items.cpp
     components/items.h
     components/local_server.cpp

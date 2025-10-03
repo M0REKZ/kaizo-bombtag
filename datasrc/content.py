@@ -457,11 +457,25 @@ container.sprites.Add(Sprite("part_pulley", set_extras, 4,0,1,1))
 container.sprites.Add(Sprite("part_hectagon", set_extras, 6,0,2,2))
 
 # +KZ Kaizo Network
+
+# Crown
 kz_image_crown = Image("kz_crown", "kz/crown.png")
 container.images.Add(kz_image_crown)
 set_kz_crown = SpriteSet("kz_crown", kz_image_crown, 1, 1)
 container.spritesets.Add(set_kz_crown)
 container.sprites.Add(Sprite("kz_crown", set_kz_crown, 0, 0, 1, 1))
+
+# Turrets
+kz_image_turret_1 = Image("kz_turret_1", "kz/Turret_1.png")
+kz_image_turret_2 = Image("kz_turret_2", "kz/Turret_2.png")
+container.images.Add(kz_image_turret_1)
+container.images.Add(kz_image_turret_2)
+set_kz_turret_1 = SpriteSet("kz_turret_1", kz_image_turret_1, 1, 1)
+set_kz_turret_2 = SpriteSet("kz_turret_2", kz_image_turret_2, 1, 1)
+container.spritesets.Add(set_kz_turret_1)
+container.spritesets.Add(set_kz_turret_2)
+container.sprites.Add(Sprite("kz_turret_1", set_kz_turret_1, 0, 0, 1, 1))
+container.sprites.Add(Sprite("kz_turret_2", set_kz_turret_2, 0, 0, 1, 1))
 # end +KZ Kaizo Network
 
 anim = Animation("base")
