@@ -461,23 +461,6 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 	}
 }
 
-void CItems::RenderCrown()
-{
-	for(int i = 0; i < MAX_CLIENTS; ++i)
-	{
-		if(!GameClient()->m_Snap.m_aCharacters[i].m_Active || GameClient()->m_aClients[i].m_Team == TEAM_SPECTATORS)
-			continue;
-
-		if(GameClient()->m_aClients[i].m_CrownTick != -1 && GameClient()->m_aClients[i].m_CrownTick + Client()->GameTickSpeed() > Client()->GameTick(g_Config.m_ClDummy))
-		{
-			Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_CROWN].m_Id);
-			Graphics()->QuadsSetRotation(0);
-			Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
-			Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, 0, GameClient()->m_aClients[i].m_RenderPos.x, GameClient()->m_aClients[i].m_RenderPos.y - 64.0f, 1.0f, 0.5f);
-		}
-	}
-}
-
 void CItems::OnRender()
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
@@ -497,6 +480,17 @@ void CItems::OnRender()
 
 	bool UsePredicted = GameClient()->Predict() && GameClient()->AntiPingGunfire();
 	auto &aSwitchers = GameClient()->Switchers();
+
+	int Num = Client()->SnapNumItems(IClient::SNAP_CURRENT); //+KZ moved this here
+
+	// +KZ things that must render in background
+	for(int i = 0; i < Num; i++)
+	{
+		const IClient::CSnapItem Item = Client()->SnapGetItem(IClient::SNAP_CURRENT, i);
+
+		HandleKaizoSnapItem(Item, false);
+	}
+
 	if(UsePredicted)
 	{
 		for(auto *pProj = (CProjectile *)GameClient()->m_PrevPredictedWorld.FindFirst(CGameWorld::ENTTYPE_PROJECTILE); pProj; pProj = (CProjectile *)pProj->NextEntity())
@@ -640,8 +634,6 @@ void CItems::OnRender()
 		}
 	}
 
-	int Num = Client()->SnapNumItems(IClient::SNAP_CURRENT);
-
 	// render flag
 	for(int i = 0; i < Num; i++)
 	{
@@ -656,6 +648,10 @@ void CItems::OnRender()
 				RenderFlag(static_cast<const CNetObj_Flag *>(pPrev), static_cast<const CNetObj_Flag *>(Item.m_pData),
 					static_cast<const CNetObj_GameData *>(pPrevGameData), GameClient()->m_Snap.m_pGameDataObj);
 			}
+		}
+		else // +KZ probably is a Kaizo Network Item
+		{
+			HandleKaizoSnapItem(Item, true);
 		}
 	}
 
@@ -725,6 +721,9 @@ void CItems::OnInit()
 
 	IGraphics::CQuadItem Brick(0, 0, 16.0f, 16.0f);
 	m_DoorHeadOffset = Graphics()->QuadContainerAddQuads(m_ItemsQuadContainerIndex, &Brick, 1);
+
+	// +KZ Kaizo Network
+	OnInitKZ();
 
 	Graphics()->QuadContainerUpload(m_ItemsQuadContainerIndex);
 }
