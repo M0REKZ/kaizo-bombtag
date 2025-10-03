@@ -109,7 +109,7 @@ void CCharacterCore::PreTickKZ()
 {
 	if(m_Input.m_Fire & 1)
 	{
-		if(m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+		if(m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM && m_AttractorBeamPlayer == -1)
 		{
 			vec2 Dir = vec2(m_Input.m_TargetX, m_Input.m_TargetY);
 			if(length(Dir) > 300.f)
@@ -120,16 +120,20 @@ void CCharacterCore::PreTickKZ()
 			vec2 AttractorPos = m_Pos + (normalize(vec2(m_Input.m_TargetX,m_Input.m_TargetY)) * 82);
 
 			CCharacterCore * pCore = nullptr;
+
+			float BestDistance = 1000.f;
 			for(int i = 0; i < MAX_CLIENTS;i++)
 			{
 				if(i == m_Id)
 					continue;
 
 				vec2 TempPos;
-				pCore = Collision()->IntersectCharacterCore(AttractorPos, m_Pos + Dir, PhysicalSize(), TempPos, m_pWorld->m_apCharacters[i]);
 
-				if(pCore)
-					break;
+				if(Collision()->IntersectCharacterCore(AttractorPos, m_Pos + Dir, PhysicalSize(), TempPos, m_pWorld->m_apCharacters[i]) && distance(AttractorPos, TempPos) < BestDistance)
+				{
+					BestDistance = distance(AttractorPos, TempPos);
+					pCore = m_pWorld->m_apCharacters[i];
+				}
 			}
 
 			if(pCore)
@@ -137,7 +141,7 @@ void CCharacterCore::PreTickKZ()
 				m_AttractorBeamPlayer = pCore->m_Id;
 			}
 		}
-		else
+		else if(m_ActiveWeapon != KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM && m_AttractorBeamPlayer != -1)
 		{
 			m_AttractorBeamPlayer = -1;
 		}
