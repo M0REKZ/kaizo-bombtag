@@ -476,6 +476,14 @@ container.spritesets.Add(set_kz_turret_1)
 container.spritesets.Add(set_kz_turret_2)
 container.sprites.Add(Sprite("kz_turret_1", set_kz_turret_1, 0, 0, 1, 1))
 container.sprites.Add(Sprite("kz_turret_2", set_kz_turret_2, 0, 0, 1, 1))
+
+# Mine
+kz_image_mine = Image("kz_mine", "kz/mine.png")
+container.images.Add(kz_image_mine)
+set_kz_mine = SpriteSet("kz_mine", kz_image_mine, 1, 1)
+container.spritesets.Add(set_kz_mine)
+container.sprites.Add(Sprite("kz_mine", set_kz_mine, 0, 0, 1, 1))
+
 # end +KZ Kaizo Network
 
 anim = Animation("base")

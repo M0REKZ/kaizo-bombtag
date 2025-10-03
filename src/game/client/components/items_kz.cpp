@@ -16,6 +16,9 @@ void CItems::OnInitKZ()
 
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
 	m_TurretOffset_2 = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -16.f, -16.f, 32.f, 32.f);
+
+	Graphics()->QuadsSetSubset(0, 0, 1, 1);
+	m_MineOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -16.f, -16.f, 32.f, 32.f);
 }
 
 void CItems::RenderCrown()
@@ -47,6 +50,10 @@ void CItems::HandleKaizoSnapItem(const IClient::CSnapItem &Item, bool Front)
 		{
 			RenderTurret((CNetObj_KaizoNetworkTurret *)Item.m_pData);
 		}
+		else if(Item.m_Type == NETOBJTYPE_KAIZONETWORKMINE)
+		{
+			RenderMine((CNetObj_KaizoNetworkMine *)Item.m_pData);
+		}
 	}
 }
 
@@ -77,4 +84,17 @@ void CItems::RenderTurret(CNetObj_KaizoNetworkTurret *pTurret)
 	Graphics()->QuadsSetRotation(Client()->GameTick(g_Config.m_ClDummy) * pi * 2 / 3);
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
 	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, Offset, pTurret->m_X, pTurret->m_Y, 1.0f, 1.0f);
+}
+
+void CItems::RenderMine(CNetObj_KaizoNetworkMine *pMine)
+{
+	if(!pMine)
+		return;
+
+	int Tick = Client()->GameTick(g_Config.m_ClDummy);
+
+	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_MINE].m_Id);
+	Graphics()->QuadsSetRotation(Tick%360 * pi/180);
+	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
+	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_MineOffset, pMine->m_X, pMine->m_Y + 8 * sin((float)Tick / 25.0f), 1.0f, 1.0f);
 }
