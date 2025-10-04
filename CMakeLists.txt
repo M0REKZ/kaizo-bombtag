@@ -1452,6 +1452,12 @@ set(EXPECTED_DATA
   gui_icons.png
   gui_logo.png
   hud.png
+  kz/crown.png
+  kz/Turret_1.png
+  kz/Turret_2.png
+  kz/mine.png
+  kz/attractor.png
+  kz/portal.png
   languages/arabic.txt
   languages/azerbaijani.txt
   languages/belarusian.txt

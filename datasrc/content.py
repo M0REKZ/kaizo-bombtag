@@ -484,6 +484,20 @@ set_kz_mine = SpriteSet("kz_mine", kz_image_mine, 1, 1)
 container.spritesets.Add(set_kz_mine)
 container.sprites.Add(Sprite("kz_mine", set_kz_mine, 0, 0, 1, 1))
 
+# Portal gun
+kz_image_portal = Image("kz_portal", "kz/portal.png")
+container.images.Add(kz_image_portal)
+set_kz_portal = SpriteSet("kz_portal", kz_image_portal, 1, 1)
+container.spritesets.Add(set_kz_portal)
+container.sprites.Add(Sprite("kz_portal", set_kz_portal, 0, 0, 1, 1))
+
+# Attractor beam
+kz_image_attractor = Image("kz_attractor", "kz/attractor.png")
+container.images.Add(kz_image_attractor)
+set_kz_attractor = SpriteSet("kz_attractor", kz_image_attractor, 1, 1)
+container.spritesets.Add(set_kz_attractor)
+container.sprites.Add(Sprite("kz_attractor", set_kz_attractor, 0, 0, 1, 1))
+
 # end +KZ Kaizo Network
 
 anim = Animation("base")
