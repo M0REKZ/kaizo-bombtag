@@ -1907,7 +1907,9 @@ function(generate_source output_file script_parameter)
       datasrc/compile.py
       datasrc/content.py
       datasrc/datatypes.py
+      datasrc/images_kz.py
       datasrc/network.py
+      datasrc/network_kz.py
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 endfunction()
@@ -1934,7 +1936,9 @@ function(generate_maps output_file script_parameter)
       datasrc/compile.py
       datasrc/content.py
       datasrc/datatypes.py
+      datasrc/images_kz.py
       datasrc/network.py
+      datasrc/network_kz.py
       datasrc/seven/compile.py
       datasrc/seven/content.py
       datasrc/seven/datatypes.py
@@ -2417,6 +2421,7 @@ if(CLIENT)
     components/nameplates.h
     components/particles.cpp
     components/particles.h
+    components/players_kz.cpp
     components/players.cpp
     components/players.h
     components/race_demo.cpp
@@ -2439,6 +2444,7 @@ if(CLIENT)
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
+    gameclient_kz.cpp
     gameclient.cpp
     gameclient.h
     laser_data.cpp

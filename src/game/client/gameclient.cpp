@@ -1201,15 +1201,7 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dumm
 	}
 
 	//+KZ Kaizo Network
-	if (MsgId == NETMSGTYPE_SV_KAIZONETWORKCROWN)
-	{
-		CNetMsg_Sv_KaizoNetworkCrown *pMsg = (CNetMsg_Sv_KaizoNetworkCrown *)pRawMsg;
-		int CrownId = pMsg->m_ClientId;
-		if(CrownId >= 0 && CrownId < MAX_CLIENTS)
-		{
-			m_aClients[CrownId].m_CrownTick = m_GameWorld.GameTick();
-		}
-	}
+	HandleKaizoMessage(MsgId, pUnpacker, Conn, Dummy, pRawMsg);
 }
 
 void CGameClient::OnStateChange(int NewState, int OldState)
@@ -1964,6 +1956,11 @@ void CGameClient::OnNewSnapshot()
 					m_aSwitchStateTeam[g_Config.m_ClDummy] = -1;
 				GotSwitchStateTeam = true;
 			}
+			else //+KZ: May be a Kaizo Network item
+			{
+				HandleKaizoSnapItem(&Item);
+			}
+
 		}
 	}
 
@@ -2793,8 +2790,7 @@ void CGameClient::CClientData::UpdateRenderInfo()
 void CGameClient::CClientData::Reset()
 {
 	//+KZ
-	m_CrownTick = -1;
-	//+KZ end
+	KaizoReset();
 
 	m_UseCustomColor = 0;
 	m_ColorBody = 0;

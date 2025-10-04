@@ -14,6 +14,7 @@
 
 #include "kz_pickup.h"
 #include <game/mapitems_kz.h>
+#include <game/version.h>
 
 static constexpr int gs_PickupPhysSize = 14;
 
@@ -295,25 +296,40 @@ void CKZPickup::Snap(int SnappingClient)
 	}
 	else
 	{
-		if(m_Subtype == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+		if(Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_PORTAL_ATTRACTOR)
 		{
-			vec2 postemp;
-					
-			postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
-			postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
+			if(m_Subtype == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+			{
+				vec2 postemp;
+						
+				postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
+				postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
 
-			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1,Server()->Tick() % 3);
-			GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+				GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1,Server()->Tick() % 3);
+				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+			}
+			else if(m_Subtype == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+			{
+				vec2 postemp;
+						
+				postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
+				postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
+
+				GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1, LASERTYPE_DRAGGER, -1, -1, LASERFLAG_NO_PREDICT);
+				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+			}
 		}
-		else if(m_Subtype == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+		else
 		{
-			vec2 postemp;
-					
-			postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
-			postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
+			CNetObj_KaizoNetworkPickup *pPickup = Server()->SnapNewItem<CNetObj_KaizoNetworkPickup>(GetId());
 
-			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1, LASERTYPE_DRAGGER, -1, -1, LASERFLAG_NO_PREDICT);
-			GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+			if(!pPickup)
+				return;
+			
+			pPickup->m_X = (int)m_Pos.x;
+			pPickup->m_Y = (int)m_Pos.y;
+			pPickup->m_Type = m_Subtype;
+			pPickup->m_Switch = m_Number;
 		}
 	}
 }

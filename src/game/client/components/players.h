@@ -57,6 +57,12 @@ public:
 
 	const std::shared_ptr<CManagedTeeRenderInfo> &NinjaTeeRenderInfo() const { return m_pNinjaTeeRenderInfo; }
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
+
+	//+KZ
+	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START] = {0};
+
+	void OnKaizoInit();
+	void RenderKaizoWeapon(const CNetObj_Character *pPrevChar, const CNetObj_Character *pPlayerChar, const CTeeRenderInfo *pRenderInfo, int ClientId, float Intra, CAnimState &AnimState);
 };
 
 #endif

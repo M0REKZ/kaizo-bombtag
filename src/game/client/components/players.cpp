@@ -542,7 +542,11 @@ void CPlayers::RenderPlayer(
 			vec2 WeaponPosition;
 			bool IsSit = Inactive && !InAir && Stationary;
 
-			if(Player.m_Weapon == WEAPON_HAMMER)
+			if(GameClient()->IsKaizoCharUpdated(ClientId) && GameClient()->m_aClients[ClientId].m_KaizoCustomWeapon >= 0) //+KZ added
+			{
+				RenderKaizoWeapon(pPrevChar, pPlayerChar, &RenderInfo, ClientId, Intra, State);
+			}
+			else if(Player.m_Weapon == WEAPON_HAMMER)
 			{
 				// static position for hammer
 				WeaponPosition = Position + vec2(State.GetAttach()->m_X, State.GetAttach()->m_Y);
@@ -978,6 +982,7 @@ void CPlayers::OnInit()
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
 		Graphics()->QuadContainerAddSprite(m_WeaponEmoteQuadContainerIndex, 64.f);
 	}
+	OnKaizoInit(); //+KZ for custom weapons 
 	Graphics()->QuadContainerUpload(m_WeaponEmoteQuadContainerIndex);
 
 	for(int i = 0; i < NUM_WEAPONS; ++i)

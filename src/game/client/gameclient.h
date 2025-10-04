@@ -522,6 +522,11 @@ public:
 
 		//+KZ
 		int m_CrownTick = -1;
+		int m_KaizoCharTick = -1;
+		int m_KaizoWeapons = 0;
+		int m_KaizoCustomWeapon = -1;
+
+		void KaizoReset();
 	};
 
 	CClientData m_aClients[MAX_CLIENTS];
@@ -928,6 +933,11 @@ private:
 	};
 
 	SMultiView m_MultiView;
+
+	void HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg);
+	void HandleKaizoSnapItem(const IClient::CSnapItem *pItem);
+	public:
+	bool IsKaizoCharUpdated(int ClientId);
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);

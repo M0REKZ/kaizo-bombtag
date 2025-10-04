@@ -48,11 +48,14 @@ private:
 	void HandleKaizoSnapItem(const IClient::CSnapItem &Item, bool Front);
 	void RenderTurret(CNetObj_KaizoNetworkTurret *pTurret);
 	void RenderMine(CNetObj_KaizoNetworkMine *pMine);
+	void RenderKaizoPickup(CNetObj_KaizoNetworkPickup *pPickup);
 
 	int m_CrownOffset;
 	int m_TurretOffset_1;
 	int m_TurretOffset_2;
 	int m_MineOffset;
+
+	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
 };
 
 #endif

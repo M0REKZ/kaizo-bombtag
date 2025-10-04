@@ -1587,6 +1587,19 @@ void CCharacter::Snap(int SnappingClient)
 
 	// -1 is the default value, SnapNewItem zeroes the object, so it would incorrectly become 0
 	pDDNetCharacter->m_TuneZoneOverride = ((m_TuneZoneOverrideKZ < 0) ? (m_ForcedTuneKZ ? m_TuneZone : -1) : m_TuneZoneOverrideKZ); //+KZ modified
+
+	//+KZ
+	if(Server()->GetKaizoNetworkVersion(SnappingClient) >= KAIZO_NETWORK_VERSION_PORTAL_ATTRACTOR)
+	{
+		CNetObj_KaizoNetworkCharacter *pKaizoNetworkCharacter = Server()->SnapNewItem<CNetObj_KaizoNetworkCharacter>(Id);
+
+		if(!pKaizoNetworkCharacter)
+			return;
+
+		pKaizoNetworkCharacter->m_Tick = Server()->Tick();
+		pKaizoNetworkCharacter->m_WeaponFlags = 0; //nothing for now, i want to use it in the future to tell the client which weapons we have
+		pKaizoNetworkCharacter->m_RealCurrentWeapon = m_Core.m_ActiveWeapon >= KZ_CUSTOM_WEAPONS_START ? m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START : -1;
+	}
 }
 
 void CCharacter::PostGlobalSnap()

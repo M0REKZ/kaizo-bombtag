@@ -181,6 +181,10 @@ private:
 
 	int m_LastWeaponSwitchTick;
 	int m_LastTuneZoneTick;
+
+	//+KZ
+	public:
+	CNetObj_KaizoNetworkCharacter m_KaizoNetworkChar;
 };
 
 #endif

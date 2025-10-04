@@ -247,6 +247,9 @@ void CCharacter::HandleWeaponSwitch()
 
 void CCharacter::FireWeapon()
 {
+	if(m_KaizoNetworkChar.m_Tick != -1 && m_KaizoNetworkChar.m_Tick > GameWorld()->GameTick() - GameWorld()->GameTickSpeed()/5 && m_KaizoNetworkChar.m_RealCurrentWeapon != -1)
+		return; //+KZ for now dont predict
+
 	if(m_NumInputs < 2)
 		return;
 

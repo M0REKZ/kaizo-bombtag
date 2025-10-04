@@ -385,20 +385,6 @@ Objects = [
 	NetEventEx("MapSoundWorld:Common", "map-sound-world@netevent.ddnet.org", [
 		NetIntAny("m_SoundId"),
 	]),
- 
-	# +KZ Kaizo Network
- 
-	NetObjectEx("KaizoNetworkTurret", "kaizoturret@m0rekz.github.io", [
-		NetIntAny("m_X"),
-		NetIntAny("m_Y"),
-		NetIntRange("m_Type", 0, 'max_int'),
-	]),
- 
-	NetObjectEx("KaizoNetworkMine", "kaizomine@m0rekz.github.io", [
-		NetIntAny("m_X"),
-		NetIntAny("m_Y"),
-		NetIntRange("m_Type", 0, 'max_int'),
-	]),
 ]
 
 Messages = [
@@ -637,10 +623,8 @@ Messages = [
 		NetIntRange("m_Owner", 0, 'MAX_CLIENTS-1'),
 		NetTick("m_IntendedTick"),
 	]),
- 
-	# +KZ Kaizo Network
- 
-	NetMessageEx("Sv_KaizoNetworkCrown", "kaizocrown@m0rekz.github.io", [
-		NetIntAny("m_ClientId"),
-	]),
 ]
+
+
+# +KZ Kaizo Network
+exec(open("datasrc/network_kz.py").read())
