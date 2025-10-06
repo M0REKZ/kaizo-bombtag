@@ -25,6 +25,16 @@ bool CControls::CheckNewInput()
 	if(m_FastInput.m_Jump != TestInput.m_Jump)
 		NewInput = true;
 
+	if(m_FastInput.m_WantedWeapon != TestInput.m_WantedWeapon)
+		NewInput = true;
+	if(m_FastInput.m_NextWeapon != TestInput.m_NextWeapon)
+		NewInput = true;
+	if(m_FastInput.m_PrevWeapon != TestInput.m_PrevWeapon)
+		NewInput = true;
+
+	if(m_FastInput.m_PlayerFlags != TestInput.m_PlayerFlags)
+		NewInput = true;
+
 	if(g_Config.m_ClSubTickAiming)
 	{
 		TestInput.m_TargetX = (int)m_aMousePos[g_Config.m_ClDummy].x;
