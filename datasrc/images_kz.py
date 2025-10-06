@@ -33,6 +33,12 @@ set_kz_portal = SpriteSet("kz_portal", kz_image_portal, 1, 1)
 container.spritesets.Add(set_kz_portal)
 container.sprites.Add(Sprite("kz_portal", set_kz_portal, 0, 0, 7, 3))
 
+kz_image_portal_orange = Image("kz_portal_orange", "kz/portal_orange.png")
+container.images.Add(kz_image_portal_orange)
+set_kz_portal_orange = SpriteSet("kz_portal_orange", kz_image_portal_orange, 1, 1)
+container.spritesets.Add(set_kz_portal_orange)
+container.sprites.Add(Sprite("kz_portal_orange", set_kz_portal_orange, 0, 0, 7, 3))
+
 # Attractor beam
 kz_image_attractor = Image("kz_attractor", "kz/attractor.png")
 container.images.Add(kz_image_attractor)

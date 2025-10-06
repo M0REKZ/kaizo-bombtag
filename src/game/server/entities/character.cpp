@@ -1597,7 +1597,8 @@ void CCharacter::Snap(int SnappingClient)
 			return;
 
 		pKaizoNetworkCharacter->m_Tick = Server()->Tick();
-		pKaizoNetworkCharacter->m_WeaponFlags = 0; //nothing for now, i want to use it in the future to tell the client which weapons we have
+		pKaizoNetworkCharacter->m_Flags = 0;
+		pKaizoNetworkCharacter->m_Flags |= m_BluePortal ? KAIZOCHARACTERFLAG_BLUEPORTAL : 0;
 		pKaizoNetworkCharacter->m_RealCurrentWeapon = m_Core.m_ActiveWeapon >= KZ_CUSTOM_WEAPONS_START ? m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START : -1;
 	}
 }

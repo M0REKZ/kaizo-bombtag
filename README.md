@@ -21,3 +21,7 @@ This repo also uses code from the following mods that are NOT made by +KZ:
 [Nheir's Bot Mod for Teeworlds](https://github.com/nheir/teeworlds)
 
 [Kaffeine's Infclass](https://github.com/infclass/teeworlds-infclassR)
+
+Other credits:
+
+Portal gun and Attractor beam textures by Pointer

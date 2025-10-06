@@ -34,7 +34,7 @@ void CGameClient::HandleKaizoSnapItem(const IClient::CSnapItem *pItem)
             return;
 
         m_aClients[ClientId].m_KaizoCharTick = pKaizoChar->m_Tick;
-        m_aClients[ClientId].m_KaizoWeapons = pKaizoChar->m_WeaponFlags;
+        m_aClients[ClientId].m_CharFlags = pKaizoChar->m_Flags;
         m_aClients[ClientId].m_KaizoCustomWeapon = pKaizoChar->m_RealCurrentWeapon;
 
         CCharacter *pChar = m_GameWorld.GetCharacterById(ClientId);
@@ -55,7 +55,7 @@ void CGameClient::CClientData::KaizoReset()
 {
     m_CrownTick = -1;
     m_KaizoCharTick = -1;
-    m_KaizoWeapons = 0;
+    m_CharFlags = 0;
     m_KaizoCustomWeapon = -1;
 }
 

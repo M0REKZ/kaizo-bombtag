@@ -14,6 +14,11 @@ void CPlayers::OnKaizoInit()
     Graphics()->GetSpriteScale(&g_pData->m_aSprites[SPRITE_KZ_PORTAL], ScaleX, ScaleY);
     Graphics()->QuadsSetSubset(0, 0, 1, 1);
 	m_KaizoWeaponsOffsets[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START] = Graphics()->QuadContainerAddSprite(m_WeaponEmoteQuadContainerIndex, 92 * ScaleX, 92 * ScaleY);
+
+    Graphics()->GetSpriteScale(&g_pData->m_aSprites[SPRITE_KZ_PORTAL_ORANGE], ScaleX, ScaleY);
+    Graphics()->QuadsSetSubset(0, 0, 1, 1);
+	m_KaizoWeaponsOrangePortalGunOffset = Graphics()->QuadContainerAddSprite(m_WeaponEmoteQuadContainerIndex, 92 * ScaleX, 92 * ScaleY);
+
     Graphics()->GetSpriteScale(&g_pData->m_aSprites[SPRITE_KZ_ATTRACTOR], ScaleX, ScaleY);
     Graphics()->QuadsSetSubset(0, 0, 1, 1);
 	m_KaizoWeaponsOffsets[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START] = Graphics()->QuadContainerAddSprite(m_WeaponEmoteQuadContainerIndex, 92 * ScaleX, 92 * ScaleY);
@@ -50,10 +55,18 @@ void CPlayers::RenderKaizoWeapon(const CNetObj_Character *pPrevChar, const CNetO
 			//WeaponPosition.y += -2.f;
 			if(IsSit)
 				WeaponPosition.y += 3.0f;
-            Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_PORTAL].m_Id);
             Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 			Graphics()->QuadsSetRotation(AnimState.GetAttach()->m_Angle * pi * 2 + (Direction.x < 0 ? -Angle + pi : Angle));
-			Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, m_KaizoWeaponsOffsets[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START], WeaponPosition.x, WeaponPosition.y, Direction.x < 0 ? -1.0f : 1.0f);
+            if(GameClient()->m_aClients[ClientId].m_CharFlags & KAIZOCHARACTERFLAG_BLUEPORTAL)
+            {
+                Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_PORTAL].m_Id);
+                Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, m_KaizoWeaponsOffsets[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START], WeaponPosition.x, WeaponPosition.y, Direction.x < 0 ? -1.0f : 1.0f);
+            }
+            else
+            {
+                Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_PORTAL_ORANGE].m_Id);
+                Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, m_KaizoWeaponsOrangePortalGunOffset, WeaponPosition.x, WeaponPosition.y, Direction.x < 0 ? -1.0f : 1.0f);
+            }
         }
         break;
     case KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START:

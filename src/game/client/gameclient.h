@@ -523,7 +523,7 @@ public:
 		//+KZ
 		int m_CrownTick = -1;
 		int m_KaizoCharTick = -1;
-		int m_KaizoWeapons = 0;
+		int m_CharFlags = 0;
 		int m_KaizoCustomWeapon = -1;
 
 		void KaizoReset();

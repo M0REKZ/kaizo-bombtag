@@ -60,6 +60,7 @@ public:
 
 	//+KZ
 	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START] = {0};
+	int m_KaizoWeaponsOrangePortalGunOffset = 0;
 
 	void OnKaizoInit();
 	void RenderKaizoWeapon(const CNetObj_Character *pPrevChar, const CNetObj_Character *pPlayerChar, const CTeeRenderInfo *pRenderInfo, int ClientId, float Intra, CAnimState &AnimState);

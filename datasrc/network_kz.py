@@ -1,5 +1,13 @@
 # Copyright (C) Benjamín Gajardo (also known as +KZ)
 
+import datatypes
+
+KaizoCharacterFlags = ["BLUEPORTAL"]
+
+Flags += [
+	datatypes.Flags("KAIZOCHARACTERFLAG", KaizoCharacterFlags),
+]
+
 Objects += [
     # +KZ Kaizo Network
  
@@ -16,7 +24,7 @@ Objects += [
 	]),
 
     NetObjectEx("KaizoNetworkCharacter", "kaizocharacter@m0rekz.github.io", [
-		NetIntAny("m_WeaponFlags", default=0),
+		NetIntAny("m_Flags", default=0),
         NetIntAny("m_RealCurrentWeapon", default=-1),
         NetIntAny("m_Tick", default=0),
 	], validate_size=False),
