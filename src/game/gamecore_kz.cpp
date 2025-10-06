@@ -124,7 +124,13 @@ void CCharacterCore::PreTickKZ()
 			float BestDistance = 1000.f;
 			for(int i = 0; i < MAX_CLIENTS;i++)
 			{
+				if(!m_pWorld->m_apCharacters[i])
+					continue;
+
 				if(i == m_Id)
+					continue;
+
+				if((m_Id != -1 && !m_pTeams->CanCollide(i, m_Id)) || m_pWorld->m_apCharacters[i]->m_Solo || m_Solo)
 					continue;
 
 				vec2 TempPos;
