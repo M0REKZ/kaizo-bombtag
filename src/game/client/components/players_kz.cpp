@@ -47,7 +47,7 @@ void CPlayers::RenderKaizoWeapon(const CNetObj_Character *pPrevChar, const CNetO
     case KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START:
         {
 			vec2 WeaponPosition = Position + Direction * 24.f;
-			WeaponPosition.y += -2.f;
+			//WeaponPosition.y += -2.f;
 			if(IsSit)
 				WeaponPosition.y += 3.0f;
             Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_PORTAL].m_Id);

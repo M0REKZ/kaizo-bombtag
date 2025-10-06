@@ -312,6 +312,7 @@ public: // KZ
 	SKZColGenericParams m_GenericParams;
 	void PreTickKZ();
 	int m_AttractorBeamPlayer = -1;
+	CNetObj_KaizoNetworkCharacter *m_pKaizoNetworkChar = nullptr; //for client prediction
 };
 
 // input count

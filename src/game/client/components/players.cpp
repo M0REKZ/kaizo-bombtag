@@ -510,10 +510,14 @@ void CPlayers::RenderPlayer(
 			State.Add(&g_pData->m_aAnimations[ANIM_WALK], WalkTime, 1.0f);
 	}
 
-	if(Player.m_Weapon == WEAPON_HAMMER)
-		State.Add(&g_pData->m_aAnimations[ANIM_HAMMER_SWING], std::clamp(LastAttackTime * 5.0f, 0.0f, 1.0f), 1.0f);
-	if(Player.m_Weapon == WEAPON_NINJA)
-		State.Add(&g_pData->m_aAnimations[ANIM_NINJA_SWING], std::clamp(LastAttackTime * 2.0f, 0.0f, 1.0f), 1.0f);
+	//+KZ custom weapons: avoid weird weapon positions
+	if(!(GameClient()->IsKaizoCharUpdated(ClientId) && GameClient()->m_aClients[ClientId].m_KaizoCustomWeapon >= 0))
+	{
+		if(Player.m_Weapon == WEAPON_HAMMER)
+			State.Add(&g_pData->m_aAnimations[ANIM_HAMMER_SWING], std::clamp(LastAttackTime * 5.0f, 0.0f, 1.0f), 1.0f);
+		if(Player.m_Weapon == WEAPON_NINJA)
+			State.Add(&g_pData->m_aAnimations[ANIM_NINJA_SWING], std::clamp(LastAttackTime * 2.0f, 0.0f, 1.0f), 1.0f);
+	}
 
 	// do skidding
 	if(!InAir && WantOtherDir && length(Vel * 50) > 500.0f)

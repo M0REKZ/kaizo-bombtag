@@ -109,7 +109,7 @@ void CCharacterCore::PreTickKZ()
 {
 	if(m_Input.m_Fire & 1)
 	{
-		if(m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM && m_AttractorBeamPlayer == -1)
+		if((m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM || (m_pKaizoNetworkChar && m_pKaizoNetworkChar->m_RealCurrentWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START)) && m_AttractorBeamPlayer == -1)
 		{
 			vec2 Dir = vec2(m_Input.m_TargetX, m_Input.m_TargetY);
 			if(length(Dir) > 300.f)
