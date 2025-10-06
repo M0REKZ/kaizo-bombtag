@@ -1,4 +1,6 @@
 // Copyright (C) Benjamín Gajardo (also known as +KZ)
+//
+// CheckNewInput() is from Fast Input commit
 
 #include "gameclient.h"
 #include <game/client/prediction/entities/character.h>
@@ -55,4 +57,9 @@ void CGameClient::CClientData::KaizoReset()
     m_KaizoCharTick = -1;
     m_KaizoWeapons = 0;
     m_KaizoCustomWeapon = -1;
+}
+
+bool CGameClient::CheckNewInput() 
+{
+	return m_Controls.CheckNewInput();
 }
