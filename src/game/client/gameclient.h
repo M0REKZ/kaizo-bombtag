@@ -938,6 +938,7 @@ private:
 	void HandleKaizoSnapItem(const IClient::CSnapItem *pItem);
 	public:
 	bool IsKaizoCharUpdated(int ClientId);
+	bool CheckNewInput() override;
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);
