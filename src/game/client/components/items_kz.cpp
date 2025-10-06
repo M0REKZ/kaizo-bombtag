@@ -35,6 +35,9 @@ void CItems::OnInitKZ()
 
 void CItems::RenderCrown()
 {
+	if(!g_Config.m_KaizoShowCrowns)
+		return;
+
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		if(!GameClient()->m_Snap.m_aCharacters[i].m_Active || GameClient()->m_aClients[i].m_Team == TEAM_SPECTATORS)

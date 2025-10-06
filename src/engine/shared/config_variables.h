@@ -809,3 +809,4 @@ MACRO_CONFIG_INT(SvGoresGrenadeTele, sv_kog_grenade_tele, 0, 0, 1, CFGFLAG_SERVE
 //Client configs
 
 MACRO_CONFIG_INT(KaizoFastInput, kaizo_fast_input, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable fast input")
+MACRO_CONFIG_INT(KaizoShowCrowns, kaizo_show_crowns, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show crowns on top of the players in Kaizo servers")
