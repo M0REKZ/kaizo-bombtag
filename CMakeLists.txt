@@ -1458,6 +1458,7 @@ set(EXPECTED_DATA
   kz/mine.png
   kz/attractor.png
   kz/portal.png
+  kz/portal_orange.png
   languages/arabic.txt
   languages/azerbaijani.txt
   languages/belarusian.txt
