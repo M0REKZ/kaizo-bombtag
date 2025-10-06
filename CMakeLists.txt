@@ -1453,6 +1453,7 @@ set(EXPECTED_DATA
   gui_logo.png
   hud.png
   kz/crown.png
+  kz/gui_logo.png
   kz/Turret_1.png
   kz/Turret_2.png
   kz/license.txt
