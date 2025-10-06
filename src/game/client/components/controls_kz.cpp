@@ -33,6 +33,11 @@ bool CControls::CheckNewInput()
 		TestInput.m_TargetY *= GameClient()->m_Camera.m_Zoom;
 	}
 
+	if(m_FastInput.m_TargetX != TestInput.m_TargetX)
+		NewInput = true;
+	if(m_FastInput.m_TargetY != TestInput.m_TargetY)
+		NewInput = true;
+
 	if (NewInput)
 	{
 		m_FastInput = TestInput;
