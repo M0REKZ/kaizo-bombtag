@@ -1455,6 +1455,7 @@ set(EXPECTED_DATA
   kz/crown.png
   kz/Turret_1.png
   kz/Turret_2.png
+  kz/license.txt
   kz/mine.png
   kz/attractor.png
   kz/portal.png
