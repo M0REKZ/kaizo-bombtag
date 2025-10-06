@@ -2397,6 +2397,8 @@ if(CLIENT)
     components/items_kz.cpp
     components/items.cpp
     components/items.h
+    components/kz/custom_communities.cpp
+    components/kz/custom_communities.h
     components/local_server.cpp
     components/local_server.h
     components/mapimages.cpp

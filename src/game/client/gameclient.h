@@ -64,6 +64,8 @@
 #include "components/touch_controls.h"
 #include "components/voting.h"
 
+#include "components/kz/custom_communities.h" // +KZ from T-Client
+
 #include <vector>
 
 class CGameInfo
@@ -934,11 +936,13 @@ private:
 
 	SMultiView m_MultiView;
 
+	//+KZ
 	void HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg);
 	void HandleKaizoSnapItem(const IClient::CSnapItem *pItem);
 	public:
 	bool IsKaizoCharUpdated(int ClientId);
-	bool CheckNewInput() override;
+	bool CheckNewInput() override; //+KZ from FastInput commit
+	CCustomCommunities m_CustomCommunities; //+KZ from T-Client
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);
