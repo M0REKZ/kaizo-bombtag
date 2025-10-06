@@ -398,9 +398,6 @@ public:
 	virtual void ProcessDemoSnapshot(class CSnapshot *pSnap) = 0;
 
 	virtual void InitializeLanguage() = 0;
-
-	//+KZ
-	virtual bool CheckNewInput() = 0; // from Fast Input commit
 };
 
 extern IGameClient *CreateGameClient();

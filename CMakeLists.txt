@@ -2368,7 +2368,6 @@ if(CLIENT)
     components/community_icons.h
     components/console.cpp
     components/console.h
-    components/controls_kz.cpp
     components/controls.cpp
     components/controls.h
     components/countryflags.cpp

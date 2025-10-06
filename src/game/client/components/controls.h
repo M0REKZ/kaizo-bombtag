@@ -48,10 +48,5 @@ private:
 	static void ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputSet(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUserData);
-
-public:
-	//+KZ from Fast Input commit
-	bool CheckNewInput();
-	CNetObj_PlayerInput m_FastInput;
 };
 #endif

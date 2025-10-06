@@ -2395,9 +2395,9 @@ void CGameClient::OnPredict()
 	if(PredictDummy())
 		pDummyChar = m_PredictedWorld.GetCharacterById(m_PredictedDummyId);
 
-	// predict //+KZ modified for fast input commit
-	int PredictionTick = Client()->GetPredictionTick() + g_Config.m_KaizoFastInput;
-	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= PredictionTick; Tick++)
+	int PredictionTick = Client()->GetPredictionTick();
+	// predict
+	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= Client()->PredGameTick(g_Config.m_ClDummy); Tick++)
 	{
 		// fetch the previous characters
 		if(Tick == PredictionTick)
@@ -2424,10 +2424,6 @@ void CGameClient::OnPredict()
 		CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
 		CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
 		bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
-
-		//+KZ fast input commit
-		if(g_Config.m_KaizoFastInput && Tick == PredictionTick)
-			pInputData = &m_Controls.m_FastInput;
 
 		if(DummyFirst)
 			pDummyChar->OnDirectInput(pDummyInputData);
@@ -2574,7 +2570,7 @@ void CGameClient::OnPredict()
 		{
 			if(!m_Snap.m_aCharacters[i].m_Active || i == m_Snap.m_LocalClientId || !m_aLastActive[i])
 				continue;
-			vec2 NewPos = (m_PredictedTick == PredictionTick /* +KZ modified for fast input commit */) ? m_aClients[i].m_Predicted.m_Pos : m_aClients[i].m_PrevPredicted.m_Pos;
+			vec2 NewPos = (m_PredictedTick == Client()->PredGameTick(g_Config.m_ClDummy)) ? m_aClients[i].m_Predicted.m_Pos : m_aClients[i].m_PrevPredicted.m_Pos;
 			vec2 PredErr = (m_aLastPos[i] - NewPos) / (float)minimum(Client()->GetPredictionTime(), 200);
 			if(in_range(length(PredErr), 0.05f, 5.f))
 			{
@@ -2652,7 +2648,7 @@ void CGameClient::OnPredict()
 		}
 	}
 
-	m_PredictedTick = PredictionTick;
+	m_PredictedTick = Client()->PredGameTick(g_Config.m_ClDummy);
 
 	if(m_NewPredictedTick)
 		m_Ghost.OnNewPredictedSnapshot();

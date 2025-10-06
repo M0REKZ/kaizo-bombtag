@@ -805,7 +805,3 @@ MACRO_CONFIG_INT(SvKaizoLaserRecoverJump, sv_kaizo_laser_recover_jump, 0, 0, 1, 
 MACRO_CONFIG_INT(SvPortalProjectile, sv_portal_projectile, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Kaizo-Insta compatibility: Use Portal Projectile instead of Laser")
 MACRO_CONFIG_INT(SvGoresQuadsEnable, sv_kog_qquads_enable, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Gores compatibility: Moving tiles")
 MACRO_CONFIG_INT(SvGoresGrenadeTele, sv_kog_grenade_tele, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Gores compatibility: Teleport grenade")
-
-//Client configs
-
-MACRO_CONFIG_INT(KaizoFastInput, kaizo_fast_input, 1, 0, 1, CFGFLAG_CLIENT, "Enable fast input")
