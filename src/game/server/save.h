@@ -169,7 +169,7 @@ private:
 		bool m_Got = false;
 		//int m_Snap = 0; not needed for save
 		int m_Ammo = -1;
-	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
+	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS];
 };
 
 class CSaveHotReloadTee

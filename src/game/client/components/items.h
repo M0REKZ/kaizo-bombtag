@@ -55,7 +55,7 @@ private:
 	int m_TurretOffset_2;
 	int m_MineOffset;
 
-	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
+	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS];
 };
 
 #endif

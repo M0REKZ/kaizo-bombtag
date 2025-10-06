@@ -136,7 +136,7 @@ void CKZPickup::Tick()
 
 			case POWERUP_WEAPON:
 
-				if(m_Subtype >= 0 && m_Subtype < KZ_NUM_CUSTOM_WEAPONS && (!pChr->GetWeaponGot(m_Subtype) || pChr->GetWeaponAmmo(m_Subtype) != -1))
+				if(m_Subtype >= 0 && m_Subtype < KZ_CUSTOM_WEAPONS_END && (!pChr->GetWeaponGot(m_Subtype) || pChr->GetWeaponAmmo(m_Subtype) != -1))
 				{
 
 						if((m_Subtype == WEAPON_GUN || m_Subtype == WEAPON_HAMMER) && !pChr->GetWeaponGot(m_Subtype))

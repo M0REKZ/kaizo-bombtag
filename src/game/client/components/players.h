@@ -59,7 +59,7 @@ public:
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
 
 	//+KZ
-	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START] = {0};
+	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS] = {0};
 	int m_KaizoWeaponsOrangePortalGunOffset = 0;
 
 	void OnKaizoInit();

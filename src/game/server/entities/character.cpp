@@ -64,6 +64,9 @@ CCharacter::CCharacter(CGameWorld *pWorld, CNetObj_PlayerInput LastInput) :
 
 	m_aCustomWeapons[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START].m_Snap = WEAPON_LASER;
 	m_aCustomWeapons[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START].m_Snap = WEAPON_LASER;
+
+	m_KaizoNetworkChar.m_RealCurrentWeapon = -1;
+	m_Core.m_pKaizoNetworkChar = &m_KaizoNetworkChar; //+KZ
 }
 
 CCharacter::~CCharacter()
@@ -171,26 +174,47 @@ void CCharacter::Destroy()
 
 void CCharacter::SetWeapon(int W)
 {
-	if(W == m_Core.m_ActiveWeapon)
-		return;
+	if(W >= KZ_CUSTOM_WEAPONS_START)
+	{
+		if(W == m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START)
+			return;
+		
+		if(W >= KZ_CUSTOM_WEAPONS_END) //+KZ
+			return;
 
-	m_LastWeapon = m_Core.m_ActiveWeapon;
-	m_QueuedWeapon = -1;
-	m_Core.m_ActiveWeapon = W;
-	GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, TeamMask());
+		GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, TeamMask());
+		
+		W -= KZ_CUSTOM_WEAPONS_START;
+		m_KaizoNetworkChar.m_RealCurrentWeapon = W;
+		m_QueuedWeapon = -1;
+	}
+	else
+	{
+		if(W == m_Core.m_ActiveWeapon)
+			return;
 
-	if(m_Core.m_ActiveWeapon < 0 || m_Core.m_ActiveWeapon >= KZ_NUM_CUSTOM_WEAPONS)
-		m_Core.m_ActiveWeapon = 0;
+		m_LastWeapon = m_Core.m_ActiveWeapon;
+		m_QueuedWeapon = -1;
+		m_Core.m_ActiveWeapon = W;
+		GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, TeamMask());
+
+		if(m_Core.m_ActiveWeapon < 0 || m_Core.m_ActiveWeapon >= NUM_WEAPONS)
+			m_Core.m_ActiveWeapon = 0;
+
+		m_KaizoNetworkChar.m_RealCurrentWeapon = -1; //+KZ
+	}
 
 	//+KZ
-	
-	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+	if(Server()->GetKaizoNetworkVersion(m_pPlayer->GetCid()) < KAIZO_NETWORK_VERSION_PORTAL_ATTRACTOR)
 	{
-		GameServer()->SendBroadcast("Weapon: Portal Gun",m_pPlayer->GetCid());
-	}
-	else if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
-	{
-		GameServer()->SendBroadcast("Weapon: Attractor Beam",m_pPlayer->GetCid());
+		if(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+		{
+			GameServer()->SendBroadcast("Weapon: Portal Gun",m_pPlayer->GetCid());
+		}
+		else if(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+		{
+			GameServer()->SendBroadcast("Weapon: Attractor Beam",m_pPlayer->GetCid());
+		}
 	}
 }
 
@@ -412,7 +436,7 @@ void CCharacter::HandleNinja()
 void CCharacter::DoWeaponSwitch()
 {
 	// make sure we can switch
-	if(m_ReloadTimer != 0 || m_QueuedWeapon == -1 || m_Core.m_aWeapons[WEAPON_NINJA].m_Got || (m_QueuedWeapon >= 0 && m_QueuedWeapon < NUM_WEAPONS ? !m_Core.m_aWeapons[m_QueuedWeapon].m_Got : ( m_QueuedWeapon >= KZ_CUSTOM_WEAPONS_START && m_QueuedWeapon < KZ_NUM_CUSTOM_WEAPONS ? !m_aCustomWeapons[m_QueuedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got : false)))
+	if(m_ReloadTimer != 0 || m_QueuedWeapon == -1 || m_Core.m_aWeapons[WEAPON_NINJA].m_Got || (m_QueuedWeapon >= 0 && m_QueuedWeapon < NUM_WEAPONS ? !m_Core.m_aWeapons[m_QueuedWeapon].m_Got : ( m_QueuedWeapon >= KZ_CUSTOM_WEAPONS_START && m_QueuedWeapon < KZ_CUSTOM_WEAPONS_END ? !m_aCustomWeapons[m_QueuedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got : false)))
 		return;
 
 	// switch Weapon
@@ -421,7 +445,9 @@ void CCharacter::DoWeaponSwitch()
 
 void CCharacter::HandleWeaponSwitch()
 {
-	int WantedWeapon = m_Core.m_ActiveWeapon;
+	int WantedWeapon = m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START; //+KZ modified
+	if(WantedWeapon < KZ_CUSTOM_WEAPONS_START || WantedWeapon >= KZ_CUSTOM_WEAPONS_END)
+		WantedWeapon = m_Core.m_ActiveWeapon;
 	if(m_QueuedWeapon != -1)
 		WantedWeapon = m_QueuedWeapon;
 
@@ -439,12 +465,12 @@ void CCharacter::HandleWeaponSwitch()
 	{
 		while(Next) // Next Weapon selection
 		{
-			WantedWeapon = (WantedWeapon + 1) % KZ_NUM_CUSTOM_WEAPONS;
+			WantedWeapon = (WantedWeapon + 1) % KZ_CUSTOM_WEAPONS_END;
 			if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && m_Core.m_aWeapons[WantedWeapon].m_Got)
 			{
 					Next--;
 			}
-			else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_NUM_CUSTOM_WEAPONS && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+			else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_CUSTOM_WEAPONS_END && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
 			{
 					Next--;
 			}
@@ -455,12 +481,12 @@ void CCharacter::HandleWeaponSwitch()
 	{
 		while(Prev) // Prev Weapon selection
 		{
-			WantedWeapon = (WantedWeapon - 1) < 0 ? KZ_NUM_CUSTOM_WEAPONS - 1 : WantedWeapon - 1;
+			WantedWeapon = (WantedWeapon - 1) < 0 ? KZ_CUSTOM_WEAPONS_END - 1 : WantedWeapon - 1;
 			if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && m_Core.m_aWeapons[WantedWeapon].m_Got)
 			{
 					Prev--;
 			}
-			else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_NUM_CUSTOM_WEAPONS && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+			else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_CUSTOM_WEAPONS_END && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
 			{
 					Prev--;
 			}
@@ -476,7 +502,7 @@ void CCharacter::HandleWeaponSwitch()
 	{
 		m_QueuedWeapon = WantedWeapon;
 	}
-	else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_NUM_CUSTOM_WEAPONS && WantedWeapon != m_Core.m_ActiveWeapon && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+	else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_CUSTOM_WEAPONS_END && WantedWeapon != m_Core.m_ActiveWeapon && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
 	{
 		m_QueuedWeapon = WantedWeapon;
 	}
@@ -518,7 +544,7 @@ void CCharacter::FireWeapon()
 	if(CountInput(m_LatestPrevInput.m_Fire, m_LatestInput.m_Fire).m_Presses)
 		WillFire = true;
 
-	if(FullAuto && (m_LatestInput.m_Fire & 1) && (m_Core.m_ActiveWeapon < NUM_WEAPONS ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Ammo))
+	if(FullAuto && (m_LatestInput.m_Fire & 1) && (m_Core.m_ActiveWeapon < NUM_WEAPONS ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Ammo))
 		WillFire = true;
 
 	if(!WillFire)
@@ -538,11 +564,13 @@ void CCharacter::FireWeapon()
 	// check for ammo
 	if(m_Core.m_ActiveWeapon >=0 && m_Core.m_ActiveWeapon < NUM_WEAPONS && !m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
 		return;
-	else if(m_Core.m_ActiveWeapon >= KZ_CUSTOM_WEAPONS_START && m_Core.m_ActiveWeapon < KZ_NUM_CUSTOM_WEAPONS && !m_aCustomWeapons[m_Core.m_ActiveWeapon-KZ_CUSTOM_WEAPONS_START].m_Ammo)
+	else if(m_KaizoNetworkChar.m_RealCurrentWeapon >= 0 && m_KaizoNetworkChar.m_RealCurrentWeapon < KZ_NUM_CUSTOM_WEAPONS && !m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Ammo)
 		return;
 
 	vec2 ProjStartPos = m_Pos + Direction * GetProximityRadius() * 0.75f;
 
+	if(m_KaizoNetworkChar.m_RealCurrentWeapon < 0)
+	{
 	switch(m_Core.m_ActiveWeapon)
 	{
 	case WEAPON_HAMMER:
@@ -724,7 +752,12 @@ void CCharacter::FireWeapon()
 		GameServer()->CreateSound(m_Pos, SOUND_NINJA_FIRE, TeamMask()); // NOLINT(clang-analyzer-unix.Malloc)
 	}
 	break;
-	
+	}
+	}
+	else
+	{
+	switch(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START)
+	{
 	//+KZ
 	case KZ_CUSTOM_WEAPON_PORTAL_GUN:
 	{
@@ -741,18 +774,19 @@ void CCharacter::FireWeapon()
 	}
 	break;
 	}
+	}
 
 	m_AttackTick = Server()->Tick();
 
-	if(!m_ReloadTimer && m_Core.m_ActiveWeapon < NUM_WEAPONS)
+	if(m_KaizoNetworkChar.m_RealCurrentWeapon < 0 && !m_ReloadTimer && m_Core.m_ActiveWeapon < NUM_WEAPONS)
 	{
 		float FireDelay;
 		GetTuning(m_TuneZone)->Get(offsetof(CTuningParams, m_HammerFireDelay) / sizeof(CTuneParam) + m_Core.m_ActiveWeapon, &FireDelay);
 		m_ReloadTimer = FireDelay * Server()->TickSpeed() / 1000;
 	}
-	else if(m_Core.m_ActiveWeapon < KZ_NUM_CUSTOM_WEAPONS)
+	else if(m_KaizoNetworkChar.m_RealCurrentWeapon >= 0)
 	{
-		if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN || m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+		if(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_PORTAL_GUN || m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
 		{
 			m_ReloadTimer = GetTuning(m_TuneZone)->m_LaserFireDelay * Server()->TickSpeed() / 1000;
 		}
@@ -913,7 +947,7 @@ void CCharacter::Tick()
 		m_Waitingforreleaseaim = false;
 	}
 
-	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN && m_AimPressed && !m_Waitingforreleaseaim)
+	if(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_PORTAL_GUN && m_AimPressed && !m_Waitingforreleaseaim)
 	{
 		m_BluePortal = !m_BluePortal;
 		m_Waitingforreleaseaim = true;
@@ -1262,7 +1296,7 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 	{
 		Health = m_Health;
 		Armor = m_Armor;
-		AmmoCount = (m_FreezeTime == 0) ? (m_Core.m_ActiveWeapon < NUM_WEAPONS ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Ammo) : 0;
+		AmmoCount = (m_FreezeTime == 0) ? (m_KaizoNetworkChar.m_RealCurrentWeapon < 0 ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Ammo) : 0;
 	}
 
 	if(GetPlayer()->IsAfk() || GetPlayer()->IsPaused() || (m_pPlayer->m_PlayerFlags & PLAYERFLAG_IN_MENU)) // +KZ added in menu
@@ -1280,7 +1314,7 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 	}
 
 	//+KZ
-	if(Weapon >= KZ_CUSTOM_WEAPONS_START)
+	if(m_KaizoNetworkChar.m_RealCurrentWeapon >= 0 && m_KaizoNetworkChar.m_RealCurrentWeapon < KZ_NUM_CUSTOM_WEAPONS)
 		m_SnapCustomWeapon = true;
 	else
 		m_SnapCustomWeapon = false;
@@ -1313,7 +1347,7 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 		pCharacter->m_AttackTick = m_AttackTick;
 		pCharacter->m_Direction = m_Input.m_Direction;
 		if(m_SnapCustomWeapon)
-			pCharacter->m_Weapon = m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Snap;
+			pCharacter->m_Weapon = m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Snap;
 		else
 			pCharacter->m_Weapon = Weapon;
 		pCharacter->m_AmmoCount = AmmoCount;
@@ -1342,7 +1376,7 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 		pCharacter->m_AttackTick = m_AttackTick;
 		pCharacter->m_Direction = m_Input.m_Direction;
 		if(m_SnapCustomWeapon)
-			pCharacter->m_Weapon = m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Snap;
+			pCharacter->m_Weapon = m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Snap;
 		else
 			pCharacter->m_Weapon = Weapon;
 		pCharacter->m_AmmoCount = AmmoCount;
@@ -1439,7 +1473,7 @@ void CCharacter::Snap(int SnappingClient)
 		m_DidHookedQuadSound = false;
 	}
 
-	if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+	if(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_PORTAL_GUN)
 	{
 		vec2 postemp;
 				
@@ -1447,7 +1481,7 @@ void CCharacter::Snap(int SnappingClient)
 
 		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_PortalKindId,postemp,postemp,Server()->Tick(),m_pPlayer->GetCid(),m_BluePortal ? LASERTYPE_RIFLE : LASERTYPE_SHOTGUN);
 	}
-	else if(m_Core.m_ActiveWeapon == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+	else if(m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
 	{
 		vec2 postemp;
 
@@ -1599,7 +1633,7 @@ void CCharacter::Snap(int SnappingClient)
 		pKaizoNetworkCharacter->m_Tick = Server()->Tick();
 		pKaizoNetworkCharacter->m_Flags = 0;
 		pKaizoNetworkCharacter->m_Flags |= m_BluePortal ? KAIZOCHARACTERFLAG_BLUEPORTAL : 0;
-		pKaizoNetworkCharacter->m_RealCurrentWeapon = m_Core.m_ActiveWeapon >= KZ_CUSTOM_WEAPONS_START ? m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START : -1;
+		pKaizoNetworkCharacter->m_RealCurrentWeapon = m_KaizoNetworkChar.m_RealCurrentWeapon;
 	}
 }
 
@@ -2618,7 +2652,7 @@ bool CCharacter::UnFreeze()
 	if(m_FreezeTime > 0)
 	{
 		m_Armor = 10;
-		if(m_Core.m_ActiveWeapon < NUM_WEAPONS ? !m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Got : !m_aCustomWeapons[m_Core.m_ActiveWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+		if(m_KaizoNetworkChar.m_RealCurrentWeapon < 0 ? !m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Got : !m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Got)
 			m_Core.m_ActiveWeapon = WEAPON_GUN;
 		m_FreezeTime = 0;
 		m_Core.m_FreezeStart = 0;
@@ -2662,7 +2696,7 @@ void CCharacter::GiveWeapon(int Weapon, bool Remove)
 
 
 	}
-	else if(Weapon >= KZ_CUSTOM_WEAPONS_START && Weapon < KZ_NUM_CUSTOM_WEAPONS)
+	else if(Weapon >= KZ_CUSTOM_WEAPONS_START && Weapon < KZ_CUSTOM_WEAPONS_END)
 	{
 		m_aCustomWeapons[Weapon-KZ_CUSTOM_WEAPONS_START].m_Got = !Remove;
 

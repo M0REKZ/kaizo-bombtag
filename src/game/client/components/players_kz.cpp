@@ -26,7 +26,7 @@ void CPlayers::OnKaizoInit()
 
 void CPlayers::RenderKaizoWeapon(const CNetObj_Character *pPrevChar, const CNetObj_Character *pPlayerChar, const CTeeRenderInfo *pRenderInfo, int ClientId, float Intra, CAnimState &AnimState)
 {
-    if(GameClient()->m_aClients[ClientId].m_KaizoCustomWeapon >= KZ_NUM_CUSTOM_WEAPONS)
+    if(GameClient()->m_aClients[ClientId].m_KaizoCustomWeapon >= KZ_CUSTOM_WEAPONS_END)
         return;
 
     float IntraTick = Intra;

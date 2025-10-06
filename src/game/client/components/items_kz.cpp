@@ -123,7 +123,7 @@ void CItems::RenderKaizoPickup(CNetObj_KaizoNetworkPickup *pPickup)
 	if(!pPickup)
 		return;
 
-	if(pPickup->m_Type < KZ_CUSTOM_WEAPONS_START || pPickup->m_Type >= KZ_NUM_CUSTOM_WEAPONS)
+	if(pPickup->m_Type < KZ_CUSTOM_WEAPONS_START || pPickup->m_Type >= KZ_CUSTOM_WEAPONS_END)
 		return;
 
 	int SwitcherTeam = GameClient()->SwitchStateTeam();

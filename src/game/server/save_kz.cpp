@@ -18,7 +18,7 @@ void CSaveTee::SaveKZ(CCharacter *pchr, bool AddPenalty)
 	m_BluePortal = pchr->m_BluePortal;
     m_TuneZoneOverrideKZ = pchr->m_TuneZoneOverrideKZ;
 
-    for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START; i++)
+    for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS; i++)
     {
 	    m_aCustomWeapons[i].m_Ammo = pchr->m_aCustomWeapons[i].m_Ammo;
         m_aCustomWeapons[i].m_Got = pchr->m_aCustomWeapons[i].m_Got;
@@ -32,7 +32,7 @@ bool CSaveTee::LoadKZ(CCharacter *pchr, std::optional<int> Team)
 	pchr->m_BluePortal = m_BluePortal;
     pchr->m_TuneZoneOverrideKZ = m_TuneZoneOverrideKZ;
 
-    for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START; i++)
+    for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS; i++)
     {
 	    pchr->m_aCustomWeapons[i].m_Ammo = m_aCustomWeapons[i].m_Ammo;
         pchr->m_aCustomWeapons[i].m_Got = m_aCustomWeapons[i].m_Got;
