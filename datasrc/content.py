@@ -243,7 +243,7 @@ container.images.Add(image_null)
 container.images.Add(image_game)
 container.images.Add(image_particles)
 container.images.Add(Image("cursor", "gui_cursor.png"))
-container.images.Add(Image("banner", "gui_logo.png"))
+container.images.Add(Image("banner", "kz/gui_logo.png")) # +KZ modified
 container.images.Add(image_emoticons)
 container.images.Add(Image("background_noise", "background_noise.png"))
 container.images.Add(image_speedup_arrow)
