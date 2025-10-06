@@ -2071,6 +2071,7 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   assertion_logger.h
   compression.cpp
   compression.h
+  config_kz.cpp
   config.cpp
   config.h
   config_variables.h
@@ -2406,6 +2407,7 @@ if(CLIENT)
     components/mapsounds.h
     components/menu_background.cpp
     components/menu_background.h
+    components/menus_kz.cpp
     components/menus.cpp
     components/menus.h
     components/menus_browser.cpp

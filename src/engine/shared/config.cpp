@@ -384,6 +384,9 @@ bool CConfigManager::Save()
 	char aLineBuf[2048];
 	for(const SConfigVariable *pVariable : m_vpAllVariables)
 	{
+		if(pVariable->m_pScriptName && str_find(pVariable->m_pScriptName, "kaizo")) // +KZ dont save kaizo configs
+			continue;
+
 		if((pVariable->m_Flags & CFGFLAG_SAVE) != 0 && !pVariable->IsDefault())
 		{
 			pVariable->Serialize(aLineBuf, sizeof(aLineBuf));
@@ -398,6 +401,9 @@ bool CConfigManager::Save()
 
 	for(const char *pCommand : m_vpUnknownCommands)
 	{
+		if(pCommand && str_find(pCommand, "kaizo")) //+KZ dont save kaizo configs
+			continue;
+		
 		WriteLine(pCommand);
 	}
 

@@ -3393,6 +3393,14 @@ void CClient::Run()
 		m_vQuittingWarnings.emplace_back(Localize("Error saving settings"), aError);
 	}
 
+	//+KZ
+	if(!m_pConfigManager->SaveKaizo())
+	{
+		char aError[128];
+		str_format(aError, sizeof(aError), Localize("Saving settings to '%s' failed"), KAIZO_CONFIG_FILE);
+		m_vQuittingWarnings.emplace_back(Localize("Error saving settings"), aError);
+	}
+
 	m_Fifo.Shutdown();
 	m_Http.Shutdown();
 	Engine()->ShutdownJobs();
@@ -4851,6 +4859,22 @@ int main(int argc, const char **argv)
 		if(!pConsole->ExecuteFile(CONFIG_FILE))
 		{
 			const char *pError = "Failed to load config from '" CONFIG_FILE "'.";
+			log_error("client", "%s", pError);
+			pClient->ShowMessageBox({.m_pTitle = "Config File Error", .m_pMessage = pError});
+			PerformAllCleanup();
+			return -1;
+		}
+		pConsole->SetUnknownCommandCallback(IConsole::EmptyUnknownCommandCallback, nullptr);
+	}
+
+
+	//+KZ config
+	if(pStorage->FileExists(KAIZO_CONFIG_FILE, IStorage::TYPE_ALL))
+	{
+		pConsole->SetUnknownCommandCallback(SaveUnknownCommandCallback, pClient);
+		if(!pConsole->ExecuteFile(KAIZO_CONFIG_FILE))
+		{
+			const char *pError = "Failed to load config from '" KAIZO_CONFIG_FILE "'.";
 			log_error("client", "%s", pError);
 			pClient->ShowMessageBox({.m_pTitle = "Config File Error", .m_pMessage = pError});
 			PerformAllCleanup();

@@ -21,6 +21,9 @@ static constexpr const char *DEFAULT_SAVED_RCON_USER = "local-server";
 #define AUTOEXEC_CLIENT_FILE "autoexec_client.cfg"
 #define AUTOEXEC_SERVER_FILE "autoexec_server.cfg"
 
+//+KZ
+#define KAIZO_CONFIG_FILE "settings_kaizo.cfg"
+
 class CConfig
 {
 public:
@@ -241,6 +244,9 @@ public:
 	void StoreUnknownCommand(const char *pCommand) override;
 
 	void PossibleConfigVariables(const char *pStr, int FlagMask, POSSIBLECFGFUNC pfnCallback, void *pUserData) override;
+
+	//+KZ
+	bool SaveKaizo() override;
 };
 
 #endif

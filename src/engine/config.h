@@ -26,6 +26,9 @@ public:
 	virtual void StoreUnknownCommand(const char *pCommand) = 0;
 
 	virtual void PossibleConfigVariables(const char *pStr, int FlagMask, POSSIBLECFGFUNC pfnCallback, void *pUserData) = 0;
+
+	//+KZ
+	virtual bool SaveKaizo() = 0;
 };
 
 extern IConfigManager *CreateConfigManager();

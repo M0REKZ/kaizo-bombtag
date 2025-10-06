@@ -674,6 +674,7 @@ public:
 		SETTINGS_SOUND,
 		SETTINGS_DDNET,
 		SETTINGS_ASSETS,
+		SETTINGS_KAIZO, //+KZ
 
 		SETTINGS_LENGTH,
 
@@ -811,5 +812,8 @@ private:
 	void RenderSettingsDDNet(CUIRect MainView);
 	void RenderSettingsAppearance(CUIRect MainView);
 	bool RenderHslaScrollbars(CUIRect *pRect, unsigned int *pColor, bool Alpha, float DarkestLight);
+
+	//+KZ
+	void RenderSettingsKaizo(CUIRect MainView);
 };
 #endif
