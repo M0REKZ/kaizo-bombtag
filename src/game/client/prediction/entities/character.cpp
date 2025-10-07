@@ -414,7 +414,10 @@ void CCharacter::FireWeapon()
 		{
 			float LaserReach = GetTuning(GetOverriddenTuneZone())->m_LaserReach;
 
-			new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_SHOTGUN);
+			SKZLaserParams ShotgunParams;
+			ShotgunParams.m_IsRecoverJump = m_KaizoNetworkChar.m_Flags & KAIZOCHARACTERFLAG_LASERRECOVERJUMP;
+
+			new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_SHOTGUN, &ShotgunParams);
 		}
 	}
 	break;
@@ -441,7 +444,10 @@ void CCharacter::FireWeapon()
 	{
 		float LaserReach = GetTuning(GetOverriddenTuneZone())->m_LaserReach;
 
-		new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_LASER);
+		SKZLaserParams LaserParams;
+		LaserParams.m_IsRecoverJump = m_KaizoNetworkChar.m_Flags & KAIZOCHARACTERFLAG_LASERRECOVERJUMP;
+
+		new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_LASER, &LaserParams);
 	}
 	break;
 

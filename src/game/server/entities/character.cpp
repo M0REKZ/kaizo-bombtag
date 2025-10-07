@@ -1633,6 +1633,7 @@ void CCharacter::Snap(int SnappingClient)
 		pKaizoNetworkCharacter->m_Tick = Server()->Tick();
 		pKaizoNetworkCharacter->m_Flags = 0;
 		pKaizoNetworkCharacter->m_Flags |= m_BluePortal ? KAIZOCHARACTERFLAG_BLUEPORTAL : 0;
+		pKaizoNetworkCharacter->m_Flags |= (m_HasRecoverJumpLaser || g_Config.m_SvKaizoLaserRecoverJump) ? KAIZOCHARACTERFLAG_LASERRECOVERJUMP : 0;
 		pKaizoNetworkCharacter->m_RealCurrentWeapon = m_KaizoNetworkChar.m_RealCurrentWeapon;
 	}
 }

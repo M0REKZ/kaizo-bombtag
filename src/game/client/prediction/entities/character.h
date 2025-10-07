@@ -185,6 +185,7 @@ private:
 	//+KZ
 	public:
 	CNetObj_KaizoNetworkCharacter m_KaizoNetworkChar;
+	CCharacterCore &GetCoreKZ() { return m_Core; }
 };
 
 #endif

@@ -2,7 +2,7 @@
 
 import datatypes
 
-KaizoCharacterFlags = ["BLUEPORTAL"]
+KaizoCharacterFlags = ["BLUEPORTAL", "LASERRECOVERJUMP"]
 
 Flags += [
 	datatypes.Flags("KAIZOCHARACTERFLAG", KaizoCharacterFlags),

@@ -12,7 +12,7 @@ class CLaser : public CEntity
 	friend class CGameWorld;
 
 public:
-	CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type);
+	CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type, SKZLaserParams *pParams = nullptr);
 
 	void Tick() override;
 
@@ -41,6 +41,9 @@ private:
 	vec2 m_PrevPos;
 	int m_Type;
 	int m_TuneZone;
+
+	//+KZ
+	bool m_IsRecoverJump = false;
 };
 
 #endif
