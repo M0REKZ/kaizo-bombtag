@@ -610,6 +610,7 @@ void CGameClient::OnConnected()
 void CGameClient::OnReset()
 {
 	InvalidateSnapshot();
+	KaizoReset(); //+KZ
 
 	m_EditorMovementDelay = 5;
 
@@ -1878,6 +1879,7 @@ void CGameClient::OnNewSnapshot()
 				}
 				FoundGameInfoEx = true;
 				m_GameInfo = GetGameInfo((const CNetObj_GameInfoEx *)Item.m_pData, Item.m_DataSize, &ServerInfo);
+				GetKaizoInfo(&ServerInfo); //+KZ added
 			}
 			else if(Item.m_Type == NETOBJTYPE_GAMEDATA)
 			{
@@ -1968,6 +1970,7 @@ void CGameClient::OnNewSnapshot()
 	if(!FoundGameInfoEx)
 	{
 		m_GameInfo = GetGameInfo(nullptr, 0, &ServerInfo);
+		GetKaizoInfo(&ServerInfo); //+KZ added
 	}
 
 	for(CClientData &Client : m_aClients)

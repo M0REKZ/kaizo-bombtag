@@ -30,4 +30,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoPredictDDNetTeleport ^= 1;
 	}
+
+	MainView.HSplitTop(2.0f, nullptr, &MainView);
+
+    MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_KaizoInstaShieldShield, Localize("InstaShield Shield"), g_Config.m_KaizoInstaShieldShield, &Button))
+	{
+		g_Config.m_KaizoInstaShieldShield ^= 1;
+	}
 }

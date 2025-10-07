@@ -2,4 +2,6 @@ Licenses for the files inside this folder:
 
 portal.png, portal_orange.png, attractor.png by Pointer (license: CC BY-SA 3.0)
 
+shield.png by Dune (license: CC BY-SA 3.0)
+
 All other files are made by +KZ, they are under Copyright (c) Benjamín Gajardo

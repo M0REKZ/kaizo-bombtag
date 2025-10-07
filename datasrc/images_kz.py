@@ -26,6 +26,13 @@ set_kz_mine = SpriteSet("kz_mine", kz_image_mine, 1, 1)
 container.spritesets.Add(set_kz_mine)
 container.sprites.Add(Sprite("kz_mine", set_kz_mine, 0, 0, 1, 1))
 
+# InstaShield Shield
+kz_image_shield = Image("kz_shield", "kz/shield.png")
+container.images.Add(kz_image_shield)
+set_kz_shield = SpriteSet("kz_shield", kz_image_shield, 1, 1)
+container.spritesets.Add(set_kz_shield)
+container.sprites.Add(Sprite("kz_shield", set_kz_shield, 0, 0, 1, 1))
+
 # Portal gun
 kz_image_portal = Image("kz_portal", "kz/portal.png")
 container.images.Add(kz_image_portal)

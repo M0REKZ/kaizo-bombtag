@@ -943,6 +943,10 @@ private:
 	bool IsKaizoCharUpdated(int ClientId);
 	bool CheckNewInput() override; //+KZ from FastInput commit
 	CCustomCommunities m_CustomCommunities; //+KZ from T-Client
+
+	void GetKaizoInfo(CServerInfo *pServerInfo);
+	bool m_InstaShield = false;
+	void KaizoReset();
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);

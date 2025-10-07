@@ -708,6 +708,17 @@ void CPlayers::RenderPlayer(
 			case WEAPON_SHOTGUN: RenderHand(&RenderInfo, WeaponPosition, Direction, -pi / 2, vec2(-5, 4), Alpha); break;
 			case WEAPON_GRENADE: RenderHand(&RenderInfo, WeaponPosition, Direction, -pi / 2, vec2(-4, 7), Alpha); break;
 			}
+
+			//+KZ from Dune Gamer client
+			if(g_Config.m_KaizoInstaShieldShield && Player.m_Weapon == WEAPON_SHOTGUN && GameClient()->m_InstaShield)
+			{
+				Graphics()->TextureSet(g_pData->m_aImages[IMAGE_KZ_SHIELD].m_Id);
+				Graphics()->QuadsBegin();
+				Graphics()->QuadsSetRotation(State.GetAttach()->m_Angle*pi*2+Angle);
+				IGraphics::CQuadItem Quad(Position.x-68, Position.y-68, 136, 136);
+				Graphics()->QuadsDrawTL(&Quad, 1);
+				Graphics()->QuadsEnd();
+			}
 		}
 	}
 

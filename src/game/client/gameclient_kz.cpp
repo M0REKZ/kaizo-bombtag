@@ -63,3 +63,14 @@ bool CGameClient::CheckNewInput()
 {
 	return m_Controls.CheckNewInput();
 }
+
+void CGameClient::GetKaizoInfo(CServerInfo *pServerInfo)
+{
+	Client()->GetServerInfo(pServerInfo);
+    m_InstaShield = pServerInfo->m_aGameType[0] == 'i' && pServerInfo->m_aGameType[str_length(pServerInfo->m_aGameType) - 1] == ')';
+}
+
+void CGameClient::KaizoReset()
+{
+    m_InstaShield = false;
+}

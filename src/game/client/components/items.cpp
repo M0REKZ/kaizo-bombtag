@@ -141,6 +141,10 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId)
 
 void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags)
 {
+	//+KZ from Dune Gamer client
+	if(pCurrent->m_Type == POWERUP_ARMOR && (g_Config.m_KaizoInstaShieldShield ? GameClient()->m_InstaShield : false))
+		return;
+
 	int CurWeapon = std::clamp(pCurrent->m_Subtype, 0, NUM_WEAPONS - 1);
 	int QuadOffset = 2;
 	float IntraTick = IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy);
