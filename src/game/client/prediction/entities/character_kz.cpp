@@ -13,7 +13,7 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
     if(g_Config.m_KaizoPredictDDNetTeleport && GameWorld()->m_WorldConfig.m_IsDDRace)
     {
         int z = Collision()->IsTeleport(MapIndex);
-        if(!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons && z && !Collision()->TeleOuts(z - 1).empty())
+        if(!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons && z && Collision()->TeleOuts(z - 1).size() == 1)
         {
             if(m_Core.m_Super || m_Core.m_Invincible)
                 return;
@@ -29,7 +29,7 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
             return;
         }
         int evilz = Collision()->IsEvilTeleport(MapIndex);
-        if(evilz && !Collision()->TeleOuts(evilz - 1).empty())
+        if(evilz && Collision()->TeleOuts(evilz - 1).size() == 1)
         {
             if(m_Core.m_Super || m_Core.m_Invincible)
                 return;
@@ -59,7 +59,7 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
             // first check if there is a TeleCheckOut for the current recorded checkpoint, if not check previous checkpoints
             for(int k = m_TeleCheckpoint - 1; k >= 0; k--)
             {
-                if(!Collision()->TeleCheckOuts(k).empty())
+                if(Collision()->TeleCheckOuts(k).size() == 1)
                 {
                     int TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleCheckOuts(k).size());
                     m_Core.m_Pos = Collision()->TeleCheckOuts(k)[TeleOut];
@@ -85,7 +85,7 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
             // first check if there is a TeleCheckOut for the current recorded checkpoint, if not check previous checkpoints
             for(int k = m_TeleCheckpoint - 1; k >= 0; k--)
             {
-                if(!Collision()->TeleCheckOuts(k).empty())
+                if(Collision()->TeleCheckOuts(k).size() == 1)
                 {
                     int TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleCheckOuts(k).size());
                     m_Core.m_Pos = Collision()->TeleCheckOuts(k)[TeleOut];
