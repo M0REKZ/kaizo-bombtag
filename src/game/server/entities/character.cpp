@@ -190,7 +190,7 @@ void CCharacter::SetWeapon(int W)
 	}
 	else
 	{
-		if(W == m_Core.m_ActiveWeapon)
+		if(m_KaizoNetworkChar.m_RealCurrentWeapon < 0 && W == m_Core.m_ActiveWeapon)
 			return;
 
 		m_LastWeapon = m_Core.m_ActiveWeapon;
@@ -498,11 +498,11 @@ void CCharacter::HandleWeaponSwitch()
 		WantedWeapon = m_Input.m_WantedWeapon - 1;
 
 	// check for insane values
-	if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && WantedWeapon != m_Core.m_ActiveWeapon && m_Core.m_aWeapons[WantedWeapon].m_Got)
+	if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && (WantedWeapon != m_Core.m_ActiveWeapon || m_KaizoNetworkChar.m_RealCurrentWeapon >= 0) && m_Core.m_aWeapons[WantedWeapon].m_Got)
 	{
 		m_QueuedWeapon = WantedWeapon;
 	}
-	else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_CUSTOM_WEAPONS_END && WantedWeapon != m_Core.m_ActiveWeapon && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
+	else if(WantedWeapon >= KZ_CUSTOM_WEAPONS_START && WantedWeapon < KZ_CUSTOM_WEAPONS_END && WantedWeapon != m_KaizoNetworkChar.m_RealCurrentWeapon + KZ_CUSTOM_WEAPONS_START && m_aCustomWeapons[WantedWeapon - KZ_CUSTOM_WEAPONS_START].m_Got)
 	{
 		m_QueuedWeapon = WantedWeapon;
 	}
