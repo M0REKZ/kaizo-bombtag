@@ -587,6 +587,8 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
+	m_DontMixPredictedPos = false; //+KZ
+
 	if(m_pGameWorld->m_WorldConfig.m_NoWeakHookAndBounce)
 	{
 		m_Core.TickDeferred();
@@ -1130,10 +1132,14 @@ void CCharacter::DDRacePostCoreTick()
 	std::vector<int> vIndices = Collision()->GetMapIndices(m_PrevPos, m_Pos);
 	if(!vIndices.empty())
 		for(int Index : vIndices)
+		{
 			HandleTiles(Index);
+			KaizoPredictNormalTiles(Index); //+KZ
+		}
 	else
 	{
 		HandleTiles(CurrentIndex);
+		KaizoPredictNormalTiles(CurrentIndex); //+KZ
 	}
 }
 

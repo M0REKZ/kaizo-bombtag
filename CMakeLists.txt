@@ -2461,6 +2461,7 @@ if(CLIENT)
     lineinput.h
     pickup_data.cpp
     pickup_data.h
+    prediction/entities/character_kz.cpp
     prediction/entities/character.cpp
     prediction/entities/character.h
     prediction/entities/door.cpp

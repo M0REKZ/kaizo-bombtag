@@ -22,4 +22,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoShowCrowns ^= 1;
 	}
+
+	MainView.HSplitTop(2.0f, nullptr, &MainView);
+
+    MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_KaizoPredictDDNetTeleport, Localize("Predict DDNet teleports if there is only 1 exit"), g_Config.m_KaizoPredictDDNetTeleport, &Button))
+	{
+		g_Config.m_KaizoPredictDDNetTeleport ^= 1;
+	}
 }

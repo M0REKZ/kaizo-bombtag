@@ -186,6 +186,9 @@ private:
 	public:
 	CNetObj_KaizoNetworkCharacter m_KaizoNetworkChar;
 	CCharacterCore &GetCoreKZ() { return m_Core; }
+	void KaizoPredictNormalTiles(int Index); //for normal tiles
+	void ResetPickups();
+	bool m_DontMixPredictedPos = false;
 };
 
 #endif

@@ -3584,6 +3584,9 @@ void CGameClient::UpdateRenderedCharacters()
 
 			m_aClients[i].m_IsPredicted = true;
 
+			if(pChar->m_DontMixPredictedPos) //+KZ
+				Pos = vec2(m_aClients[i].m_RenderCur.m_X, m_aClients[i].m_RenderCur.m_Y);
+			else
 			Pos = mix(
 				vec2(m_aClients[i].m_RenderPrev.m_X, m_aClients[i].m_RenderPrev.m_Y),
 				vec2(m_aClients[i].m_RenderCur.m_X, m_aClients[i].m_RenderCur.m_Y),
