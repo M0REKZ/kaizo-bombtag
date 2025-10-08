@@ -812,5 +812,6 @@ MACRO_CONFIG_INT(KaizoFastInput, kaizo_fast_input, 1, 0, 1, CFGFLAG_CLIENT | CFG
 MACRO_CONFIG_INT(KaizoShowCrowns, kaizo_show_crowns, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show crowns on top of the players in Kaizo servers")
 MACRO_CONFIG_INT(KaizoPredictDDNetTeleport, kaizo_predict_ddnet_teleport, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict DDNet teleports if there is only 1 exit")
 MACRO_CONFIG_INT(KaizoInstaShieldShield, kaizo_instashield_shield, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable InstaShield Shield")
+MACRO_CONFIG_INT(KaizoPredictDeathTiles, kaizo_predict_death_tiles, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict death effect in death tiles")
 //This one is from T-Client:
 MACRO_CONFIG_STR(KaizoCustomCommunitiesUrl, kaizo_custom_communities_url, 256, "https://raw.githubusercontent.com/SollyBunny/ddnet-custom-communities/refs/heads/main/custom-communities-ddnet-info.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL to fetch custom communities from (must be https), empty to disable")

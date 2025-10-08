@@ -11,6 +11,22 @@ void CGameClient::OnKaizoConnected()
     m_Collision.m_pTeamsCore = m_GameWorld.Teams();
 }
 
+void CGameClient::DoKaizoPredictionEffects(CCharacter *pCharacter)
+{
+    if(g_Config.m_KaizoPredictDeathTiles) 
+    {
+        if(pCharacter->m_IsInDeathTile && !m_DidDeathEffect)
+        {
+            m_Effects.PlayerDeath(pCharacter->m_Pos, pCharacter->GetCid(), 1.0f);
+            m_DidDeathEffect = true;
+        }
+        else if(m_DidDeathEffect && !pCharacter->m_IsInDeathTile)
+        {
+            m_DidDeathEffect = false;
+        }
+    }
+}
+
 void CGameClient::UpdateKaizoPrediction()
 {
     m_GameWorld.m_Core.m_WorldTickKZ = m_GameWorld.GameTick();
@@ -87,4 +103,5 @@ void CGameClient::GetKaizoInfo(CServerInfo *pServerInfo)
 void CGameClient::KaizoReset()
 {
     m_InstaShield = false;
+    m_DidDeathEffect = false;
 }

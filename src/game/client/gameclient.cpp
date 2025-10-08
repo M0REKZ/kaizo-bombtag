@@ -2556,6 +2556,9 @@ void CGameClient::OnPredict()
 				if(Events & COREEVENT_HOOK_HIT_NOHOOK)
 					m_Sounds.PlayAndRecord(CSounds::CHN_WORLD, SOUND_HOOK_NOATTACH, 1.0f, Pos);
 			}
+			//+KZ
+			if(g_Config.m_ClPredict && !m_SuppressEvents)
+				DoKaizoPredictionEffects(pLocalChar);
 		}
 
 		// check if we want to trigger predicted airjump for dummy

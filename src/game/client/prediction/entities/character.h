@@ -189,6 +189,7 @@ private:
 	void KaizoPredictNormalTiles(int Index); //for normal tiles
 	void ResetPickups();
 	bool m_DontMixPredictedPos = false;
+	bool m_IsInDeathTile = false;
 };
 
 #endif

@@ -938,6 +938,7 @@ private:
 
 	//+KZ
 	void OnKaizoConnected();
+	void DoKaizoPredictionEffects(CCharacter *pCharacter);
 	void UpdateKaizoPrediction();
 	void HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg);
 	void HandleKaizoSnapItem(const IClient::CSnapItem *pItem);
@@ -949,6 +950,8 @@ private:
 	void GetKaizoInfo(CServerInfo *pServerInfo);
 	bool m_InstaShield = false;
 	void KaizoReset();
+
+	bool m_DidDeathEffect = false;
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);
