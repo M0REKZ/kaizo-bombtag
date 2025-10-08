@@ -13,7 +13,7 @@ void CGameClient::OnKaizoConnected()
 
 void CGameClient::DoKaizoPredictionEffects(CCharacter *pCharacter)
 {
-    if(g_Config.m_KaizoPredictDeathTiles) 
+    if(g_Config.m_KaizoPredictDeathTiles && !(pCharacter->Team() == TEAM_SUPER || pCharacter->Core()->m_Invincible)) 
     {
         if(pCharacter->m_IsInDeathTile && !m_DidDeathEffect)
         {
