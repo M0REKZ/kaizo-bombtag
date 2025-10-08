@@ -22,6 +22,13 @@ This repo also uses code from the following mods that are NOT made by +KZ:
 
 [Kaffeine's Infclass](https://github.com/infclass/teeworlds-infclassR)
 
+[T-Client](https://github.com/sjrc6/TaterClient-ddnet)
+
+[Teeworlds Gamer](https://github.com/Dune-jr/teeworlds/tree/gamer)
+
+...and other mods and rejected DDNet Pull requests.
+
 Other credits:
 
 Portal gun and Attractor beam textures by Pointer
+InstaShield shield texture by Dune
