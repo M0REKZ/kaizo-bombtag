@@ -937,6 +937,8 @@ private:
 	SMultiView m_MultiView;
 
 	//+KZ
+	void OnKaizoConnected();
+	void UpdateKaizoPrediction();
 	void HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg);
 	void HandleKaizoSnapItem(const IClient::CSnapItem *pItem);
 	public:

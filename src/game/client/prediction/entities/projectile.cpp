@@ -78,8 +78,26 @@ void CProjectile::Tick()
 	vec2 CurPos = GetPos(Ct);
 	vec2 ColPos;
 	vec2 NewPos;
-	int Collide = Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos);
 	CCharacter *pOwnerChar = GameWorld()->GetCharacterById(m_Owner);
+
+	//+KZ
+	CCharacterCore *pOwnerCore = nullptr;
+
+	if(pOwnerChar)
+	{
+		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
+	}
+
+	SKZColIntersectLineParams ParamsKZ;
+	ParamsKZ.pCore = pOwnerCore;
+	ParamsKZ.IsHook = false;
+	ParamsKZ.IsWeapon = true;
+	ParamsKZ.pProjPos = &m_Pos;
+	ParamsKZ.Weapon = m_Type;
+	ParamsKZ.m_IsDDraceProjectile = m_Freeze;
+	//+KZ end
+
+	int Collide = Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos, ParamsKZ.m_IsDDraceProjectile ? nullptr : &ParamsKZ); //+KZ added ParamsKZ, also added a check for ddrace projectile to not break explosive bullet prediction
 
 	CCharacter *pTargetChr = GameWorld()->IntersectCharacter(PrevPos, ColPos, m_Freeze ? 1.0f : 6.0f, ColPos, pOwnerChar, m_Owner);
 

@@ -577,6 +577,8 @@ void CGameClient::OnConnected()
 	m_GameWorld.m_Core.InitSwitchers(m_Collision.m_HighestSwitchNumber);
 	m_RaceHelper.Init(this);
 
+	OnKaizoConnected(); //+KZ
+
 	// render loading before going through all components
 	m_Menus.RenderLoading(pConnectCaption, pLoadMapContent, 0);
 	for(auto &pComponent : m_vpAll)
@@ -3311,10 +3313,7 @@ void CGameClient::UpdateLocalTuning()
 void CGameClient::UpdatePrediction()
 {
 	//+KZ
-	m_GameWorld.m_Core.m_WorldTickKZ = m_GameWorld.GameTick();
-	m_Collision.SetTime(static_cast<double>(m_GameWorld.GameTick() - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
-	if(g_Config.m_SvGoresQuadsEnable)
-		m_Collision.UpdateQuadCache();
+	UpdateKaizoPrediction();
 
 	m_GameWorld.m_WorldConfig.m_IsVanilla = m_GameInfo.m_PredictVanilla;
 	m_GameWorld.m_WorldConfig.m_IsDDRace = m_GameInfo.m_PredictDDRace;

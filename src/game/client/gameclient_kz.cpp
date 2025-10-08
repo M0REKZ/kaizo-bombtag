@@ -5,6 +5,20 @@
 #include "gameclient.h"
 #include <game/client/prediction/entities/character.h>
 
+void CGameClient::OnKaizoConnected()
+{
+    m_Collision.m_pWorldCore = &m_GameWorld.m_Core;
+    m_Collision.m_pTeamsCore = m_GameWorld.Teams();
+}
+
+void CGameClient::UpdateKaizoPrediction()
+{
+    m_GameWorld.m_Core.m_WorldTickKZ = m_GameWorld.GameTick();
+	m_Collision.SetTime(static_cast<double>(m_GameWorld.GameTick() - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
+	if(g_Config.m_SvGoresQuadsEnable)
+		m_Collision.UpdateQuadCache();
+}
+
 void CGameClient::HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg)
 {
     if (MsgId == NETMSGTYPE_SV_KAIZONETWORKCROWN)

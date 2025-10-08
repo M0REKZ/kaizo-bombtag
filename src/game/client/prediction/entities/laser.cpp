@@ -109,6 +109,16 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 
 void CLaser::DoBounce()
 {
+	// KZ
+	CCharacter *pOwnerChar = GameWorld()->GetCharacterById(m_Owner); 
+	CCharacterCore *pOwnerCore = nullptr;
+
+	if(pOwnerChar)
+	{
+		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
+	}
+	// End KZ
+
 	m_EvalTick = GameWorld()->GameTick();
 
 	if(m_Energy < 0)
@@ -122,7 +132,18 @@ void CLaser::DoBounce()
 	int Res;
 	vec2 To = m_Pos + m_Dir * m_Energy;
 
-	Res = Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To);
+	//+KZ
+	SKZColTeleWeaponParams ParamsKZ;
+	ParamsKZ.From = m_Pos;
+	ParamsKZ.To = To;
+	ParamsKZ.Type = m_Type;
+	ParamsKZ.OwnerId = m_Owner;
+	ParamsKZ.BounceNum = m_Bounces;
+	SKZColCharCoreParams ParamsKZ2;
+	ParamsKZ.pCharCoreParams = &ParamsKZ2;
+	ParamsKZ2.pCore = pOwnerCore;
+
+	Res = Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To, nullptr, &ParamsKZ); //+KZ added ParamsKZ
 
 	if(Res)
 	{
