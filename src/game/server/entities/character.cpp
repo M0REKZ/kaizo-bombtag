@@ -2986,23 +2986,23 @@ void CCharacter::HandleKZTiles()
 	if(!m_HasRecoverJumpLaser && pKZTile && pKZTile->m_Index == KZ_TILE_LASER_RECOVER_JUMP_ON && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
 	{
 		m_HasRecoverJumpLaser = true;
-		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can now recover your jumps by shooting youself with laser");
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can now recover your jumps by shooting yourself with laser");
 	}
 	else if(!m_HasRecoverJumpLaser && pKZTileFront && pKZTileFront->m_Index == KZ_TILE_LASER_RECOVER_JUMP_ON && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
 	{
 		m_HasRecoverJumpLaser = true;
-		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can now recover your jumps by shooting youself with laser");
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can now recover your jumps by shooting yourself with laser");
 	}
 
 	if(m_HasRecoverJumpLaser && pKZTile && pKZTile->m_Index == KZ_TILE_LASER_RECOVER_JUMP_OFF && (pKZTile->m_Number ? Switchers()[pKZTile->m_Number].m_aStatus[Team()] : true))
 	{
 		m_HasRecoverJumpLaser = false;
-		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can no longer recover your jumps by shooting youself with laser");
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can no longer recover your jumps by shooting yourself with laser");
 	}
 	else if(m_HasRecoverJumpLaser && pKZTileFront && pKZTileFront->m_Index == KZ_TILE_LASER_RECOVER_JUMP_OFF && (pKZTileFront->m_Number ? Switchers()[pKZTileFront->m_Number].m_aStatus[Team()] : true))
 	{
 		m_HasRecoverJumpLaser = false;
-		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can no longer recover your jumps by shooting youself with laser");
+		GameServer()->SendChatTarget(m_pPlayer->GetCid(),"You can no longer recover your jumps by shooting yourself with laser");
 	}
 
 	//+KZ Game Only Tiles
