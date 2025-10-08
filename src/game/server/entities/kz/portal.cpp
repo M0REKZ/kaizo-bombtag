@@ -116,7 +116,7 @@ void CPortalKZ::Snap(int SnappingClient)
 		Team = pChr->Team();
 	}
 
-	if(pChr && pChr->GetPlayer() && pChr->GetPlayer()->GetTeam() == TEAM_SPECTATORS ? false : (pOwner->Team() != TEAM_SUPER && pOwner->Team() != Team))
+	if(pChr && pChr->GetPlayer() && (pChr->GetPlayer()->GetTeam() == TEAM_SPECTATORS || pChr->GetPlayer()->IsPaused()) ? false : (pOwner->Team() != TEAM_SUPER && pOwner->Team() != Team))
 		return;
 
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
