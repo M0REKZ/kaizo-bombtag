@@ -42,5 +42,8 @@ public:
 	void Confetti(vec2 Pos, float Alpha);
 
 	void Update();
+
+	//+KZ
+	void ColouredSparkleTrailKaizo(vec2 Pos, ColorRGBA Color);
 };
 #endif

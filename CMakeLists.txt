@@ -2382,6 +2382,7 @@ if(CLIENT)
     components/damageind.h
     components/debughud.cpp
     components/debughud.h
+    components/effects_kz.cpp
     components/effects.cpp
     components/effects.h
     components/emoticon.cpp

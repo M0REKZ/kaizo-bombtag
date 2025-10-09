@@ -753,6 +753,10 @@ void CPlayers::RenderPlayer(
 		GameClient()->m_Effects.SparkleTrail(BodyPos, Alpha);
 	}
 
+	//+KZ
+	if(g_Config.m_KaizoKillingSpreeSparkles && GameClient()->m_aClients[ClientId].m_KillingSpreeMode)
+		GameClient()->m_Effects.ColouredSparkleTrailKaizo(BodyPos, ColorRGBA(1.f,0.f,0.f,Alpha));
+
 	if(ClientId < 0)
 		return;
 

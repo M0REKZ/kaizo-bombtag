@@ -73,4 +73,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoSleepingInMenuPlayers ^= 1;
 	}
+
+	Left.HSplitTop(2.0f, nullptr, &Left);
+
+    Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoKillingSpreeSparkles, Localize("Killing spree sparkles"), g_Config.m_KaizoKillingSpreeSparkles, &Button))
+	{
+		g_Config.m_KaizoKillingSpreeSparkles ^= 1;
+	}
 }

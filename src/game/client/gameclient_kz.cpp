@@ -38,7 +38,7 @@ void CGameClient::UpdateKaizoPrediction()
 
 void CGameClient::HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg)
 {
-    if (MsgId == NETMSGTYPE_SV_KAIZONETWORKCROWN)
+    if(MsgId == NETMSGTYPE_SV_KAIZONETWORKCROWN)
 	{
 		CNetMsg_Sv_KaizoNetworkCrown *pMsg = (CNetMsg_Sv_KaizoNetworkCrown *)pRawMsg;
 		int CrownId = pMsg->m_ClientId;
@@ -47,6 +47,26 @@ void CGameClient::HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, 
 			m_aClients[CrownId].m_CrownTick = m_GameWorld.GameTick();
 		}
 	}
+
+    //for killing spree mode
+    if(MsgId == NETMSGTYPE_SV_CHAT)
+    {
+        CNetMsg_Sv_Chat *pMsg = (CNetMsg_Sv_Chat *)pRawMsg;
+
+        if(pMsg->m_ClientId < 0)
+        {
+            for(auto &Client : m_aClients)
+            {
+                char aTempName[MAX_NAME_LENGTH + 6] = {0};
+                str_format(aTempName, sizeof(aTempName), "'%s'", Client.m_aName);
+                if(str_startswith(pMsg->m_pMessage, Client.m_aName) || str_startswith(pMsg->m_pMessage, aTempName))
+                {
+                    if(str_find_nocase(pMsg->m_pMessage, "is on a killing spree") || str_find_nocase(pMsg->m_pMessage, "is on a rampage"))
+                        Client.m_KillingSpreeMode = true;
+                }
+            }
+        }
+    }
 }
 
 void CGameClient::HandleKaizoSnapItem(const IClient::CSnapItem *pItem)
@@ -94,6 +114,11 @@ void CGameClient::PostSnapshotKaizo()
         if(g_Config.m_KaizoSleepingInMenuPlayers && !Client.m_ReceivedDDNetPlayerInfoInLastSnapshot && !(m_Snap.m_aCharacters[Client.m_ClientId].m_Cur.m_PlayerFlags & PLAYERFLAG_IN_MENU)) //reset afk if not receiving ddnet player
         {
             Client.m_Afk = false;
+        }
+        
+        if(!m_Snap.m_aCharacters[Client.m_ClientId].m_Active)
+        {
+            Client.m_KillingSpreeMode = false;
         }
     }
 }

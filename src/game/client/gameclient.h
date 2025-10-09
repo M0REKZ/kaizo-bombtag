@@ -529,6 +529,7 @@ public:
 		int m_KaizoCustomWeapon = -1;
 		int m_ReceivedPing = -1;
 		bool m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
+		bool m_KillingSpreeMode;
 
 		void KaizoReset();
 	};
