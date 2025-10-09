@@ -1772,6 +1772,9 @@ void CGameClient::OnNewSnapshot()
 
 						m_aClients[Item.m_Id].m_Snapped = *((const CNetObj_Character *)Item.m_pData);
 						m_aClients[Item.m_Id].m_Evolved = m_Snap.m_aCharacters[Item.m_Id].m_Cur;
+
+						if(g_Config.m_KaizoSleepingInMenuPlayers) //+KZ added
+							m_aClients[Item.m_Id].m_Afk = m_Snap.m_aCharacters[Item.m_Id].m_Cur.m_PlayerFlags & PLAYERFLAG_IN_MENU;
 					}
 					else
 					{

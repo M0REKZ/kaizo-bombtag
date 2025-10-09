@@ -14,6 +14,7 @@
 
 #include <game/gamecore.h>
 #include <game/teamscore.h>
+#include <game/version.h>
 
 MACRO_ALLOC_POOL_ID_IMPL(CPlayer, MAX_CLIENTS)
 
@@ -491,7 +492,7 @@ void CPlayer::Snap(int SnappingClient)
 		pDDNetPlayer->m_AuthLevel = AUTHED_NO;
 
 	pDDNetPlayer->m_Flags = 0;
-	if(m_Afk || m_PlayerFlags & PLAYERFLAG_IN_MENU) // Raid added in menu
+	if(m_Afk || ((m_PlayerFlags & PLAYERFLAG_IN_MENU) && Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_PLAYER_PING)) // +KZ added in menu
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_AFK;
 	if(m_Paused == PAUSE_SPEC)
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_SPEC;

@@ -814,5 +814,6 @@ MACRO_CONFIG_INT(KaizoPredictDDNetTeleport, kaizo_predict_ddnet_teleport, 1, 0, 
 MACRO_CONFIG_INT(KaizoInstaShieldShield, kaizo_instashield_shield, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable InstaShield Shield")
 MACRO_CONFIG_INT(KaizoPredictDeathTiles, kaizo_predict_death_tiles, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict death effect in death tiles")
 MACRO_CONFIG_INT(KaizoPingCircles, kaizo_ping_circles, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ping circles above players in Kaizo servers")
+MACRO_CONFIG_INT(KaizoSleepingInMenuPlayers, kaizo_sleeping_in_menu_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Players navigating menu appear as sleeping")
 //This one is from T-Client:
 MACRO_CONFIG_STR(KaizoCustomCommunitiesUrl, kaizo_custom_communities_url, 256, "https://raw.githubusercontent.com/SollyBunny/ddnet-custom-communities/refs/heads/main/custom-communities-ddnet-info.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL to fetch custom communities from (must be https), empty to disable")

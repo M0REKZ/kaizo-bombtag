@@ -54,4 +54,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoPingCircles ^= 1;
 	}
+
+	MainView.HSplitTop(2.0f, nullptr, &MainView);
+
+    MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_KaizoSleepingInMenuPlayers, Localize("Show players navigating menu as sleeping tees"), g_Config.m_KaizoSleepingInMenuPlayers, &Button))
+	{
+		g_Config.m_KaizoSleepingInMenuPlayers ^= 1;
+	}
 }

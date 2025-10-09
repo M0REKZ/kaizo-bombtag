@@ -722,6 +722,10 @@ void CPlayers::RenderPlayer(
 		}
 	}
 
+	//+KZ sleeping menu tees
+	if(g_Config.m_KaizoSleepingInMenuPlayers && (GameClient()->m_Snap.m_aCharacters[ClientId].m_Cur.m_PlayerFlags & PLAYERFLAG_IN_MENU))
+		Player.m_Emote = EMOTE_BLINK;
+
 	// render the "shadow" tee
 	if(Local && ((g_Config.m_Debug && g_Config.m_ClUnpredictedShadow >= 0) || g_Config.m_ClUnpredictedShadow == 1))
 	{

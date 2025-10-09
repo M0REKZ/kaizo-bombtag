@@ -1299,7 +1299,7 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 		AmmoCount = (m_FreezeTime == 0) ? (m_KaizoNetworkChar.m_RealCurrentWeapon < 0 ? m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo : m_aCustomWeapons[m_KaizoNetworkChar.m_RealCurrentWeapon].m_Ammo) : 0;
 	}
 
-	if(GetPlayer()->IsAfk() || GetPlayer()->IsPaused() || (m_pPlayer->m_PlayerFlags & PLAYERFLAG_IN_MENU)) // +KZ added in menu
+	if(GetPlayer()->IsAfk() || GetPlayer()->IsPaused() || ((m_pPlayer->m_PlayerFlags & PLAYERFLAG_IN_MENU) && Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_PLAYER_PING)) // +KZ added in menu
 	{
 		if(m_FreezeTime > 0 || m_Core.m_DeepFrozen || m_Core.m_LiveFrozen)
 			Emote = EMOTE_NORMAL;
