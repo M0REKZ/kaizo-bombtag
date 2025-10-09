@@ -62,6 +62,9 @@ void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImag
 				switch(LayerType)
 				{
 				case LAYER_DEFAULT_TILESET:
+					//+KZ
+					if(pRenderLayer = GetKZLayerInLoad(pTileLayer, GroupId, LayerId))
+						break;
 					pRenderLayer = std::make_unique<CRenderLayerTile>(
 						GroupId,
 						LayerId,

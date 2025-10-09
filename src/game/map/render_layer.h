@@ -110,7 +110,10 @@ public:
 protected:
 	virtual void *GetRawData() const;
 	template<class T>
-	T *GetData() const;
+	T *GetData() const //+KZ moved this here
+	{
+		return (T *)GetRawData();
+	}
 
 	virtual ColorRGBA GetRenderColor(const CRenderLayerParams &Params) const;
 	virtual void InitTileData();
@@ -261,6 +264,10 @@ protected:
 
 private:
 	IGraphics::CTextureHandle m_TextureHandle;
+
+	//+KZ
+	public:
+	bool m_IsEntitiesQuads = false;
 };
 
 class CRenderLayerEntityBase : public CRenderLayerTile
@@ -370,5 +377,48 @@ protected:
 
 private:
 	CTuneTile *m_pTuneTiles;
+};
+
+//+KZ
+class CRenderLayerEntityKZGame final : public CRenderLayerEntityBase
+{
+public:
+	CRenderLayerEntityKZGame(int GroupId, int LayerId, int Flags, CMapItemLayerTilemap *pLayerTilemap);
+	int GetDataIndex(unsigned int &TileSize) const override;
+	void Init() override;
+	void InitTileData() override;
+	void Unload() override;
+
+protected:
+	IGraphics::CTextureHandle m_Texture;
+
+	void RenderTileLayerWithTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
+	void RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
+	void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const override;
+	IGraphics::CTextureHandle GetTexture() const override;
+
+private:
+	CKZTile *m_pKZTiles;
+};
+
+class CRenderLayerEntityKZFront final : public CRenderLayerEntityBase
+{
+public:
+	CRenderLayerEntityKZFront(int GroupId, int LayerId, int Flags, CMapItemLayerTilemap *pLayerTilemap);
+	int GetDataIndex(unsigned int &TileSize) const override;
+	void Init() override;
+	void InitTileData() override;
+	void Unload() override;
+
+protected:
+	IGraphics::CTextureHandle m_Texture;
+
+	void RenderTileLayerWithTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
+	void RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
+	void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const override;
+	IGraphics::CTextureHandle GetTexture() const override;
+
+private:
+	CKZTile *m_pKZTiles;
 };
 #endif
