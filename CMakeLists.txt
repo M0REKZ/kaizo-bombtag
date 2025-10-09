@@ -2426,6 +2426,7 @@ if(CLIENT)
     components/menus_start.h
     components/motd.cpp
     components/motd.h
+    components/nameplates_classes_kz.h
     components/nameplates.cpp
     components/nameplates.h
     components/particles.cpp
@@ -2854,6 +2855,7 @@ if(SERVER)
     gameworld.cpp
     gameworld.h
     mutes.cpp
+    player_kz.cpp
     player.cpp
     player.h
     save.cpp

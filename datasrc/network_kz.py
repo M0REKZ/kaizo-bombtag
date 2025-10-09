@@ -35,6 +35,10 @@ Objects += [
         NetIntAny("m_Type", default=0),
         NetIntAny("m_Switch", default=0),
 	], validate_size=False),
+    
+    NetObjectEx("KaizoNetworkPlayerPing", "kaizoplayerping@m0rekz.github.io", [
+		NetIntAny("m_Ping", default=0),
+	], validate_size=False),
 ]
 
 Messages += [

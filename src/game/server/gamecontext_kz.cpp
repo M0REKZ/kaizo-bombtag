@@ -1,6 +1,7 @@
 // Copyright (C) Benjamín Gajardo (also known as +KZ)
 
 // SendGameMsg taken from ddnet-insta by Chillerdragon, it is not under +KZ copyright
+// SetPlayerLastAckedTick is SetPlayerLastAckedSnapshot from ICTFX
 
 #include "gamecontext.h"
 
@@ -577,4 +578,15 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 	}
 	str_copy(pName, aName, StrSize);
 	delete[] aName;
+}
+
+void CGameContext::SetPlayerLastAckedTick(int ClientId, int Tick)
+{
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return;
+
+	if(!m_apPlayers[ClientId])
+		return;
+
+	m_apPlayers[ClientId]->m_LastAckedTick = Tick;
 }

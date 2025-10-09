@@ -46,4 +46,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoPredictDeathTiles ^= 1;
 	}
+
+	MainView.HSplitTop(2.0f, nullptr, &MainView);
+
+    MainView.HSplitTop(20.0f, &Button, &MainView);
+	if(DoButton_CheckBox(&g_Config.m_KaizoPingCircles, Localize("Show ping circles above players on Kaizo servers"), g_Config.m_KaizoPingCircles, &Button))
+	{
+		g_Config.m_KaizoPingCircles ^= 1;
+	}
 }

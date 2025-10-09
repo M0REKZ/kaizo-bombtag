@@ -1961,6 +1961,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				IntendedTick = Tick() + 1;
 
 			pInput->m_GameTick = IntendedTick;
+			pInput->m_AckedTick = LastAckedSnapshot; //+KZ
 
 			for(int i = 0; i < Size / 4; i++)
 			{
@@ -3317,6 +3318,7 @@ int CServer::Run()
 					{
 						if(Input.m_GameTick == Tick())
 						{
+							GameServer()->SetPlayerLastAckedTick(c, Input.m_AckedTick); //+KZ
 							GameServer()->OnClientPredictedInput(c, Input.m_aData);
 							ClientHadInput = true;
 							break;

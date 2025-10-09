@@ -402,6 +402,9 @@ public:
 	 * @param i The client id.
 	 */
 	virtual void OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int Id) = 0;
+
+	//+KZ
+	virtual void SetPlayerLastAckedTick(int ClientId, int Tick) = 0;
 };
 
 extern IGameServer *CreateGameServer();

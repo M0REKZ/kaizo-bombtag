@@ -72,6 +72,18 @@ void CGameClient::HandleKaizoSnapItem(const IClient::CSnapItem *pItem)
         if(pChar)
             pChar->m_KaizoNetworkChar = *pKaizoChar;
     }
+    else if(pItem->m_Type == NETOBJTYPE_KAIZONETWORKPLAYERPING)
+    {
+        const CNetObj_KaizoNetworkPlayerPing *pKaizoPlayerPing = (const CNetObj_KaizoNetworkPlayerPing *)pItem->m_pData;
+        if(!pKaizoPlayerPing)
+            return;
+        
+        int ClientId = pItem->m_Id;
+        if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+            return;
+
+        m_aClients[ClientId].m_ReceivedPing = pKaizoPlayerPing->m_Ping;
+    }
 }
 
 bool CGameClient::IsKaizoCharUpdated(int ClientId)
@@ -87,6 +99,7 @@ void CGameClient::CClientData::KaizoReset()
     m_KaizoCharTick = -1;
     m_CharFlags = 0;
     m_KaizoCustomWeapon = -1;
+    m_ReceivedPing = -1;
 }
 
 bool CGameClient::CheckNewInput() 

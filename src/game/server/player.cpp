@@ -524,6 +524,9 @@ void CPlayer::Snap(int SnappingClient)
 		pSpecChar->m_X = m_pCharacter->Core()->m_Pos.x;
 		pSpecChar->m_Y = m_pCharacter->Core()->m_Pos.y;
 	}
+
+	//+KZ
+	OnKaizoSnap(SnappingClient, id);
 }
 
 void CPlayer::FakeSnap()

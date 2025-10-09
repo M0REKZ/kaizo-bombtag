@@ -527,6 +527,7 @@ public:
 		int m_KaizoCharTick = -1;
 		int m_CharFlags = 0;
 		int m_KaizoCustomWeapon = -1;
+		int m_ReceivedPing = -1;
 
 		void KaizoReset();
 	};

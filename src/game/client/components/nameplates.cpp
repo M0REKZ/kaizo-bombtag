@@ -165,6 +165,9 @@ public:
 
 // Part Definitions
 
+//+KZ
+#include "nameplates_classes_kz.h"
+
 class CNamePlatePartNewLine : public CNamePlatePart
 {
 public:
@@ -497,6 +500,9 @@ private:
 
 		AddPart<CNamePlatePartHookStrongWeak>(This);
 		AddPart<CNamePlatePartHookStrongWeakId>(This);
+
+		//+KZ
+		AddPart<CNamePlatePartKaizoPlayerPing>(This);
 	}
 
 public:

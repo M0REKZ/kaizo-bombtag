@@ -666,6 +666,8 @@ public:
 	static void ConGetAttractorBeam(IConsole::IResult *pResult, void *pUserData);
 
 	void IdentifyClientName(int ClientId, char *pName, int StrSize);
+
+	virtual void SetPlayerLastAckedTick(int ClientId, int Tick) override;
 };
 
 static inline bool CheckClientId(int ClientId)
