@@ -6,7 +6,7 @@
 
 void CPlayer::OnKaizoSnap(int SnappingClient, int Id)
 {
-    if(Server()->GetKaizoNetworkVersion(m_ClientId) >= KAIZO_NETWORK_VERSION_PLAYER_PING && m_LastAckedTick != -1)
+    if(Server()->GetKaizoNetworkVersion(SnappingClient) >= KAIZO_NETWORK_VERSION_PLAYER_PING && m_LastAckedTick != -1)
 	{
 		CNetObj_KaizoNetworkPlayerPing *pKaizoPlayerPing = Server()->SnapNewItem<CNetObj_KaizoNetworkPlayerPing>(Id);
 		if(!pKaizoPlayerPing)
