@@ -1651,6 +1651,7 @@ void CGameClient::OnNewSnapshot()
 	for(auto &Client : m_aClients)
 	{
 		Client.m_SpecCharPresent = false;
+		Client.m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
 	}
 
 	// go through all the items in the snapshot and gather the info we want
@@ -1739,6 +1740,9 @@ void CGameClient::OnNewSnapshot()
 					{
 						m_Snap.m_SpecInfo.m_Active = true;
 					}
+
+					//+KZ
+					m_aClients[Item.m_Id].m_ReceivedDDNetPlayerInfoInLastSnapshot = true;
 				}
 			}
 			else if(Item.m_Type == NETOBJTYPE_CHARACTER)
@@ -2328,6 +2332,8 @@ void CGameClient::OnNewSnapshot()
 	m_IsDummySwapping = 0;
 	if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		UpdatePrediction();
+
+	PostSnapshotKaizo();
 }
 
 void CGameClient::UpdateEditorIngameMoved()

@@ -87,6 +87,17 @@ void CGameClient::HandleKaizoSnapItem(const IClient::CSnapItem *pItem)
     }
 }
 
+void CGameClient::PostSnapshotKaizo()
+{
+    for(auto &Client : m_aClients)
+    {
+        if(g_Config.m_KaizoSleepingInMenuPlayers && !Client.m_ReceivedDDNetPlayerInfoInLastSnapshot && !(m_Snap.m_aCharacters[Client.m_ClientId].m_Cur.m_PlayerFlags & PLAYERFLAG_IN_MENU)) //reset afk if not receiving ddnet player
+        {
+            Client.m_Afk = false;
+        }
+    }
+}
+
 bool CGameClient::IsKaizoCharUpdated(int ClientId)
 {
     if(m_aClients[ClientId].m_KaizoCharTick >= 0 && m_aClients[ClientId].m_KaizoCharTick > m_GameWorld.GameTick() - m_GameWorld.GameTickSpeed()/5)
@@ -101,6 +112,7 @@ void CGameClient::CClientData::KaizoReset()
     m_CharFlags = 0;
     m_KaizoCustomWeapon = -1;
     m_ReceivedPing = -1;
+    m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
 }
 
 bool CGameClient::CheckNewInput() 

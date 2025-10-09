@@ -528,6 +528,7 @@ public:
 		int m_CharFlags = 0;
 		int m_KaizoCustomWeapon = -1;
 		int m_ReceivedPing = -1;
+		bool m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
 
 		void KaizoReset();
 	};
@@ -943,6 +944,7 @@ private:
 	void UpdateKaizoPrediction();
 	void HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy, void *pRawMsg);
 	void HandleKaizoSnapItem(const IClient::CSnapItem *pItem);
+	void PostSnapshotKaizo();
 	public:
 	bool IsKaizoCharUpdated(int ClientId);
 	bool CheckNewInput() override; //+KZ from FastInput commit
