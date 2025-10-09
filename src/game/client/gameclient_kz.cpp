@@ -29,8 +29,9 @@ void CGameClient::DoKaizoPredictionEffects(CCharacter *pCharacter)
 
 void CGameClient::UpdateKaizoPrediction()
 {
-    m_GameWorld.m_Core.m_WorldTickKZ = m_GameWorld.GameTick();
-	m_Collision.SetTime(static_cast<double>(m_GameWorld.GameTick() - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
+    int Tick = (g_Config.m_ClPredict && m_PredictedTick >= MIN_TICK) ? m_PredictedTick : m_GameWorld.GameTick();
+    m_GameWorld.m_Core.m_WorldTickKZ = Tick;
+	m_Collision.SetTime(static_cast<double>(Tick - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
 	if(g_Config.m_SvGoresQuadsEnable)
 		m_Collision.UpdateQuadCache();
 }
