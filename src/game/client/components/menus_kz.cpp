@@ -92,4 +92,21 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoPredictPointerTWPlus ^= 1;
 	}
+
+	// dangerous settings, some communities may consider it a cheat, chill communities may not, use at your own risk!
+	Left.HSplitTop(40.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, Localize("Dangerous Settings!"), 20.0f, TEXTALIGN_ML);
+	Left.HSplitTop(45.0f, &Label, &Left);
+	Left.HSplitTop(20.0f, &Label, &MainView);
+
+	SLabelProperties DangerLabelProps;
+	DangerLabelProps.SetColor(ColorRGBA(1.f,0.f,0.f));
+	Ui()->DoLabel(&Label, Localize("Some communities may consider these features as cheats while others may not.\nUSE AT YOUR OWN RISK! (Some wont work in some servers and it is NOT a bug)"), 10.0f, TEXTALIGN_ML, DangerLabelProps);
+	Left.HSplitTop(25.0f, &Label, &Left);
+
+	Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoOldModsZooming, Localize("Zooming in Old non-DDNet mods (only if zoom is not prohibited)"), g_Config.m_KaizoOldModsZooming, &Button))
+	{
+		g_Config.m_KaizoOldModsZooming ^= 1;
+	}
 }

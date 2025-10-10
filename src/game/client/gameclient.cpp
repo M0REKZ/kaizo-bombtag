@@ -1525,6 +1525,7 @@ static CGameInfo GetGameInfo(const CNetObj_GameInfoEx *pInfoEx, int InfoExSize, 
 
 	//+KZ
 	Info.m_GameInfoFlagsKZ = Flags;
+	Info.m_GameInfoVersionKZ = Version;
 
 	if(Version >= 0)
 	{

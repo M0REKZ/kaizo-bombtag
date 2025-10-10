@@ -116,6 +116,7 @@ public:
 	bool m_DDRaceTeam;
 
 	int m_GameInfoFlagsKZ;
+	int m_GameInfoVersionKZ;
 };
 
 class CSnapEntities
