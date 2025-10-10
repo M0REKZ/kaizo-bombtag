@@ -9,6 +9,9 @@ void CGameClient::OnKaizoConnected()
 {
     m_Collision.m_pWorldCore = &m_GameWorld.m_Core;
     m_Collision.m_pTeamsCore = m_GameWorld.Teams();
+
+    m_GameWorld.m_WorldConfig.m_IsPointerTWPlus = false; //initial value for this
+    m_WaitingForPointerTWPlusInfo = false;   
 }
 
 void CGameClient::DoKaizoPredictionEffects(CCharacter *pCharacter)
@@ -55,6 +58,14 @@ void CGameClient::HandleKaizoMessage(int MsgId, CUnpacker *pUnpacker, int Conn, 
 
         if(pMsg->m_ClientId < 0)
         {
+            if(m_WaitingForPointerTWPlusInfo)
+            {
+                if(str_find(pMsg->m_pMessage, "by Pointer") && str_find(pMsg->m_pMessage, "TW+"))
+                {
+                    m_GameWorld.m_WorldConfig.m_IsPointerTWPlus = true;
+                }
+            }
+
             for(auto &Client : m_aClients)
             {
                 char aTempName[MAX_NAME_LENGTH + 6] = {0};
@@ -148,7 +159,50 @@ bool CGameClient::CheckNewInput()
 void CGameClient::GetKaizoInfo(CServerInfo *pServerInfo)
 {
 	Client()->GetServerInfo(pServerInfo);
+
+    //Detect Specific mods
+
+    //InstaShield
     m_InstaShield = pServerInfo->m_aGameType[0] == 'i' && pServerInfo->m_aGameType[str_length(pServerInfo->m_aGameType) - 1] == ')';
+
+    //Pointer's TW+
+    if(g_Config.m_KaizoPredictPointerTWPlus && !m_WaitingForPointerTWPlusInfo)
+    {
+        //First verify flags that Pointer TW+ would and would not send
+        if(m_GameInfo.m_GameInfoFlagsKZ & 
+        (
+        GAMEINFOFLAG_GAMETYPE_PLUS |
+		GAMEINFOFLAG_ALLOW_EYE_WHEEL |
+		GAMEINFOFLAG_ALLOW_HOOK_COLL |
+		GAMEINFOFLAG_PREDICT_VANILLA |
+		GAMEINFOFLAG_ENTITIES_DDNET |
+		GAMEINFOFLAG_ENTITIES_DDRACE |
+		GAMEINFOFLAG_ENTITIES_RACE
+        ) && !(m_GameInfo.m_GameInfoFlagsKZ & 
+        (
+        GAMEINFOFLAG_GAMETYPE_FASTCAP |
+        GAMEINFOFLAG_GAMETYPE_FNG |
+        GAMEINFOFLAG_GAMETYPE_BLOCK_WORLDS |
+        GAMEINFOFLAG_TIMESCORE |
+        GAMEINFOFLAG_FLAG_STARTS_RACE |
+        GAMEINFOFLAG_RACE |
+        GAMEINFOFLAG_GAMETYPE_RACE |
+        GAMEINFOFLAG_GAMETYPE_DDRACE |
+        GAMEINFOFLAG_GAMETYPE_DDNET |
+        GAMEINFOFLAG_GAMETYPE_BLOCK_WORLDS |
+        GAMEINFOFLAG_GAMETYPE_VANILLA |
+        GAMEINFOFLAG_DDRACE_RECORD_MESSAGE |
+        GAMEINFOFLAG_RACE_RECORD_MESSAGE |
+        GAMEINFOFLAG_PREDICT_FNG |
+        GAMEINFOFLAG_BUG_VANILLA_BOUNCE |
+        GAMEINFOFLAG_BUG_FNG_LASER_RANGE
+        )))
+        {
+            //Very possibly this is Pointer's TW+, but to make extremely sure we will send a command that will say us if this is really the Pointer's mod
+            m_Chat.SendChat(0, "/info");
+            m_WaitingForPointerTWPlusInfo = true;
+        }
+    }
 }
 
 void CGameClient::KaizoReset()

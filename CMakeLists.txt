@@ -2481,6 +2481,7 @@ if(CLIENT)
     prediction/entities/projectile.h
     prediction/entity.cpp
     prediction/entity.h
+    prediction/gameworld_kz.cpp
     prediction/gameworld.cpp
     prediction/gameworld.h
     projectile_data.cpp

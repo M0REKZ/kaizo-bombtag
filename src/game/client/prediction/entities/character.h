@@ -190,6 +190,7 @@ private:
 	void ResetPickups();
 	bool m_DontMixPredictedPos = false;
 	bool m_IsInDeathTile = false;
+	bool m_InPointerTele = false;
 };
 
 #endif

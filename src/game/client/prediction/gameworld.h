@@ -83,6 +83,9 @@ public:
 		bool m_UseTuneZones;
 		bool m_BugDDRaceInput;
 		bool m_NoWeakHookAndBounce;
+
+		//+KZ
+		bool m_IsPointerTWPlus;
 	} m_WorldConfig;
 
 	bool m_IsValidCopy;
@@ -115,6 +118,21 @@ private:
 	CEntity *m_apFirstEntityTypes[NUM_ENTTYPES];
 
 	CCharacter *m_apCharacters[MAX_CLIENTS];
+
+	//+KZ
+	void OnCopyWorld();
+	void OnGameTile(int X, int Y, const CTile *pTile);
+
+	public:
+
+	struct SPointerTelePos
+	{
+		int m_X;
+		int m_Y;
+		bool m_Exists = false;
+	};
+	
+	SPointerTelePos m_PointerTelePositions[4]; // positions of teleports
 };
 
 class CCharOrder

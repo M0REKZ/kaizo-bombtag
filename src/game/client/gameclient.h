@@ -114,6 +114,8 @@ public:
 	bool m_NoSkinChangeForFrozen;
 
 	bool m_DDRaceTeam;
+
+	int m_GameInfoFlagsKZ;
 };
 
 class CSnapEntities
@@ -956,6 +958,7 @@ private:
 	void KaizoReset();
 
 	bool m_DidDeathEffect = false;
+	bool m_WaitingForPointerTWPlusInfo = false;
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);

@@ -669,6 +669,10 @@ void CGameWorld::CopyWorld(CGameWorld *pFrom)
 			}
 		}
 	}
+
+	//+KZ
+	OnCopyWorld();
+
 	m_IsValidCopy = true;
 }
 

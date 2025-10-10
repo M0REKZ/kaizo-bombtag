@@ -1089,8 +1089,22 @@ void CCharacter::DDRaceTick()
 
 void CCharacter::DDRacePostCoreTick()
 {
-	if(!GameWorld()->m_WorldConfig.m_PredictDDRace)
+	if(!GameWorld()->m_WorldConfig.m_PredictDDRace) //+KZ extended this
+	{
+		int CurrentIndex = Collision()->GetMapIndex(m_Pos);
+		std::vector<int> vIndices = Collision()->GetMapIndices(m_PrevPos, m_Pos);
+		if(!vIndices.empty())
+			for(int Index : vIndices)
+			{
+				KaizoPredictNormalTiles(Index); //+KZ
+			}
+		else
+		{
+			KaizoPredictNormalTiles(CurrentIndex); //+KZ
+		}
 		return;
+	}
+		
 
 	if(m_Core.m_EndlessHook)
 		m_Core.m_HookTick = 0;

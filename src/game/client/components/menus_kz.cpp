@@ -81,4 +81,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoKillingSpreeSparkles ^= 1;
 	}
+
+	Left.HSplitTop(2.0f, nullptr, &Left);
+
+    Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoPredictPointerTWPlus, Localize("Predict Pointer's TW+"), g_Config.m_KaizoPredictPointerTWPlus, &Button))
+	{
+		g_Config.m_KaizoPredictPointerTWPlus ^= 1;
+	}
 }

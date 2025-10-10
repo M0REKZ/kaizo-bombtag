@@ -1523,6 +1523,9 @@ static CGameInfo GetGameInfo(const CNetObj_GameInfoEx *pInfoEx, int InfoExSize, 
 	Info.m_NoSkinChangeForFrozen = false;
 	Info.m_DDRaceTeam = false;
 
+	//+KZ
+	Info.m_GameInfoFlagsKZ = Flags;
+
 	if(Version >= 0)
 	{
 		Info.m_TimeScore = Flags & GAMEINFOFLAG_TIMESCORE;
