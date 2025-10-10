@@ -270,6 +270,9 @@ void CCharacter::FireWeapon()
 	if(m_FrozenLastTick)
 		FullAuto = true;
 
+	if(g_Config.m_KaizoPredictPointerTWPlus && GameWorld()->m_WorldConfig.m_IsPointerTWPlus && m_Core.m_ActiveWeapon == WEAPON_GUN)
+		FullAuto = true; //+KZ try to predict Pointer auto gun
+
 	// don't fire hammer when player is deep and sv_deepfly is disabled
 	if(!g_Config.m_SvDeepfly && m_Core.m_ActiveWeapon == WEAPON_HAMMER && m_Core.m_DeepFrozen)
 		return;
