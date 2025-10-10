@@ -15,10 +15,13 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 
 	MainView.VSplitMid(&Left, &Right, 20.0f);
 
-	MainView.HSplitTop(20.0f, &Label, &MainView);
+	Left.HSplitTop(20.0f, &Label, &MainView);
 	Ui()->DoLabel(&Label, Localize("Kaizo Settings"), 20.0f, TEXTALIGN_ML);
-
 	Left.HSplitTop(25.0f, &Label, &Left);
+
+	Right.HSplitTop(20.0f, &Label, &MainView);
+	Ui()->DoLabel(&Label, Localize("PvP Settings"), 20.0f, TEXTALIGN_ML);
+	Right.HSplitTop(25.0f, &Label, &Right);
 
 	Left.HSplitTop(20.0f, &Button, &Left);
 	if(DoButton_CheckBox(&g_Config.m_KaizoFastInput, Localize("Fast input"), g_Config.m_KaizoFastInput, &Button))
@@ -42,9 +45,9 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 		g_Config.m_KaizoPredictDDNetTeleport ^= 1;
 	}
 
-	Left.HSplitTop(2.0f, nullptr, &Left);
+	Right.HSplitTop(2.0f, nullptr, &Right);
 
-    Left.HSplitTop(20.0f, &Button, &Left);
+    Right.HSplitTop(20.0f, &Button, &Right);
 	if(DoButton_CheckBox(&g_Config.m_KaizoInstaShieldShield, Localize("InstaShield Shield"), g_Config.m_KaizoInstaShieldShield, &Button))
 	{
 		g_Config.m_KaizoInstaShieldShield ^= 1;
@@ -74,17 +77,17 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 		g_Config.m_KaizoSleepingInMenuPlayers ^= 1;
 	}
 
-	Left.HSplitTop(2.0f, nullptr, &Left);
+	Right.HSplitTop(2.0f, nullptr, &Right);
 
-    Left.HSplitTop(20.0f, &Button, &Left);
+    Right.HSplitTop(20.0f, &Button, &Right);
 	if(DoButton_CheckBox(&g_Config.m_KaizoKillingSpreeSparkles, Localize("Killing spree sparkles"), g_Config.m_KaizoKillingSpreeSparkles, &Button))
 	{
 		g_Config.m_KaizoKillingSpreeSparkles ^= 1;
 	}
 
-	Left.HSplitTop(2.0f, nullptr, &Left);
+	Right.HSplitTop(2.0f, nullptr, &Right);
 
-    Left.HSplitTop(20.0f, &Button, &Left);
+    Right.HSplitTop(20.0f, &Button, &Right);
 	if(DoButton_CheckBox(&g_Config.m_KaizoPredictPointerTWPlus, Localize("Predict Pointer's TW+"), g_Config.m_KaizoPredictPointerTWPlus, &Button))
 	{
 		g_Config.m_KaizoPredictPointerTWPlus ^= 1;
