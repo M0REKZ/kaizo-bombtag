@@ -6,6 +6,7 @@
 #include <base/vmath.h>
 
 #include <game/client/component.h>
+#include <base/color.h>
 
 class CEffects : public CComponent
 {

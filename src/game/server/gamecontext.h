@@ -3,6 +3,10 @@
 #ifndef GAME_SERVER_GAMECONTEXT_H
 #define GAME_SERVER_GAMECONTEXT_H
 
+#include "eventhandler.h"
+#include "gameworld.h"
+#include "teehistorian.h"
+
 #include <engine/console.h>
 #include <engine/server.h>
 
@@ -12,10 +16,6 @@
 #include <game/layers.h>
 #include <game/mapbugs.h>
 #include <game/voting.h>
-
-#include "eventhandler.h"
-#include "gameworld.h"
-#include "teehistorian.h"
 
 #include <map>
 #include <memory>
@@ -150,7 +150,6 @@ class CGameContext : public IGameServer
 	static void ConRandomUnfinishedMap(IConsole::IResult *pResult, void *pUserData);
 	static void ConRestart(IConsole::IResult *pResult, void *pUserData);
 	static void ConBroadcast(IConsole::IResult *pResult, void *pUserData);
-	static void ConBroadcastId(IConsole::IResult *pResult, void *pUserData);
 	static void ConSay(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetTeam(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetTeamAll(IConsole::IResult *pResult, void *pUserData);
@@ -206,7 +205,7 @@ public:
 
 	CGameContext();
 	CGameContext(int Reset);
-	~CGameContext();
+	~CGameContext() override;
 
 	void Clear();
 
@@ -400,7 +399,7 @@ public:
 	bool RateLimitPlayerVote(int ClientId);
 	bool RateLimitPlayerMapVote(int ClientId) const;
 
-	void OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int Id) override;
+	void OnUpdatePlayerServerInfo(CJsonWriter *pJsonWriter, int ClientId) override;
 	void ReadCensorList();
 
 	bool PracticeByDefault() const;
@@ -621,15 +620,16 @@ public:
 	};
 	int m_VoteVictim;
 
-	inline bool IsOptionVote() const { return m_VoteType == VOTE_TYPE_OPTION; }
-	inline bool IsKickVote() const { return m_VoteType == VOTE_TYPE_KICK; }
-	inline bool IsSpecVote() const { return m_VoteType == VOTE_TYPE_SPECTATE; }
+	bool IsOptionVote() const { return m_VoteType == VOTE_TYPE_OPTION; }
+	bool IsKickVote() const { return m_VoteType == VOTE_TYPE_KICK; }
+	bool IsSpecVote() const { return m_VoteType == VOTE_TYPE_SPECTATE; }
 
 	bool IsRunningVote(int ClientId) const;
 	bool IsRunningKickOrSpecVote(int ClientId) const;
 
 	void SendRecord(int ClientId);
 	void SendFinish(int ClientId, float Time, float PreviousBestTime);
+	void SendSaveCode(int Team, int TeamSize, int State, const char *pError, const char *pSaveRequester, const char *pServerName, const char *pGeneratedCode, const char *pCode);
 	void OnSetAuthed(int ClientId, int Level) override;
 
 	void ResetTuning();
