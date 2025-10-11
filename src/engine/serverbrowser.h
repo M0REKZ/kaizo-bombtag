@@ -3,6 +3,8 @@
 #ifndef ENGINE_SERVERBROWSER_H
 #define ENGINE_SERVERBROWSER_H
 
+#include "kernel.h"
+
 #include <base/hash.h>
 #include <base/system.h>
 
@@ -10,8 +12,6 @@
 #include <engine/shared/protocol.h>
 
 #include <generated/protocol7.h>
-
-#include "kernel.h"
 
 #include <unordered_set>
 #include <vector>
@@ -244,6 +244,7 @@ public:
 class IFilterList
 {
 public:
+	virtual ~IFilterList() = default;
 	virtual void Add(const char *pElement) = 0;
 	virtual void Remove(const char *pElement) = 0;
 	virtual void Clear() = 0;
@@ -254,6 +255,7 @@ public:
 class ICommunityCache
 {
 public:
+	virtual ~ICommunityCache() = default;
 	virtual void Update(bool Force) = 0;
 	virtual const std::vector<const CCommunity *> &SelectedCommunities() const = 0;
 	virtual const std::vector<const CCommunityCountry *> &SelectableCountries() const = 0;
@@ -283,11 +285,17 @@ public:
 		SORT_GAMETYPE,
 		SORT_NUMPLAYERS,
 		SORT_NUMFRIENDS,
+	};
 
+	enum
+	{
 		QUICK_SERVERNAME = 1,
 		QUICK_PLAYER = 2,
 		QUICK_MAPNAME = 4,
+	};
 
+	enum
+	{
 		TYPE_INTERNET = 0,
 		TYPE_LAN,
 		TYPE_FAVORITES,
@@ -297,7 +305,10 @@ public:
 		TYPE_FAVORITE_COMMUNITY_4,
 		TYPE_FAVORITE_COMMUNITY_5,
 		NUM_TYPES,
+	};
 
+	enum
+	{
 		LAN_PORT_BEGIN = 8303,
 		LAN_PORT_END = 8310,
 	};

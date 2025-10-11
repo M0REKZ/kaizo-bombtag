@@ -1,5 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include "countryflags.h"
+
 #include <base/math.h>
 #include <base/system.h>
 
@@ -8,8 +10,6 @@
 #include <engine/shared/config.h>
 #include <engine/shared/linereader.h>
 #include <engine/storage.h>
-
-#include "countryflags.h"
 
 void CCountryFlags::LoadCountryflagsIndexfile()
 {
@@ -111,7 +111,7 @@ void CCountryFlags::OnInit()
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "countryflags", "failed to load country flags. folder='countryflags/'");
 		CCountryFlag DummyEntry;
 		DummyEntry.m_CountryCode = -1;
-		mem_zero(DummyEntry.m_aCountryCodeString, sizeof(DummyEntry.m_aCountryCodeString));
+		DummyEntry.m_aCountryCodeString[0] = '\0';
 		m_vCountryFlags.push_back(DummyEntry);
 	}
 
@@ -143,6 +143,7 @@ void CCountryFlags::Render(const CCountryFlag *pFlag, ColorRGBA Color, float x, 
 	{
 		Graphics()->TextureSet(pFlag->m_Texture);
 		Graphics()->SetColor(Color);
+		Graphics()->QuadsSetRotation(0.0f);
 		Graphics()->RenderQuadContainerEx(m_FlagsQuadContainerIndex, 0, -1, x, y, w, h);
 	}
 }

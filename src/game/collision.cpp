@@ -1,20 +1,20 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include <antibot/antibot_data.h>
+
 #include <base/math.h>
 #include <base/system.h>
 #include <base/vmath.h>
 
-#include <antibot/antibot_data.h>
-
-#include <cmath>
 #include <engine/map.h>
+#include <engine/shared/config.h>
 
 #include <game/collision.h>
 #include <game/layers.h>
 #include <game/mapitems.h>
 
-#include <engine/shared/config.h>
 #include "collision.h"
+#include <cmath>
 
 vec2 ClampVel(int MoveRestriction, vec2 Vel)
 {
@@ -320,10 +320,10 @@ static int GetMoveRestrictionsRaw(int Direction, int Tile, int Flags)
 		case ROTATION_180: return CANTMOVE_UP;
 		case ROTATION_270: return CANTMOVE_RIGHT;
 
-		case TILEFLAG_YFLIP ^ ROTATION_0: return CANTMOVE_UP;
-		case TILEFLAG_YFLIP ^ ROTATION_90: return CANTMOVE_RIGHT;
-		case TILEFLAG_YFLIP ^ ROTATION_180: return CANTMOVE_DOWN;
-		case TILEFLAG_YFLIP ^ ROTATION_270: return CANTMOVE_LEFT;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_0): return CANTMOVE_UP;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_90): return CANTMOVE_RIGHT;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_180): return CANTMOVE_DOWN;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_270): return CANTMOVE_LEFT;
 		}
 		break;
 	case TILE_STOPS:
@@ -331,13 +331,13 @@ static int GetMoveRestrictionsRaw(int Direction, int Tile, int Flags)
 		{
 		case ROTATION_0:
 		case ROTATION_180:
-		case TILEFLAG_YFLIP ^ ROTATION_0:
-		case TILEFLAG_YFLIP ^ ROTATION_180:
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_0):
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_180):
 			return CANTMOVE_DOWN | CANTMOVE_UP;
 		case ROTATION_90:
 		case ROTATION_270:
-		case TILEFLAG_YFLIP ^ ROTATION_90:
-		case TILEFLAG_YFLIP ^ ROTATION_270:
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_90):
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_270):
 			return CANTMOVE_LEFT | CANTMOVE_RIGHT;
 		}
 		break;

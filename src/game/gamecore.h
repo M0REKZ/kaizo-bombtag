@@ -3,10 +3,9 @@
 #ifndef GAME_GAMECORE_H
 #define GAME_GAMECORE_H
 
-#include <base/vmath.h>
+#include "prng.h"
 
-#include <set>
-#include <vector>
+#include <base/vmath.h>
 
 #include <engine/shared/protocol.h>
 
@@ -17,7 +16,8 @@
 
 #include "params_kz.h"
 
-#include "prng.h"
+#include <set>
+#include <vector>
 
 class CCollision;
 class CTeamsCore;

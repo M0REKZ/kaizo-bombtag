@@ -3,11 +3,15 @@
 #ifndef ENGINE_SERVER_SERVER_H
 #define ENGINE_SERVER_SERVER_H
 
+#include "antibot.h"
+#include "authmanager.h"
+#include "name_ban.h"
+#include "snap_id_pool.h"
+
 #include <base/hash.h>
 
 #include <engine/console.h>
 #include <engine/server.h>
-
 #include <engine/shared/demo.h>
 #include <engine/shared/econ.h>
 #include <engine/shared/fifo.h>
@@ -21,11 +25,6 @@
 #include <memory>
 #include <optional>
 #include <vector>
-
-#include "antibot.h"
-#include "authmanager.h"
-#include "name_ban.h"
-#include "snap_id_pool.h"
 
 #if defined(CONF_UPNP)
 #include "upnp.h"
@@ -137,7 +136,10 @@ public:
 			STATE_CONNECTING,
 			STATE_READY,
 			STATE_INGAME,
+		};
 
+		enum
+		{
 			SNAPRATE_INIT = 0,
 			SNAPRATE_FULL,
 			SNAPRATE_RECOVER,
@@ -172,7 +174,6 @@ public:
 		char m_aClan[MAX_CLAN_LENGTH];
 		int m_Country;
 		std::optional<int> m_Score;
-		int m_Authed;
 		int m_AuthKey;
 		int m_AuthTries;
 		bool m_AuthHidden;
@@ -196,7 +197,7 @@ public:
 		bool m_IsAllTheHaxxClient; // to identify allthehaxx clients
 		bool m_IsPulseClient; // to identify pulse clients
 
-		const IConsole::CCommandInfo *m_pRconCmdToSend;
+		const IConsole::ICommandInfo *m_pRconCmdToSend;
 		enum
 		{
 			MAPLIST_UNINITIALIZED = -1,
@@ -231,7 +232,7 @@ public:
 		}
 	};
 
-	int ConsoleAccessLevel(int ClientId) const;
+	IConsole::EAccessLevel ConsoleAccessLevel(int ClientId) const;
 
 	CClient m_aClients[MAX_CLIENTS];
 	int m_aIdMap[MAX_CLIENTS * VANILLA_MAX_CLIENTS];
@@ -307,7 +308,7 @@ public:
 	std::shared_ptr<ILogger> m_pStdoutLogger = nullptr;
 
 	CServer();
-	~CServer();
+	~CServer() override;
 
 	bool IsClientNameAvailable(int ClientId, const char *pNameRequest);
 	bool SetClientNameImpl(int ClientId, const char *pNameRequest, bool Set);
@@ -377,8 +378,8 @@ public:
 	// Accepts -1 as ClientId to mean "all clients with at least auth level admin"
 	void SendRconLogLine(int ClientId, const CLogMessage *pMessage);
 
-	void SendRconCmdAdd(const IConsole::CCommandInfo *pCommandInfo, int ClientId);
-	void SendRconCmdRem(const IConsole::CCommandInfo *pCommandInfo, int ClientId);
+	void SendRconCmdAdd(const IConsole::ICommandInfo *pCommandInfo, int ClientId);
+	void SendRconCmdRem(const IConsole::ICommandInfo *pCommandInfo, int ClientId);
 	void SendRconCmdGroupStart(int ClientId);
 	void SendRconCmdGroupEnd(int ClientId);
 	int NumRconCommands(int ClientId);
@@ -491,6 +492,7 @@ public:
 	static void ConchainRconHelperPasswordChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMapUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainSixupUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainRegisterCommunityTokenRedact(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainLoglevel(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainStdoutOutputLevel(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainAnnouncementFileName(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);

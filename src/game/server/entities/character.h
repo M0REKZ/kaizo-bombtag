@@ -3,9 +3,8 @@
 #ifndef GAME_SERVER_ENTITIES_CHARACTER_H
 #define GAME_SERVER_ENTITIES_CHARACTER_H
 
-#include <game/server/entity.h>
-
 #include <game/race_state.h>
+#include <game/server/entity.h>
 #include <game/server/save.h>
 #include <game/mapitems.h>
 
@@ -93,6 +92,7 @@ public:
 	void SetEndlessHook(bool Enable);
 
 	void SetEmote(int Emote, int Tick);
+	int DetermineEyeEmote();
 
 	void Rescue();
 
@@ -248,7 +248,7 @@ public:
 	int GetArmor() const { return m_Armor; }
 	void SetArmor(int Armor) { m_Armor = Armor; }
 	CCharacterCore GetCore() { return m_Core; }
-	void SetCore(CCharacterCore Core) { m_Core = Core; }
+	void SetCore(const CCharacterCore &Core) { m_Core = Core; }
 	const CCharacterCore *Core() const { return &m_Core; }
 	bool GetWeaponGot(int Type) { return (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Got : m_Core.m_aWeapons[Type].m_Got); } //modified for custom weapons +KZ
 	void SetWeaponGot(int Type, bool Value) { (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Got = Value : m_Core.m_aWeapons[Type].m_Got = Value); } //modified for custom weapons +KZ
