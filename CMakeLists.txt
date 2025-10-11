@@ -2531,6 +2531,7 @@ if(CLIENT)
     editor_server_settings.h
     editor_trackers.cpp
     editor_trackers.h
+    editor_kz.cpp
     editor_ui.cpp
     editor_ui.h
     enums.h
@@ -2575,6 +2576,7 @@ if(CLIENT)
     mapitems/layer_tiles.h
     mapitems/layer_tune.cpp
     mapitems/layer_tune.h
+    mapitems/map_kz.cpp
     mapitems/map.cpp
     mapitems/map.h
     mapitems/map_io.cpp

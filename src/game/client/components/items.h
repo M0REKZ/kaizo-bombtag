@@ -9,6 +9,9 @@
 
 #include <game/client/component.h>
 
+#include <engine/client.h>
+#include <game/mapitems.h>
+
 class CProjectileData;
 class CLaserData;
 

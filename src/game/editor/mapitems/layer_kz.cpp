@@ -69,12 +69,12 @@ bool CLayerKZGame::IsEmpty() const
 	return true;
 }
 
-void CLayerKZGame::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
+void CLayerKZGame::BrushDraw(CLayer *pBrush, vec2 WorldPos)
 {
 	if(m_Readonly)
 		return;
 
-	std::shared_ptr<CLayerKZGame> pSwitchLayer = std::static_pointer_cast<CLayerKZGame>(pBrush);
+	CLayerKZGame *pSwitchLayer = static_cast<CLayerKZGame *>(pBrush);
 	int sx = ConvertX(WorldPos.x);
 	int sy = ConvertY(WorldPos.y);
 	if(str_comp(pSwitchLayer->m_aFileName, m_pEditor->m_aFileName))
@@ -227,7 +227,7 @@ void CLayerKZGame::BrushRotate(float Amount)
 	}
 }
 
-void CLayerKZGame::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUIRect Rect)
+void CLayerKZGame::FillSelection(bool Empty, CLayer *pBrush, CUIRect Rect)
 {
 	if(m_Readonly || (!Empty && pBrush->m_Type != LAYERTYPE_TILES))
 		return;
@@ -241,7 +241,7 @@ void CLayerKZGame::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUI
 	int w = ConvertX(Rect.w);
 	int h = ConvertY(Rect.h);
 
-	std::shared_ptr<CLayerKZGame> pLt = std::static_pointer_cast<CLayerKZGame>(pBrush);
+	CLayerKZGame *pLt = static_cast<CLayerKZGame *>(pBrush);
 
 	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || pLt->IsEmpty();
 

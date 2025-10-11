@@ -6,6 +6,7 @@
 
 #include <game/client/component.h>
 #include <game/client/render.h>
+#include <game/mapitems.h>
 
 class CPlayers : public CComponent
 {
