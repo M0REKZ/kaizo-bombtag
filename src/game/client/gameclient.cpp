@@ -498,6 +498,9 @@ void CGameClient::OnUpdate()
 	{
 		pComponent->OnUpdate();
 	}
+
+	//+KZ
+	KaizoPostUpdate();
 }
 
 void CGameClient::OnDummySwap()
@@ -1681,12 +1684,18 @@ void CGameClient::OnNewSnapshot()
 					}
 					IntsToStr(pInfo->m_aClan, std::size(pInfo->m_aClan), pClient->m_aClan, std::size(pClient->m_aClan));
 
-					//pClient->m_Country = pInfo->m_Country +KZ commented and modified
-					UCountryDataKZ TempCountryData;
-					TempCountryData.m_IntData = pInfo->m_Country;
-					pClient->m_Country = RemoveArbitraryClientFlagFromCountry(TempCountryData.m_IntData);
-					//+KZ get arbitrary custom client byte
-					pClient->m_CustomClient = TempCountryData.m_CharArbitraryData[3];
+					if(pClient->m_CustomClient) //+KZ modified
+					{
+						pClient->m_Country = pInfo->m_Country;
+					}
+					else
+					{
+						UCountryDataKZ TempCountryData;
+						TempCountryData.m_IntData = pInfo->m_Country;
+						pClient->m_Country = RemoveArbitraryClientFlagFromCountry(TempCountryData.m_IntData);
+						//+KZ get arbitrary custom client byte
+						pClient->m_CustomClient = TempCountryData.m_CharArbitraryData[3];
+					}
 
 					IntsToStr(pInfo->m_aSkin, std::size(pInfo->m_aSkin), pClient->m_aSkinName, std::size(pClient->m_aSkinName));
 					if(!CSkin::IsValidName(pClient->m_aSkinName) ||

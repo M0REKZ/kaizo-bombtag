@@ -535,6 +535,7 @@ public:
 		bool m_KillingSpreeMode;
 
 		char m_CustomClient = '\0';
+		bool m_SentCustomClient = false;
 
 		void KaizoReset();
 	};
@@ -959,6 +960,7 @@ private:
 	void GetKaizoInfo(CServerInfo *pServerInfo);
 	bool m_InstaShield = false;
 	void KaizoReset();
+	void KaizoPostUpdate();
 
 	bool m_DidDeathEffect = false;
 	bool m_WaitingForPointerTWPlusInfo = false;
@@ -972,6 +974,8 @@ private:
 
 	int InsertArbitraryClientFlagInCountry(int Country);
 	int RemoveArbitraryClientFlagFromCountry(int Country);
+
+	int m_SendingCustomClientTicks = -1;
 };
 
 ColorRGBA CalculateNameColor(ColorHSLA TextColorHSL);

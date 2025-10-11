@@ -14,6 +14,7 @@ void CGameClient::OnKaizoConnected()
 
     m_GameWorld.m_WorldConfig.m_IsPointerTWPlus = false; //initial value for this
     m_WaitingForPointerTWPlusInfo = false;   
+    m_aClients[0].m_SentCustomClient = false; //to send custom client on connect
 }
 
 void CGameClient::DoKaizoPredictionEffects(CCharacter *pCharacter)
@@ -153,6 +154,7 @@ void CGameClient::CClientData::KaizoReset()
     m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
 
     m_CustomClient = 0;
+    m_SentCustomClient = false;
 }
 
 bool CGameClient::CheckNewInput() 
@@ -221,12 +223,61 @@ void CGameClient::KaizoReset()
     m_DidDeathEffect = false;
 }
 
+void CGameClient::KaizoPostUpdate()
+{
+    bool MustSendCustomClient = false;
+
+    for(auto &Client : m_aClients)
+    {
+        if(Client.m_Active)
+        {
+            if(Client.m_ClientId == m_Snap.m_LocalClientId || Client.m_ClientId == m_PredictedDummyId)
+            {
+                Client.m_CustomClient = KZ_CUSTOM_CLIENT_ID_KAIZO_NETWORK; //force Kaizo Network client for us
+            }
+
+            if(!Client.m_SentCustomClient)
+            {
+                MustSendCustomClient = true;
+                Client.m_SentCustomClient = true;
+            }
+        }
+        else
+        {
+            Client.m_SentCustomClient = false;
+        }
+    }
+
+    if(MustSendCustomClient)
+    {
+        m_SendingCustomClientTicks = 25;
+    }
+
+    switch (m_SendingCustomClientTicks)
+    {
+    case 25:
+        SendInfo(false);
+        SendDummyInfo(false);
+        m_SendingCustomClientTicks = 24;
+        break;
+    case 0:
+        SendInfo(false);
+        SendDummyInfo(false);
+        m_SendingCustomClientTicks = -1;
+        break;
+    default:
+        if(m_SendingCustomClientTicks > 0)
+            m_SendingCustomClientTicks--;
+        break;
+    }
+}
+
 int CGameClient::InsertArbitraryClientFlagInCountry(int Country)
 {
     if(!g_Config.m_KaizoSendClientType)
         return Country;
     
-    if(sizeof(int) != 4) //only tested with 4 bytes int
+    if(m_SendingCustomClientTicks <= 1) //dont send custom flag
         return Country;
 
     UCountryDataKZ CountryFlagsNum;
