@@ -3,6 +3,8 @@
 // CheckNewInput() is from Fast Input commit
 
 #include "gameclient.h"
+#include <game/mapitems.h>
+#include <game/client/components/countryflags.h>
 #include <game/client/prediction/entities/character.h>
 
 void CGameClient::OnKaizoConnected()
@@ -149,6 +151,8 @@ void CGameClient::CClientData::KaizoReset()
     m_KaizoCustomWeapon = -1;
     m_ReceivedPing = -1;
     m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
+
+    m_CustomClient = 0;
 }
 
 bool CGameClient::CheckNewInput() 
@@ -215,4 +219,43 @@ void CGameClient::KaizoReset()
 {
     m_InstaShield = false;
     m_DidDeathEffect = false;
+}
+
+int CGameClient::InsertArbitraryClientFlagInCountry(int Country)
+{
+    if(!g_Config.m_KaizoSendClientType)
+        return Country;
+    
+    if(sizeof(int) != 4) //only tested with 4 bytes int
+        return Country;
+
+    UCountryDataKZ CountryFlagsNum;
+    CountryFlagsNum.m_IntData = m_CountryFlags.Num();
+
+    //if some day amount of flags conflicts with arbitrary flag, just send normal country
+    if(CountryFlagsNum.m_CharArbitraryData[3]) 
+    {
+        return Country;
+    }
+
+    //insert arbitrary byte
+    UCountryDataKZ CountryData;
+
+    CountryData.m_IntData = Country;
+    CountryData.m_CharArbitraryData[3] = KZ_CUSTOM_CLIENT_ID_KAIZO_NETWORK; //1=Kaizo Network Client
+
+	return CountryData.m_IntData;
+}
+
+int CGameClient::RemoveArbitraryClientFlagFromCountry(int Country)
+{
+    if(sizeof(int) != 4) //only tested with 4 bytes int
+        return Country;
+
+	UCountryDataKZ CountryData;
+
+    CountryData.m_IntData = Country;
+    CountryData.m_CharArbitraryData[3] = 0; // clear byte
+
+	return CountryData.m_IntData;
 }

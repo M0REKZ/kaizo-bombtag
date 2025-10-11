@@ -75,6 +75,11 @@ enum
 	KZ_NUM_CUSTOM_WEAPONS = KZ_CUSTOM_WEAPONS_END - KZ_CUSTOM_WEAPONS_START,
 };
 
+enum
+{
+	KZ_CUSTOM_CLIENT_ID_KAIZO_NETWORK = 1,
+};
+
 //Pointer TW+ Tiles from Pointer's TW+
 enum
 {

@@ -93,6 +93,22 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 		g_Config.m_KaizoPredictPointerTWPlus ^= 1;
 	}
 
+	Left.HSplitTop(2.0f, nullptr, &Left);
+
+    Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoShowClientType, Localize("Try to identify custom clients of other players and show a icon above them"), g_Config.m_KaizoShowClientType, &Button))
+	{
+		g_Config.m_KaizoShowClientType ^= 1;
+	}
+
+	Left.HSplitTop(2.0f, nullptr, &Left);
+
+    Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoSendClientType, Localize("Let know other clients we are using Kaizo Network (Your country flag will be shown as default for normal clients)"), g_Config.m_KaizoSendClientType, &Button))
+	{
+		g_Config.m_KaizoSendClientType ^= 1;
+	}
+
 	// dangerous settings, some communities may consider it a cheat, chill communities may not, use at your own risk!
 	Left.HSplitTop(40.0f, &Label, &MainView);
 	Ui()->DoLabel(&Label, Localize("Dangerous Settings!"), 20.0f, TEXTALIGN_ML);

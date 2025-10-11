@@ -503,6 +503,7 @@ private:
 
 		//+KZ
 		AddPart<CNamePlatePartKaizoPlayerPing>(This);
+		AddPart<CNamePlatePartKaizoCustomClient>(This);
 	}
 
 public:
