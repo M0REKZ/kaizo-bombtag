@@ -104,7 +104,7 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	Left.HSplitTop(2.0f, nullptr, &Left);
 
     Left.HSplitTop(20.0f, &Button, &Left);
-	if(DoButton_CheckBox(&g_Config.m_KaizoSendClientType, Localize("Let know other clients we are using Kaizo Network (Your country flag will be shown as default for normal clients)"), g_Config.m_KaizoSendClientType, &Button))
+	if(DoButton_CheckBox(&g_Config.m_KaizoSendClientType, Localize("Let know other clients we are using Kaizo Network"), g_Config.m_KaizoSendClientType, &Button))
 	{
 		g_Config.m_KaizoSendClientType ^= 1;
 	}
