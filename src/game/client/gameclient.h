@@ -68,6 +68,7 @@
 #include "components/voting.h"
 
 #include "components/kz/custom_communities.h" // +KZ from T-Client
+#include "components/kz/rechargebars.h" // +KZ
 
 #include <vector>
 
@@ -963,6 +964,7 @@ private:
 	bool IsKaizoCharUpdated(int ClientId);
 	bool CheckNewInput() override; //+KZ from FastInput commit
 	CCustomCommunities m_CustomCommunities; //+KZ from T-Client
+	CRechargeBars m_RechargeBars; //+KZ
 
 	void GetKaizoInfo(CServerInfo *pServerInfo);
 	bool m_InstaShield = false;

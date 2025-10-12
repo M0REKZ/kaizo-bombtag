@@ -142,6 +142,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Particles.m_RenderExtra,
 					      &m_Particles.m_RenderGeneral,
 					      &m_FreezeBars,
+						  &m_RechargeBars, //+KZ
 					      &m_DamageInd,
 						  &m_CustomCommunities, // +KZ from T-Client
 					      &m_Hud,

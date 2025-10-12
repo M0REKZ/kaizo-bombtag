@@ -125,4 +125,12 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	{
 		g_Config.m_KaizoOldModsZooming ^= 1;
 	}
+
+	Left.HSplitTop(2.0f, nullptr, &Left);
+
+	Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoShowRechargeBar, Localize("Show weapon recharge bar"), g_Config.m_KaizoShowRechargeBar, &Button))
+	{
+		g_Config.m_KaizoShowRechargeBar ^= 1;
+	}
 }

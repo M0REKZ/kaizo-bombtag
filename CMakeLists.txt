@@ -2410,6 +2410,8 @@ if(CLIENT)
     components/items.h
     components/kz/custom_communities.cpp
     components/kz/custom_communities.h
+    components/kz/rechargebars.cpp
+    components/kz/rechargebars.h
     components/local_server.cpp
     components/local_server.h
     components/mapimages.cpp

@@ -827,5 +827,6 @@ MACRO_CONFIG_INT(KaizoPredictPointerTWPlus, kaizo_predict_pointer_twplus, 1, 0, 
 MACRO_CONFIG_INT(KaizoOldModsZooming, kaizo_old_mods_zooming, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Allow to zoom in old non-DDNet mods (WARNING: some communities may consider it a cheat, use at your own risk!)")
 MACRO_CONFIG_INT(KaizoSendClientType, kaizo_send_client_type, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Let know other clients that we are Kaizo Network Client")
 MACRO_CONFIG_INT(KaizoShowClientType, kaizo_show_client_type, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Try to identify and show other players clients as icons")
+MACRO_CONFIG_INT(KaizoShowRechargeBar, kaizo_show_recharge_bar, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show weapon recharge bar")
 //This one is from T-Client:
 MACRO_CONFIG_STR(KaizoCustomCommunitiesUrl, kaizo_custom_communities_url, 256, "https://raw.githubusercontent.com/SollyBunny/ddnet-custom-communities/refs/heads/main/custom-communities-ddnet-info.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL to fetch custom communities from (must be https), empty to disable")
