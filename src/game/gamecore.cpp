@@ -582,6 +582,11 @@ void CCharacterCore::Move()
 
 	m_Vel.x = m_Vel.x * RampValue;
 
+	// +KZ clamp velocity to kaizo max, to prevent high CPU usage
+	// since some Kaizo tiles use the same collision system of solid tiles
+	m_Vel.x = std::clamp(m_Vel.x, (float)-g_Config.m_SvKaizoMaxVel, (float)g_Config.m_SvKaizoMaxVel);
+	m_Vel.y = std::clamp(m_Vel.y, (float)-g_Config.m_SvKaizoMaxVel, (float)g_Config.m_SvKaizoMaxVel);
+
 	vec2 NewPos = m_Pos;
 
 	vec2 OldVel = m_Vel;
