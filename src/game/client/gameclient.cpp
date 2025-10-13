@@ -2555,6 +2555,12 @@ void CGameClient::OnPredict()
 			}
 		}
 
+		//+KZ added this for quads
+		m_GameWorld.m_Core.m_WorldTickKZ = Tick;
+		m_Collision.SetTime(static_cast<double>(Tick - m_LastRoundStartTick) / m_GameWorld.GameTickSpeed());
+		if(g_Config.m_SvGoresQuadsEnable)
+			m_Collision.UpdateQuadCache();
+
 		m_PredictedWorld.Tick();
 
 		// fetch the current characters
