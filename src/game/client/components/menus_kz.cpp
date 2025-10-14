@@ -109,6 +109,14 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 		g_Config.m_KaizoSendClientType ^= 1;
 	}
 
+	Left.HSplitTop(2.0f, nullptr, &Left);
+
+    Left.HSplitTop(20.0f, &Button, &Left);
+	if(DoButton_CheckBox(&g_Config.m_KaizoRotatingHammer, Localize("Rotating hammer (like other weapons)"), g_Config.m_KaizoRotatingHammer, &Button))
+	{
+		g_Config.m_KaizoRotatingHammer ^= 1;
+	}
+
 	// dangerous settings, some communities may consider it a cheat, chill communities may not, use at your own risk!
 	Left.HSplitTop(40.0f, &Label, &MainView);
 	Ui()->DoLabel(&Label, Localize("Dangerous Settings!"), 20.0f, TEXTALIGN_ML);

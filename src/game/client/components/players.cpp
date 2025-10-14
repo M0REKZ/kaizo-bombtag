@@ -583,10 +583,20 @@ void CPlayers::RenderPlayer(
 				// if active and attack is under way, bash stuffs
 				if(!Inactive || LastAttackTime < GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.GetWeaponFireDelay(Player.m_Weapon))
 				{
-					if(Direction.x < 0)
-						Graphics()->QuadsSetRotation(-pi / 2.0f - State.GetAttach()->m_Angle * pi * 2.0f);
+					if(g_Config.m_KaizoRotatingHammer) //+KZ from rotating hammer pull request
+					{
+						if(Direction.x < 0)
+							Graphics()->QuadsSetRotation(-pi / 2.0f - State.GetAttach()->m_Angle * pi * 2.0f + Angle + pi);
+						else
+							Graphics()->QuadsSetRotation(-pi / 2.0f + State.GetAttach()->m_Angle * pi * 2.0f + Angle);
+					}
 					else
-						Graphics()->QuadsSetRotation(-pi / 2.0f + State.GetAttach()->m_Angle * pi * 2.0f);
+					{
+						if(Direction.x < 0)
+							Graphics()->QuadsSetRotation(-pi / 2.0f - State.GetAttach()->m_Angle * pi * 2.0f);
+						else
+							Graphics()->QuadsSetRotation(-pi / 2.0f + State.GetAttach()->m_Angle * pi * 2.0f);
+					}
 				}
 				else
 					Graphics()->QuadsSetRotation(Direction.x < 0.0f ? 100.0f : 500.0f);
