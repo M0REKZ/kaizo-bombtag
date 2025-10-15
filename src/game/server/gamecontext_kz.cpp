@@ -419,15 +419,34 @@ void CGameContext::SendDiscordChatMessage(int ClientID, const char* msg)
 	char aStr[275];
 	aStr[0] = '\0';
 	if(CheckClientId(ClientID))
-		str_format(aStr, sizeof(aStr),"%s: %s",Server()->ClientName(ClientID),msg);
+		str_format(aStr, sizeof(aStr),"%s",Server()->ClientName(ClientID));
 	else
-		str_format(aStr, sizeof(aStr),"%s: %s","Server",msg);
+		str_format(aStr, sizeof(aStr),"%s","Server");
 
-	str_format(
-		aPayload,
-		sizeof(aPayload),
-		"{\"allowed_mentions\": {\"parse\": []}, \"content\": \"%s\"}",
-		EscapeJson(aStatsStr, sizeof(aStatsStr), aStr));
+	char aAvatarURL[512];
+	aAvatarURL[0] = '\0';
+	char aSkinNameEscaped[128];
+	aSkinNameEscaped[0] = '\0';
+
+	if(CheckClientId(ClientID) && m_apPlayers[ClientID])
+	{
+		EscapeUrl(aSkinNameEscaped, m_apPlayers[ClientID]->m_TeeInfos.m_aSkinName);
+		if(m_apPlayers[ClientID]->m_TeeInfos.m_UseCustomColor)
+		{
+			str_format(aAvatarURL, sizeof(aAvatarURL), "%s%s/%d/%d/", "https://render-tw-skins.deno.dev/render/", aSkinNameEscaped, m_apPlayers[ClientID]->m_TeeInfos.m_ColorBody, m_apPlayers[ClientID]->m_TeeInfos.m_ColorFeet);
+		}
+		else
+		{
+			str_format(aAvatarURL, sizeof(aAvatarURL), "%s%s", "https://render-tw-skins.deno.dev/render/", aSkinNameEscaped);
+		}
+	}
+	else
+	{
+		str_format(aAvatarURL, sizeof(aAvatarURL), "%s", "https://m0rekz.github.io/img/server.png");
+	}
+
+	str_format(aPayload, sizeof(aPayload), "{\"allowed_mentions\": {\"parse\": []}, \"content\": \"%s\", \"username\": \"%s\", \"avatar_url\": \"%s\"}",
+		EscapeJson(aStatsStr, sizeof(aStatsStr), msg), aStr, aAvatarURL);
 	const int PayloadSize = str_length(aPayload);
 	// TODO: use HttpPostJson()
 	std::shared_ptr<CHttpRequest> pDiscord = HttpPost(g_Config.m_SvChatDiscordWebhook, (const unsigned char *)aPayload, PayloadSize);
