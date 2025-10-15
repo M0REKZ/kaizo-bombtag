@@ -1,10 +1,12 @@
 // Copyright (C) Benjamín Gajardo (also known as +KZ)
 //
 // KaizoPredictNormalTiles has code from character.cpp (server version)
+// KaizoPredictFireWeapon has code from character.cpp
 
 #include <engine/shared/config.h>
 #include <game/collision.h>
 #include "character.h"
+#include <generated/client_data.h>
 
 void CCharacter::KaizoPredictNormalTiles(int Index)
 {
@@ -204,6 +206,72 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
             m_InPointerTele = false;
         }
     }
+}
+
+bool CCharacter::KaizoPredictFireWeapon()
+{
+    if(m_ReloadTimer != 0)
+		return false;
+
+    vec2 Direction = normalize(vec2(m_LatestInput.m_TargetX, m_LatestInput.m_TargetY));
+
+    bool FullAuto = false;
+    if(m_FrozenLastTick)
+		FullAuto = true;
+
+    // check if we gonna fire
+	bool WillFire = false;
+	if(CountInput(m_LatestPrevInput.m_Fire, m_LatestInput.m_Fire).m_Presses)
+		WillFire = true;
+
+	if(FullAuto && (m_LatestInput.m_Fire & 1) && m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
+		WillFire = true;
+
+	if(!WillFire)
+		return false;
+
+	// check for ammo
+	if(!m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo || m_FreezeTime)
+	{
+		return false;
+	}
+
+    bool Fired = false;
+
+    // From Pointer's TW+
+    if(g_Config.m_KaizoPredictPointerTWPlus && GameWorld()->m_WorldConfig.m_IsPointerTWPlus)
+    {
+        switch(m_Core.m_ActiveWeapon)
+        {
+            case WEAPON_NINJA:
+            {
+                // reset Hit objects
+                m_NumObjectsHit = 0;
+
+                m_Core.m_Ninja.m_ActivationDir = Direction;
+                m_Core.m_Ninja.m_CurrentMoveTime = g_pData->m_Weapons.m_Ninja.m_Movetime * GameWorld()->GameTickSpeed() / 1000;
+                m_Core.m_Ninja.m_OldVelAmount = 10; //vel is constant in Pointer TW+ through a server config, but we will assume 10
+
+                Fired = true;
+            }
+            break;
+        }
+    }
+
+    if(Fired)
+    {
+        m_AttackTick = GameWorld()->GameTick(); // NOLINT(clang-analyzer-unix.Malloc)
+
+        if(!m_ReloadTimer)
+        {
+            float FireDelay;
+            GetTuning(GetOverriddenTuneZone())->Get(offsetof(CTuningParams, m_HammerFireDelay) / sizeof(CTuneParam) + m_Core.m_ActiveWeapon, &FireDelay);
+
+            m_ReloadTimer = FireDelay * GameWorld()->GameTickSpeed() / 1000;
+        }
+    }
+
+    return Fired;
 }
 
 void CCharacter::ResetPickups()
