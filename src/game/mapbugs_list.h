@@ -6,3 +6,6 @@
 #endif
 
 MAPBUG(BUG_GRENADE_DOUBLEEXPLOSION, "grenade-doubleexplosion@ddnet.tw")
+
+//+KZ
+MAPBUG(BUG_KAIZO_DUPLICATEDENTITIES, "kaizo-duplicatedentities@m0rekz.github.io")

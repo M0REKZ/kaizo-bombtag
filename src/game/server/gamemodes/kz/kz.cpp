@@ -130,7 +130,9 @@ void CGameControllerKZ::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoCh
 
 bool CGameControllerKZ::OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number)
 {
-	CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
+	// +KZ first Kaizo Network bug affecting many maps, must be activated in some cases
+	if(GameServer()->EmulateBug(BUG_KAIZO_DUPLICATEDENTITIES))
+		CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
 
 	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
 	int Team = -1;
