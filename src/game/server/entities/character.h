@@ -310,6 +310,15 @@ public:
 	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS];
 
 	CNetObj_KaizoNetworkCharacter m_KaizoNetworkChar;
+
+	int m_StartSubTick = -1;
+	int m_StartDivisor = 1;
+	int m_StartedTickKZ = -1;
+	int m_FinishSubTick = -1;
+	int m_FinishDivisor = 1;
+	int m_FinishedTickKZ = -1;
+	vec2 m_PrevVelKZ;
+	void HandleSubTickStartFinish();
 };
 
 #endif
