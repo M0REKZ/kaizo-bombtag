@@ -47,8 +47,6 @@ void CCharacter::HandleSubTickStartFinish()
     int GameCorners[4] = {0,0,0,0};
     int FrontCorners[4] = {0,0,0,0};
 
-    bool sametick = false;
-
     for(int i = 0; i <= Length; i++)
     {
         if(i == Length) //final pos
@@ -79,7 +77,6 @@ void CCharacter::HandleSubTickStartFinish()
             m_StartSubTick = i;
             m_StartDivisor = Length;
             m_StartedTickKZ = Server()->Tick();
-            sametick = true;
         }
 
         if(m_FinishSubTick < 0 && m_StartSubTick >= 0 && (GameIndex == TILE_FINISH || FrontIndex == TILE_FINISH ||
@@ -89,8 +86,6 @@ void CCharacter::HandleSubTickStartFinish()
             m_FinishSubTick = i;
             m_FinishDivisor = Length;
             m_FinishedTickKZ = Server()->Tick();
-            if(sametick)
-                printf("OMGGG\n");
             break;
         }
     }
