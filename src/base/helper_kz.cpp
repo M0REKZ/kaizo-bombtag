@@ -1,6 +1,7 @@
 // Copyright (C) Benjamín Gajardo (also known as +KZ)
 
 #include "system.h"
+#include <cmath>
 
 const char * str_format_time_kz(float Time)
 {
