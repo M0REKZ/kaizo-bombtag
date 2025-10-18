@@ -605,6 +605,11 @@ int CServer::Init()
 		Client.m_IsStAClient = false;
 		Client.m_IsAllTheHaxxClient = false;
 		Client.m_IsPulseClient = false;
+		Client.m_IsCactusClient = false;
+		Client.m_IsAiodobClient = false;
+		Client.m_IsFexClient = false;
+		Client.m_IsRushieClient = false;
+		Client.m_IsSClientClient = false;
 	}
 
 	m_CurrentGameTick = MIN_TICK;
@@ -1155,6 +1160,11 @@ int CServer::NewClientNoAuthCallback(int ClientId, void *pUser)
 	pThis->m_aClients[ClientId].m_IsStAClient = false;
 	pThis->m_aClients[ClientId].m_IsAllTheHaxxClient = false;
 	pThis->m_aClients[ClientId].m_IsPulseClient = false;
+	pThis->m_aClients[ClientId].m_IsCactusClient = false;
+	pThis->m_aClients[ClientId].m_IsAiodobClient = false;
+	pThis->m_aClients[ClientId].m_IsFexClient = false;
+	pThis->m_aClients[ClientId].m_IsRushieClient = false;
+	pThis->m_aClients[ClientId].m_IsSClientClient = false;
 
 	pThis->m_aClients[ClientId].m_DnsblState = EDnsblState::NONE;
 
@@ -1199,6 +1209,11 @@ int CServer::NewClientCallback(int ClientId, void *pUser, bool Sixup)
 	pThis->m_aClients[ClientId].m_IsStAClient = false;
 	pThis->m_aClients[ClientId].m_IsAllTheHaxxClient = false;
 	pThis->m_aClients[ClientId].m_IsPulseClient = false;
+	pThis->m_aClients[ClientId].m_IsCactusClient = false;
+	pThis->m_aClients[ClientId].m_IsAiodobClient = false;
+	pThis->m_aClients[ClientId].m_IsFexClient = false;
+	pThis->m_aClients[ClientId].m_IsRushieClient = false;
+	pThis->m_aClients[ClientId].m_IsSClientClient = false;
 
 	pThis->m_aClients[ClientId].m_State = CClient::STATE_PREAUTH;
 	pThis->m_aClients[ClientId].m_DnsblState = EDnsblState::NONE;
@@ -1788,6 +1803,26 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 		else if(Msg == NETMSG_IAMPULSE)
 		{
 			m_aClients[ClientId].m_IsPulseClient = true;
+		}
+		else if(Msg == NETMSG_IAM_CACTUS)
+		{
+			m_aClients[ClientId].m_IsCactusClient = true;
+		}
+		else if(Msg == NETMSG_IAM_AIODOB)
+		{
+			m_aClients[ClientId].m_IsAiodobClient = true;
+		}
+		else if(Msg == NETMSG_IAM_FEX)
+		{
+			m_aClients[ClientId].m_IsFexClient = true;
+		}
+		else if(Msg == NETMSG_IAMRUSHIE)
+		{
+			m_aClients[ClientId].m_IsRushieClient = true;
+		}
+		else if(Msg == NETMSG_IAM_SCLIENT)
+		{
+			m_aClients[ClientId].m_IsSClientClient = true;
 		}
 		else if(Msg == NETMSG_INFO)
 		{
@@ -4611,6 +4646,11 @@ bool CServer::SetTimedOut(int ClientId, int OrigId)
 	m_aClients[ClientId].m_IsStAClient = m_aClients[OrigId].m_IsStAClient;
 	m_aClients[ClientId].m_IsAllTheHaxxClient = m_aClients[OrigId].m_IsAllTheHaxxClient;
 	m_aClients[ClientId].m_IsPulseClient = m_aClients[OrigId].m_IsPulseClient;
+	m_aClients[ClientId].m_IsCactusClient = m_aClients[OrigId].m_IsCactusClient;
+	m_aClients[ClientId].m_IsAiodobClient = m_aClients[OrigId].m_IsAiodobClient;
+	m_aClients[ClientId].m_IsFexClient = m_aClients[OrigId].m_IsFexClient;
+	m_aClients[ClientId].m_IsRushieClient = m_aClients[OrigId].m_IsRushieClient;
+	m_aClients[ClientId].m_IsSClientClient = m_aClients[OrigId].m_IsSClientClient;
 	return true;
 }
 

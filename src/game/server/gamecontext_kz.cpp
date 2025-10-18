@@ -543,6 +543,11 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		bool StA = Server()->IsStAClient(ClientId);
 		bool AllTheHaxx = Server()->IsAllTheHaxxClient(ClientId);
 		bool Pulse = Server()->IsPulseClient(ClientId);
+		bool Cactus = Server()->IsCactusClient(ClientId);
+		bool Aiodob = Server()->IsAiodobClient(ClientId);
+		bool FeX = Server()->IsFexClient(ClientId);
+		bool Rushie = Server()->IsRushieClient(ClientId);
+		bool SClient = Server()->IsSClientClient(ClientId);
 
 		if(KaizoNetwork)
 		{
@@ -575,6 +580,26 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		else if(Pulse)
 		{
 			str_copy(aName, "Pulse Client (0.6)", StrSize);
+		}
+		else if(Cactus)
+		{
+			str_copy(aName, "Cactus Client (0.6)", StrSize);
+		}
+		else if(Aiodob)
+		{
+			str_copy(aName, "Aiodob Client (0.6)", StrSize);
+		}
+		else if(FeX)
+		{
+			str_copy(aName, "FeX Client (0.6)", StrSize);
+		}
+		else if(Rushie)
+		{
+			str_copy(aName, "RClient (0.6)", StrSize);
+		}
+		else if(SClient)
+		{
+			str_copy(aName, "S-Client (0.6)", StrSize);
 		}
 		else
 		{

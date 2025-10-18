@@ -306,6 +306,11 @@ public:
 	virtual bool IsStAClient(int ClientId) { return false; } // identify StA clients
 	virtual bool IsAllTheHaxxClient(int ClientId) { return false; } // identify allthehaxx clients
 	virtual bool IsPulseClient(int ClientId) { return false; } // identify pulse clients
+	virtual bool IsCactusClient(int ClientId) { return false; } // identify Cactus clients
+	virtual bool IsAiodobClient(int ClientId) { return false; } // identify Aiodob clients
+	virtual bool IsFexClient(int ClientId) { return false; } // identify FeX clients
+	virtual bool IsRushieClient(int ClientId) { return false; } // identify Rushie clients
+	virtual bool IsSClientClient(int ClientId) { return false; } // identify SClient clients
 
 };
 

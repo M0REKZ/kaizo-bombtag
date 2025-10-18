@@ -98,6 +98,11 @@ class CServer : public IServer
 	virtual bool IsStAClient(int ClientId) override { return m_aClients[ClientId].m_IsStAClient; }
 	virtual bool IsAllTheHaxxClient(int ClientId) override { return m_aClients[ClientId].m_IsAllTheHaxxClient; }
 	virtual bool IsPulseClient(int ClientId) override { return m_aClients[ClientId].m_IsPulseClient; }
+	virtual bool IsCactusClient(int ClientId) override { return m_aClients[ClientId].m_IsCactusClient; }
+	virtual bool IsAiodobClient(int ClientId) override { return m_aClients[ClientId].m_IsAiodobClient; }
+	virtual bool IsFexClient(int ClientId) override { return m_aClients[ClientId].m_IsFexClient; }
+	virtual bool IsRushieClient(int ClientId) override { return m_aClients[ClientId].m_IsRushieClient; }
+	virtual bool IsSClientClient(int ClientId) override { return m_aClients[ClientId].m_IsSClientClient; }
 
 public:
 	class IGameServer *GameServer() { return m_pGameServer; }
@@ -196,6 +201,11 @@ public:
 		bool m_IsStAClient; // to identify StA clients
 		bool m_IsAllTheHaxxClient; // to identify allthehaxx clients
 		bool m_IsPulseClient; // to identify pulse clients
+		bool m_IsCactusClient; // to identify Cactus clients
+		bool m_IsAiodobClient; // to identify Aiodob clients
+		bool m_IsFexClient; // to identify FeX clients
+		bool m_IsRushieClient; // to identify Rushie clients
+		bool m_IsSClientClient; // to identify SClient clients
 
 		const IConsole::ICommandInfo *m_pRconCmdToSend;
 		enum
