@@ -287,7 +287,6 @@ public:
 	int m_aCrown[7];
 	bool m_EnableCrown = false;
 	bool m_SnapCustomWeapon = false;
-	int m_CustomWeapon = 0;
 	bool m_BluePortal = true;
 	int m_PortalKindId = -1;
 	bool m_AimPressed = false;

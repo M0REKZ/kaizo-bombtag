@@ -14,9 +14,11 @@
 void CSaveTee::SaveKZ(CCharacter *pchr, bool AddPenalty)
 {
     m_Health = pchr->m_Health;
-    m_CustomWeapon = pchr->m_CustomWeapon;
+    m_CustomWeapon = pchr->m_KaizoNetworkChar.m_RealCurrentWeapon;
 	m_BluePortal = pchr->m_BluePortal;
     m_TuneZoneOverrideKZ = pchr->m_TuneZoneOverrideKZ;
+    m_NODAMAGE = pchr->m_NODAMAGE;
+    m_HasRecoverJumpLaser = pchr->m_HasRecoverJumpLaser;
 
     for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS; i++)
     {
@@ -30,9 +32,11 @@ void CSaveTee::SaveKZ(CCharacter *pchr, bool AddPenalty)
 bool CSaveTee::LoadKZ(CCharacter *pchr, std::optional<int> Team)
 {
     pchr->m_Health = m_Health;
-    pchr->m_CustomWeapon = m_CustomWeapon;
+    pchr->m_KaizoNetworkChar.m_RealCurrentWeapon = m_CustomWeapon;
 	pchr->m_BluePortal = m_BluePortal;
     pchr->m_TuneZoneOverrideKZ = m_TuneZoneOverrideKZ;
+    pchr->m_NODAMAGE = m_NODAMAGE;
+    pchr->m_HasRecoverJumpLaser = m_HasRecoverJumpLaser;
 
     for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS; i++)
     {

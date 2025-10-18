@@ -167,6 +167,8 @@ private:
 	int m_CustomWeapon = 0;
 	bool m_BluePortal = true;
 	int m_TuneZoneOverrideKZ = -1; //+KZ
+	bool m_NODAMAGE = false; //+KZ
+	bool m_HasRecoverJumpLaser = false; //+KZ
 	struct
 	{
 		bool m_Got = false;
