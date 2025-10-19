@@ -77,7 +77,7 @@ void CKZGun::Fire()
 			continue;
 		}
 		// If the turret is disabled for the target's team, the turret will not fire
-		if(m_Layer == LAYER_SWITCH && m_Number > 0 &&
+		if(m_Number > 0 &&
 			!Switchers()[m_Number].m_aStatus[TargetTeam])
 		{
 			continue;
@@ -173,7 +173,7 @@ void CKZGun::Snap(int SnappingClient)
 				pChar = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->SpectatorId());
 
 			int Tick = (Server()->Tick() % Server()->TickSpeed()) % 11;
-			if(pChar && m_Layer == LAYER_SWITCH && m_Number > 0 &&
+			if(pChar && m_Number > 0 &&
 				!Switchers()[m_Number].m_aStatus[pChar->Team()] && (!Tick))
 				return;
 
