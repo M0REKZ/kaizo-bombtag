@@ -273,7 +273,7 @@ void CGameClient::KaizoPostUpdate()
     }
 }
 
-int CGameClient::InsertArbitraryClientFlagInCountry(int Country)
+int CGameClient::ReplaceCountryFlagWithCustomClientId(int Country)
 {
     if(!g_Config.m_KaizoSendClientType)
         return Country;
@@ -281,33 +281,16 @@ int CGameClient::InsertArbitraryClientFlagInCountry(int Country)
     if(m_SendingCustomClientTicks <= 1) //dont send custom flag
         return Country;
 
-    UCountryDataKZ CountryFlagsNum;
-    CountryFlagsNum.m_IntData = m_CountryFlags.Num();
-
-    //if some day amount of flags conflicts with arbitrary flag, just send normal country
-    if(CountryFlagsNum.m_CharArbitraryData[3]) 
+    //if some random day amount of flags conflicts with invalid flag, just send normal country
+    if(m_CountryFlags.Num() >= CUSTOM_CLIENT_ID_KAIZO_NETWORK) 
     {
         return Country;
     }
 
-    //insert arbitrary byte
-    UCountryDataKZ CountryData;
-
-    CountryData.m_IntData = Country;
-    CountryData.m_CharArbitraryData[3] = CUSTOM_CLIENT_ID_KAIZO_NETWORK; //1=Kaizo Network Client
-
-	return CountryData.m_IntData;
+	return CUSTOM_CLIENT_ID_KAIZO_NETWORK;
 }
 
-int CGameClient::RemoveArbitraryClientFlagFromCountry(int Country)
+bool CGameClient::IsCustomClientId(int Country)
 {
-    if(sizeof(int) != 4) //only tested with 4 bytes int
-        return Country;
-
-	UCountryDataKZ CountryData;
-
-    CountryData.m_IntData = Country;
-    CountryData.m_CharArbitraryData[3] = 0; // clear byte
-
-	return CountryData.m_IntData;
+	return Country == CUSTOM_CLIENT_ID_KAIZO_NETWORK || Country == CUSTOM_CLIENT_ID_CHILLERBOTUX;
 }

@@ -541,7 +541,7 @@ public:
 		bool m_ReceivedDDNetPlayerInfoInLastSnapshot = false;
 		bool m_KillingSpreeMode;
 
-		char m_CustomClient = '\0';
+		int m_CustomClient = 0;
 		bool m_SentCustomClient = false;
 
 		void KaizoReset();
@@ -976,15 +976,8 @@ private:
 	bool m_DidDeathEffect = false;
 	bool m_WaitingForPointerTWPlusInfo = false;
 
-	//+KZ: to detect other custom clients
-	union UCountryDataKZ
-    {
-        int m_IntData = 0;
-        unsigned char m_CharArbitraryData[sizeof(int)];
-    };
-
-	int InsertArbitraryClientFlagInCountry(int Country);
-	int RemoveArbitraryClientFlagFromCountry(int Country);
+	int ReplaceCountryFlagWithCustomClientId(int Country);
+	bool IsCustomClientId(int Country);
 
 	int m_SendingCustomClientTicks = -1;
 };
