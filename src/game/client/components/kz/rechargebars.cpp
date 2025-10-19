@@ -11,7 +11,7 @@ void CRechargeBars::RenderFreezeBar(const int ClientId)
 
 	// pCharacter contains the predicted character for local players or the last snap for players who are spectated
 	CCharacterCore *pCharacter = &GameClient()->m_aClients[ClientId].m_Predicted;
-    CCharacter * pWorldChar = GameClient()->m_GameWorld.GetCharacterById(ClientId);
+    CCharacter * pWorldChar = g_Config.m_ClAntiPingWeapons ? GameClient()->m_PredictedWorld.GetCharacterById(ClientId) : GameClient()->m_GameWorld.GetCharacterById(ClientId);
 
     if(!pWorldChar)
         return;
@@ -19,7 +19,7 @@ void CRechargeBars::RenderFreezeBar(const int ClientId)
     float FireDelay = 0;
     GameClient()->m_GameWorld.GetTuning(pWorldChar->GetOverriddenTuneZone())->Get(offsetof(CTuningParams, m_HammerFireDelay) / sizeof(CTuneParam) + pCharacter->m_ActiveWeapon, &FireDelay);
     const int RechargeTime = FireDelay * Client()->GameTickSpeed() / 1000;
-    int RechargeTick = GameClient()->m_Snap.m_aCharacters[ClientId].m_Cur.m_AttackTick + RechargeTime;
+    int RechargeTick = pWorldChar->GetAttackTick() + RechargeTime;
 
 	if((g_Config.m_ClPredict ? Client()->PredGameTick(g_Config.m_ClDummy) : GameClient()->m_GameWorld.GameTick()) >= RechargeTick)
         return;
