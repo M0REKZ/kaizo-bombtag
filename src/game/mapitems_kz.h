@@ -5,6 +5,7 @@
 
 #include <game/mapitems.h>
 #include <generated/protocol.h>
+#include <engine/external/ddnet-custom-clients/custom_clients_ids.h>
 
 const char KZ_GAME_LAYER_NAME[9] = {'+','K', 'Z', 'G', 'a', 'm', 'e', (char)27, '\0'};
 const char KZ_FRONT_LAYER_NAME[10] = {'+','K', 'Z', 'F', 'r', 'o', 'n', 't', (char)27, '\0'};
@@ -73,11 +74,6 @@ enum
 	KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM,
 	KZ_CUSTOM_WEAPONS_END,
 	KZ_NUM_CUSTOM_WEAPONS = KZ_CUSTOM_WEAPONS_END - KZ_CUSTOM_WEAPONS_START,
-};
-
-enum
-{
-	KZ_CUSTOM_CLIENT_ID_KAIZO_NETWORK = 1,
 };
 
 //Pointer TW+ Tiles from Pointer's TW+

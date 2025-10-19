@@ -234,7 +234,7 @@ void CGameClient::KaizoPostUpdate()
         {
             if(Client.m_ClientId == m_Snap.m_LocalClientId || Client.m_ClientId == m_PredictedDummyId)
             {
-                Client.m_CustomClient = KZ_CUSTOM_CLIENT_ID_KAIZO_NETWORK; //force Kaizo Network client for us
+                Client.m_CustomClient = CUSTOM_CLIENT_ID_KAIZO_NETWORK; //force Kaizo Network client for us
             }
 
             if(!Client.m_SentCustomClient)
@@ -294,7 +294,7 @@ int CGameClient::InsertArbitraryClientFlagInCountry(int Country)
     UCountryDataKZ CountryData;
 
     CountryData.m_IntData = Country;
-    CountryData.m_CharArbitraryData[3] = KZ_CUSTOM_CLIENT_ID_KAIZO_NETWORK; //1=Kaizo Network Client
+    CountryData.m_CharArbitraryData[3] = CUSTOM_CLIENT_ID_KAIZO_NETWORK; //1=Kaizo Network Client
 
 	return CountryData.m_IntData;
 }
