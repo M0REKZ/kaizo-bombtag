@@ -292,5 +292,5 @@ int CGameClient::ReplaceCountryFlagWithCustomClientId(int Country)
 
 bool CGameClient::IsCustomClientId(int Country)
 {
-	return Country == CUSTOM_CLIENT_ID_KAIZO_NETWORK || Country == CUSTOM_CLIENT_ID_CHILLERBOTUX;
+	return Country > m_CountryFlags.Num();
 }
