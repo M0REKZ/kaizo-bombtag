@@ -15,23 +15,73 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
     if(g_Config.m_KaizoPredictDDNetTeleport && GameWorld()->m_WorldConfig.m_IsDDRace)
     {
         int z = Collision()->IsTeleport(MapIndex);
-        if(!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons && z && Collision()->TeleOuts(z - 1).size() == 1)
+
+        if(!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons)
         {
-            if(m_Core.m_Super || m_Core.m_Invincible)
-                return;
-            int TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleOuts(z - 1).size());
-            m_Core.m_Pos = Collision()->TeleOuts(z - 1)[TeleOut];
-            m_DontMixPredictedPos = true; //+KZ added this
-            if(!g_Config.m_SvTeleportHoldHook)
+            if(g_Config.ms_KaizoPredictTeleToDeath && z)
             {
-                ResetHook();
+                //check if all tele-outs lead to death tiles
+                bool AllLeadToDeath = true;
+                if(Collision()->TeleOuts(z - 1).size() > 0)
+                {
+                    for(vec2 TeleOutPos : Collision()->TeleOuts(z - 1))
+                    {
+                        if(Collision()->GetTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) != TILE_DEATH &&
+                            Collision()->GetFrontTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) != TILE_DEATH)
+                        {
+                            AllLeadToDeath = false;
+                            break;
+                        }
+                    }
+
+                    if(AllLeadToDeath)
+                    {
+                        m_IsInDeathTile = true;
+                        return;
+                    }
+                }
             }
-            if(g_Config.m_SvTeleportLoseWeapons)
-                ResetPickups();
-            return;
+            if(z && Collision()->TeleOuts(z - 1).size() == 1)
+            {
+                if(m_Core.m_Super || m_Core.m_Invincible)
+                    return;
+                int TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleOuts(z - 1).size());
+                m_Core.m_Pos = Collision()->TeleOuts(z - 1)[TeleOut];
+                m_DontMixPredictedPos = true; //+KZ added this
+                if(!g_Config.m_SvTeleportHoldHook)
+                {
+                    ResetHook();
+                }
+                if(g_Config.m_SvTeleportLoseWeapons)
+                    ResetPickups();
+                return;
+            }
         }
         int evilz = Collision()->IsEvilTeleport(MapIndex);
-        if(evilz && Collision()->TeleOuts(evilz - 1).size() == 1)
+        if(g_Config.ms_KaizoPredictTeleToDeath && evilz)
+        {
+            // check if all tele-outs lead to death tiles
+            bool AllLeadToDeath = true;
+            if(Collision()->TeleOuts(evilz - 1).size() > 0)
+            {
+                for(vec2 TeleOutPos : Collision()->TeleOuts(evilz - 1))
+                {
+                    if(Collision()->GetTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) != TILE_DEATH &&
+                        Collision()->GetFrontTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) != TILE_DEATH)
+                    {
+                        AllLeadToDeath = false;
+                        break;
+                    }
+                }
+
+                if(AllLeadToDeath)
+                {
+                    m_IsInDeathTile = true;
+                    return;
+                }
+            }
+        }
+	    if(evilz && Collision()->TeleOuts(evilz - 1).size() == 1)
         {
             if(m_Core.m_Super || m_Core.m_Invincible)
                 return;
@@ -64,6 +114,15 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
                 if(Collision()->TeleCheckOuts(k).size() == 1)
                 {
                     int TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleCheckOuts(k).size());
+
+                    vec2 TeleOutPos = Collision()->TeleCheckOuts(k)[TeleOut];
+                    if(g_Config.m_KaizoPredictTeleToDeath && (Collision()->GetTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) == TILE_DEATH ||
+                        Collision()->GetFrontTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) == TILE_DEATH))
+                    {
+                        m_IsInDeathTile = true;
+                        return;
+                    }
+
                     m_Core.m_Pos = Collision()->TeleCheckOuts(k)[TeleOut];
                     m_Core.m_Vel = vec2(0, 0);
                     m_DontMixPredictedPos = true; //+KZ added this
@@ -90,6 +149,15 @@ void CCharacter::KaizoPredictNormalTiles(int Index)
                 if(Collision()->TeleCheckOuts(k).size() == 1)
                 {
                     int TeleOut = GameWorld()->m_Core.RandomOr0(Collision()->TeleCheckOuts(k).size());
+
+                    vec2 TeleOutPos = Collision()->TeleCheckOuts(k)[TeleOut];
+                    if(g_Config.m_KaizoPredictTeleToDeath && (Collision()->GetTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) == TILE_DEATH ||
+                        Collision()->GetFrontTile(round_to_int(TeleOutPos.x),round_to_int(TeleOutPos.y)) == TILE_DEATH))
+                    {
+                        m_IsInDeathTile = true;
+                        return;
+                    }
+
                     m_Core.m_Pos = Collision()->TeleCheckOuts(k)[TeleOut];
                     m_DontMixPredictedPos = true; //+KZ added this
 
