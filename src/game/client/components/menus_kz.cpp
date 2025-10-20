@@ -278,7 +278,6 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 				str_format(aBuf, sizeof(aBuf), "%s:", Localize(Key.m_pName));
 
 				Ui()->DoLabel(&BindLabel, aBuf, 13.0f, TEXTALIGN_ML);
-				printf("Binding key %s id %d\n", aBuf, Key.m_KeyId);
 				int OldId = Key.m_KeyId, OldModifierCombination = Key.m_ModifierCombination, NewModifierCombination;
 				int NewId = GameClient()->m_KeyBinder.DoKeyReader(&Key.m_KeyId, &BindButton, OldId, OldModifierCombination, &NewModifierCombination);
 				if(NewId != OldId || NewModifierCombination != OldModifierCombination)
