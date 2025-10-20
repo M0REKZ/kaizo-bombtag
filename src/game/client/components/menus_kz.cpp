@@ -7,11 +7,13 @@
 #include <game/client/ui_listbox.h>
 #include <engine/shared/localization.h>
 #include <game/client/gameclient.h>
+#include <generated/client_data.h>
 
 enum
 {
 	KAIZO_SETTINGS_TAB_KAIZO = 0,
 	KAIZO_SETTINGS_TAB_BINDS,
+	KAIZO_SETTINGS_TAB_CREDITS,
 	NUM_KAIZO_SETTINGS_TABS,
 };
 
@@ -45,7 +47,8 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	static CButtonContainer s_aPageTabs[NUM_KAIZO_SETTINGS_TABS] = {};
 	const char *apTabNames[NUM_KAIZO_SETTINGS_TABS] = {
 		Localize("Kaizo"),
-		Localize("Binds")
+		Localize("Binds"),
+		Localize("Credits"),
 		};
 
 	for(int Tab = KAIZO_SETTINGS_TAB_KAIZO; Tab < NUM_KAIZO_SETTINGS_TABS; ++Tab)
@@ -290,6 +293,71 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 
 				SettingsBox.HSplitTop(2.0f, nullptr, &SettingsBox);
 			}
+			break;
+		}
+		case KAIZO_SETTINGS_TAB_CREDITS:
+		{
+			CUIRect ImageRect;
+			SettingsBox.HSplitTop(30.0f, nullptr, &SettingsBox);
+			SettingsBox.HSplitTop(103.0f*1.5f, &ImageRect, &SettingsBox);
+			ImageRect.VSplitMid(&ImageRect, nullptr, 0.f);
+
+			Graphics()->TextureSet(g_pData->m_aImages[IMAGE_BANNER].m_Id);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1, 1, 1, 1);
+			IGraphics::CQuadItem QuadItem((ImageRect.w - 170*1.5f) + ImageRect.x, ImageRect.y, 360.f*1.5f, 103*1.5f);
+			Graphics()->QuadsDrawTL(&QuadItem, 1);
+			Graphics()->QuadsEnd();
+
+			SettingsBox.HSplitTop(20.0f, nullptr, &SettingsBox);
+			SettingsBox.HSplitTop(20.0f, &Label, &SettingsBox);
+
+			Ui()->DoLabel(&Label, Localize("Kaizo Network By +KZ"), 30.0f, TEXTALIGN_MC);
+
+			SettingsBox.HSplitTop(30.0f, nullptr, &SettingsBox);
+			SettingsBox.HSplitTop(20.0f, &Label, &SettingsBox);
+			Ui()->DoLabel(&Label, Localize("Based on DDNet, with some code from other DDNet mods"), 15.0f, TEXTALIGN_MC);
+
+			SettingsBox.HSplitTop(50.0f, nullptr, &SettingsBox);
+
+			CUIRect ButtonsArea;
+
+			CUIRect DiscordRect;
+			CUIRect SourceCodeRect;
+
+			CButtonContainer DiscordButton;
+			CButtonContainer SourceCodeButton;
+
+			SettingsBox.HSplitTop(35.f, &ButtonsArea, &SettingsBox);
+			ButtonsArea.VSplitMid(&DiscordRect, &SourceCodeRect, 50.0f);
+			DiscordRect.HSplitTop(30.0f, &DiscordRect, &ButtonsArea);
+			SourceCodeRect.HSplitTop(30.0f, &SourceCodeRect, &ButtonsArea);
+
+			CUIRect ButtonsArea2;
+
+			CUIRect WebsiteRect;
+
+			CButtonContainer WebsiteButton;
+
+			SettingsBox.HSplitTop(60.f, &ButtonsArea2, &SettingsBox);
+			ButtonsArea2.VMargin(ButtonsArea2.w/2 + 25.f - DiscordRect.w/2, &WebsiteRect);
+			WebsiteRect.HSplitTop(30.0f, &WebsiteRect, &ButtonsArea2);
+
+			if(DoButton_Menu(&DiscordButton, Localize("Discord"), false, &DiscordRect))
+			{
+				Client()->ViewLink(Localize("https://m0rekz.github.io/discord.html"));
+			}
+
+			if(DoButton_Menu(&SourceCodeButton, Localize("Source Code"), false, &SourceCodeRect))
+			{
+				Client()->ViewLink(Localize("https://www.github.com/m0rekz/kaizo-ddnet"));
+			}
+
+			if(DoButton_Menu(&WebsiteButton, Localize("+KZ Website"), false, &WebsiteRect))
+			{
+				Client()->ViewLink(Localize("https://m0rekz.github.io/"));
+			}
+
 			break;
 		}
 	}
