@@ -832,5 +832,6 @@ MACRO_CONFIG_INT(KaizoShowClientType, kaizo_show_client_type, 1, 0, 1, CFGFLAG_C
 MACRO_CONFIG_INT(KaizoShowRechargeBar, kaizo_show_recharge_bar, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show weapon recharge bar")
 MACRO_CONFIG_INT(KaizoRotatingHammer, kaizo_rotating_hammer, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Hammer rotates like other weapons")
 MACRO_CONFIG_INT(KaizoPredictTeleToDeath, kaizo_predict_tele_to_death, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict death effect for teleports that only lead to death tiles")
+MACRO_CONFIG_INT(KaizoPredictVanillaHammerFix, kaizo_predict_vanilla_hammer_fix, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Fix hammer prediction in vanilla when hitting other players through walls")
 //This one is from T-Client:
 MACRO_CONFIG_STR(KaizoCustomCommunitiesUrl, kaizo_custom_communities_url, 256, "https://raw.githubusercontent.com/SollyBunny/ddnet-custom-communities/refs/heads/main/custom-communities-ddnet-info.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL to fetch custom communities from (must be https), empty to disable")

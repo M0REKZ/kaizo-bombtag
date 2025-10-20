@@ -87,6 +87,7 @@ public:
 
 		//+KZ
 		bool m_IsPointerTWPlus;
+		bool m_IsPureVanilla;
 	} m_WorldConfig;
 
 	bool m_IsValidCopy;

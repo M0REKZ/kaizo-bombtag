@@ -322,6 +322,11 @@ void CCharacter::FireWeapon()
 			if((pTarget == this || !CanCollide(pTarget->GetCid())))
 				continue;
 
+			//+KZ: Vanilla hammer prediction fix
+			if(g_Config.m_KaizoPredictVanillaHammerFix && GameWorld()->m_WorldConfig.m_IsPureVanilla &&
+				Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, nullptr, nullptr))
+				continue;
+
 			// set his velocity to fast upward (for now)
 
 			vec2 Dir;

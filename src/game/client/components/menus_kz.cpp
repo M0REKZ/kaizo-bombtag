@@ -93,6 +93,14 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 		g_Config.m_KaizoPredictPointerTWPlus ^= 1;
 	}
 
+	Right.HSplitTop(2.0f, nullptr, &Right);
+
+    Right.HSplitTop(20.0f, &Button, &Right);
+	if(DoButton_CheckBox(&g_Config.m_KaizoPredictVanillaHammerFix, Localize("Fix Vanilla hammer hit prediction through walls"), g_Config.m_KaizoPredictVanillaHammerFix, &Button))
+	{
+		g_Config.m_KaizoPredictVanillaHammerFix ^= 1;
+	}
+
 	Left.HSplitTop(2.0f, nullptr, &Left);
 
     Left.HSplitTop(20.0f, &Button, &Left);

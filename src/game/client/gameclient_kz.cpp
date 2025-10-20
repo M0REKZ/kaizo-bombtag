@@ -13,6 +13,7 @@ void CGameClient::OnKaizoConnected()
     m_Collision.m_pTeamsCore = m_GameWorld.Teams();
 
     m_GameWorld.m_WorldConfig.m_IsPointerTWPlus = false; //initial value for this
+    m_GameWorld.m_WorldConfig.m_IsPureVanilla = false;
     m_WaitingForPointerTWPlusInfo = false;   
     m_aClients[0].m_SentCustomClient = false; //to send custom client on connect
     m_SendingCustomClientTicks = 25; // too
@@ -168,6 +169,13 @@ void CGameClient::GetKaizoInfo(CServerInfo *pServerInfo)
 	Client()->GetServerInfo(pServerInfo);
 
     //Detect Specific mods
+
+    //Pure Vanilla
+    m_GameWorld.m_WorldConfig.m_IsPureVanilla = (str_comp(pServerInfo->m_aGameType, "CTF") == 0 ||
+                                                str_comp(pServerInfo->m_aGameType, "DM") == 0 ||
+                                                str_comp(pServerInfo->m_aGameType, "TDM") == 0 ||
+                                                str_comp(pServerInfo->m_aGameType, "LMS") == 0 ||
+                                                str_comp(pServerInfo->m_aGameType, "LTS") == 0);
 
     //InstaShield
     m_InstaShield = pServerInfo->m_aGameType[0] == 'i' && pServerInfo->m_aGameType[str_length(pServerInfo->m_aGameType) - 1] == ')';
