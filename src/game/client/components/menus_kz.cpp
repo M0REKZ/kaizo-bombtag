@@ -5,6 +5,8 @@
 #include <game/localization.h>
 #include "menus.h"
 #include <game/client/ui_listbox.h>
+#include <engine/shared/localization.h>
+#include <game/client/gameclient.h>
 
 enum
 {
@@ -14,6 +16,19 @@ enum
 };
 
 static int s_CurCustomTab = KAIZO_SETTINGS_TAB_KAIZO;
+
+class CKeyInfo
+{
+public:
+	const char *m_pName;
+	const char *m_pCommand;
+	int m_KeyId;
+	int m_ModifierCombination;
+};
+
+static CKeyInfo gs_aKeys[] = {
+	{Localizable("Rescue"), "say /rescue", 0, 0},
+};
 
 void CMenus::RenderSettingsKaizo(CUIRect MainView)
 {
@@ -229,7 +244,53 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 		}
 		case KAIZO_SETTINGS_TAB_BINDS:
 		{
-			//TODO
+			// this is kinda slow, but whatever
+			for(auto &Key : gs_aKeys)
+				Key.m_KeyId = Key.m_ModifierCombination = 0;
+
+			for(int Mod = 0; Mod < CBinds::MODIFIER_COMBINATION_COUNT; Mod++)
+			{
+				for(int KeyId = 0; KeyId < KEY_LAST; KeyId++)
+				{
+					const char *pBind = GameClient()->m_Binds.Get(KeyId, Mod);
+					if(!pBind[0])
+						continue;
+
+					for(auto &Key : gs_aKeys)
+						if(str_comp(pBind, Key.m_pCommand) == 0)
+						{
+							Key.m_KeyId = KeyId;
+							Key.m_ModifierCombination = Mod;
+							break;
+						}
+				}
+			}
+
+			for(int i = 0; i < 1; i++)
+			{
+				const CKeyInfo &Key = gs_aKeys[i];
+
+				CUIRect BindButton, BindLabel;
+				SettingsBox.HSplitTop(20.0f, &BindButton, &SettingsBox);
+				BindButton.VSplitLeft(135.0f, &BindLabel, &BindButton);
+
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "%s:", Localize(Key.m_pName));
+
+				Ui()->DoLabel(&BindLabel, aBuf, 13.0f, TEXTALIGN_ML);
+				printf("Binding key %s id %d\n", aBuf, Key.m_KeyId);
+				int OldId = Key.m_KeyId, OldModifierCombination = Key.m_ModifierCombination, NewModifierCombination;
+				int NewId = GameClient()->m_KeyBinder.DoKeyReader(&Key.m_KeyId, &BindButton, OldId, OldModifierCombination, &NewModifierCombination);
+				if(NewId != OldId || NewModifierCombination != OldModifierCombination)
+				{
+					if(OldId != 0 || NewId == 0)
+						GameClient()->m_Binds.Bind(OldId, "", false, OldModifierCombination);
+					if(NewId != 0)
+						GameClient()->m_Binds.Bind(NewId, Key.m_pCommand, false, NewModifierCombination);
+				}
+
+				SettingsBox.HSplitTop(2.0f, nullptr, &SettingsBox);
+			}
 			break;
 		}
 	}
