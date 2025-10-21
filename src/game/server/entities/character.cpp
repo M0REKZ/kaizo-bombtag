@@ -697,7 +697,7 @@ void CCharacter::FireWeapon()
 		{
 			for(CProjectile * pProj = (CProjectile *)GameWorld()->FindFirst(CGameWorld::ENTTYPE_PROJECTILE); pProj; pProj = (CProjectile *)pProj->TypeNext())
 			{
-				if(pProj->m_GoresTeleportGrenade && pProj->GetOwnerId() == m_pPlayer->GetCid() && pProj->GetType())
+				if(pProj->m_GoresTeleportGrenade && pProj->GetOwnerId() == m_pPlayer->GetCid() && pProj->GetType() == WEAPON_GRENADE)
 				{
 					gores_dontfire = true;
 
