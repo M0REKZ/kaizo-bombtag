@@ -1457,6 +1457,31 @@ CHud::CMovementInformation CHud::GetMovementInformation(int ClientId, int Conn) 
 		}
 		Out.m_Angle = Angle * 180.0f / pi;
 	}
+
+	//+KZ evil to do this after all calculations but i dont want hard git conflicts
+	if(g_Config.m_KaizoHudRealPosition)
+	{
+		if(ClientId == SPEC_FREEVIEW)
+		{
+			Out.m_Pos = GameClient()->m_Camera.m_Center;
+		}
+		else if(GameClient()->m_aClients[ClientId].m_SpecCharPresent)
+		{
+			Out.m_Pos = GameClient()->m_aClients[ClientId].m_SpecChar;
+		}
+		else
+		{
+			const CNetObj_Character *pCurChar = &GameClient()->m_Snap.m_aCharacters[ClientId].m_Cur;
+			Out.m_Pos = vec2(pCurChar->m_X, pCurChar->m_Y);
+		}
+	}
+
+	if(g_Config.m_KaizoHudRealVelocity)
+	{
+		const CNetObj_Character *pCurChar = &GameClient()->m_Snap.m_aCharacters[ClientId].m_Cur;
+		Out.m_Speed =  vec2(pCurChar->m_VelX, pCurChar->m_VelY);
+	}
+
 	return Out;
 }
 

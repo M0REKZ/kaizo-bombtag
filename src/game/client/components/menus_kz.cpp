@@ -218,6 +218,22 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 				g_Config.m_KaizoPredictTeleToDeath ^= 1;
 			}
 
+			Left.HSplitTop(2.0f, nullptr, &Left);
+
+			Left.HSplitTop(20.0f, &Button, &Left);
+			if(DoButton_CheckBox(&g_Config.m_KaizoHudRealPosition, Localize("If HUD player position is enabled, show real position"), g_Config.m_KaizoHudRealPosition, &Button))
+			{
+				g_Config.m_KaizoHudRealPosition ^= 1;
+			}
+
+			Left.HSplitTop(2.0f, nullptr, &Left);
+
+			Left.HSplitTop(20.0f, &Button, &Left);
+			if(DoButton_CheckBox(&g_Config.m_KaizoHudRealVelocity, Localize("If HUD player velocity is enabled, show real velocity"), g_Config.m_KaizoHudRealVelocity, &Button))
+			{
+				g_Config.m_KaizoHudRealVelocity ^= 1;
+			}
+
 			// dangerous settings, some communities may consider it a cheat, chill communities may not, use at your own risk!
 			Left.HSplitTop(40.0f, &Label, &SettingsBox);
 			Ui()->DoLabel(&Label, Localize("Dangerous Settings!"), 20.0f, TEXTALIGN_ML);
