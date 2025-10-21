@@ -500,8 +500,22 @@ void CCharacter::HandleWeaponSwitch()
 	}
 
 	// Direct Weapon selection
-	if(m_LatestInput.m_WantedWeapon)
-		WantedWeapon = m_Input.m_WantedWeapon - 1;
+	if(m_LatestInput.m_WantedWeapon) //+KZ modified
+	{
+		if(m_KaizoNetworkChar.m_RealCurrentWeapon >= 0)
+		{
+			//this has a bug, you cant go to the previously equiped weapon in certain conditions
+			//if you used commands to equip a custom weapon
+			if(m_LatestInput.m_WantedWeapon != m_Input.m_WantedWeapon)
+			{
+				WantedWeapon = m_LatestInput.m_WantedWeapon - 1;
+			}
+		}
+		else
+		{
+			WantedWeapon = m_Input.m_WantedWeapon - 1;
+		}
+	}
 
 	// check for insane values
 	if(WantedWeapon >= 0 && WantedWeapon < NUM_WEAPONS && (WantedWeapon != m_Core.m_ActiveWeapon || m_KaizoNetworkChar.m_RealCurrentWeapon >= 0) && m_Core.m_aWeapons[WantedWeapon].m_Got)
