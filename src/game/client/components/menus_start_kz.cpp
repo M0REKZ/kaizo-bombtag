@@ -187,11 +187,11 @@ void CMenusStart::RenderKaizoStartMenu(CUIRect MainView)
 	// render version
 	CUIRect CurVersion, ConsoleButton;
 	MainView.HSplitTop(45.0f, &CurVersion, nullptr);
-	CurVersion.VSplitRight(40.0f, &CurVersion, nullptr);
+	CurVersion.VSplitLeft(40.0f, nullptr, &CurVersion);
 	CurVersion.HSplitTop(20.0f, &ConsoleButton, &CurVersion);
 	CurVersion.HSplitTop(5.0f, nullptr, &CurVersion);
-	ConsoleButton.VSplitRight(40.0f, nullptr, &ConsoleButton);
-	Ui()->DoLabel(&CurVersion, GAME_RELEASE_VERSION, 14.0f, TEXTALIGN_MR);
+	ConsoleButton.VSplitRight(60.0f, nullptr, &ConsoleButton);
+	Ui()->DoLabel(&CurVersion, "Based on DDNet " GAME_RELEASE_VERSION, 14.0f, TEXTALIGN_MR);
 
 	static CButtonContainer s_ConsoleButton;
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
