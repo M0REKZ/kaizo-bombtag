@@ -105,10 +105,6 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 			Ui()->DoLabel(&Label, Localize("Kaizo Settings"), 20.0f, TEXTALIGN_ML);
 			Left.HSplitTop(25.0f, &Label, &Left);
 
-			Right.HSplitTop(20.0f, &Label, &SettingsBox);
-			Ui()->DoLabel(&Label, Localize("PvP Settings"), 20.0f, TEXTALIGN_ML);
-			Right.HSplitTop(25.0f, &Label, &Right);
-
 			Left.HSplitTop(20.0f, &Button, &Left);
 			if(DoButton_CheckBox(&g_Config.m_KaizoFastInput, Localize("Fast input"), g_Config.m_KaizoFastInput, &Button))
 			{
@@ -129,14 +125,6 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 			if(DoButton_CheckBox(&g_Config.m_KaizoPredictDDNetTeleport, Localize("Predict DDNet teleports if there is only 1 exit"), g_Config.m_KaizoPredictDDNetTeleport, &Button))
 			{
 				g_Config.m_KaizoPredictDDNetTeleport ^= 1;
-			}
-
-			Right.HSplitTop(2.0f, nullptr, &Right);
-
-			Right.HSplitTop(20.0f, &Button, &Right);
-			if(DoButton_CheckBox(&g_Config.m_KaizoInstaShieldShield, Localize("InstaShield Shield"), g_Config.m_KaizoInstaShieldShield, &Button))
-			{
-				g_Config.m_KaizoInstaShieldShield ^= 1;
 			}
 
 			Left.HSplitTop(2.0f, nullptr, &Left);
@@ -161,30 +149,6 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 			if(DoButton_CheckBox(&g_Config.m_KaizoSleepingInMenuPlayers, Localize("Show players navigating menu as sleeping tees"), g_Config.m_KaizoSleepingInMenuPlayers, &Button))
 			{
 				g_Config.m_KaizoSleepingInMenuPlayers ^= 1;
-			}
-
-			Right.HSplitTop(2.0f, nullptr, &Right);
-
-			Right.HSplitTop(20.0f, &Button, &Right);
-			if(DoButton_CheckBox(&g_Config.m_KaizoKillingSpreeSparkles, Localize("Killing spree sparkles"), g_Config.m_KaizoKillingSpreeSparkles, &Button))
-			{
-				g_Config.m_KaizoKillingSpreeSparkles ^= 1;
-			}
-
-			Right.HSplitTop(2.0f, nullptr, &Right);
-
-			Right.HSplitTop(20.0f, &Button, &Right);
-			if(DoButton_CheckBox(&g_Config.m_KaizoPredictPointerTWPlus, Localize("Predict Pointer's TW+"), g_Config.m_KaizoPredictPointerTWPlus, &Button))
-			{
-				g_Config.m_KaizoPredictPointerTWPlus ^= 1;
-			}
-
-			Right.HSplitTop(2.0f, nullptr, &Right);
-
-			Right.HSplitTop(20.0f, &Button, &Right);
-			if(DoButton_CheckBox(&g_Config.m_KaizoPredictVanillaHammerFix, Localize("Fix Vanilla hammer hit prediction through walls"), g_Config.m_KaizoPredictVanillaHammerFix, &Button))
-			{
-				g_Config.m_KaizoPredictVanillaHammerFix ^= 1;
 			}
 
 			Left.HSplitTop(2.0f, nullptr, &Left);
@@ -235,6 +199,43 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 				g_Config.m_KaizoHudRealVelocity ^= 1;
 			}
 
+			// PvP Settings
+			Right.HSplitTop(20.0f, &Label, &SettingsBox);
+			Ui()->DoLabel(&Label, Localize("PvP Settings"), 20.0f, TEXTALIGN_ML);
+			Right.HSplitTop(25.0f, &Label, &Right);
+
+			Right.HSplitTop(2.0f, nullptr, &Right);
+
+			Right.HSplitTop(20.0f, &Button, &Right);
+			if(DoButton_CheckBox(&g_Config.m_KaizoInstaShieldShield, Localize("InstaShield Shield"), g_Config.m_KaizoInstaShieldShield, &Button))
+			{
+				g_Config.m_KaizoInstaShieldShield ^= 1;
+			}
+
+			Right.HSplitTop(2.0f, nullptr, &Right);
+
+			Right.HSplitTop(20.0f, &Button, &Right);
+			if(DoButton_CheckBox(&g_Config.m_KaizoKillingSpreeSparkles, Localize("Killing spree sparkles"), g_Config.m_KaizoKillingSpreeSparkles, &Button))
+			{
+				g_Config.m_KaizoKillingSpreeSparkles ^= 1;
+			}
+
+			Right.HSplitTop(2.0f, nullptr, &Right);
+
+			Right.HSplitTop(20.0f, &Button, &Right);
+			if(DoButton_CheckBox(&g_Config.m_KaizoPredictPointerTWPlus, Localize("Predict Pointer's TW+"), g_Config.m_KaizoPredictPointerTWPlus, &Button))
+			{
+				g_Config.m_KaizoPredictPointerTWPlus ^= 1;
+			}
+
+			Right.HSplitTop(2.0f, nullptr, &Right);
+
+			Right.HSplitTop(20.0f, &Button, &Right);
+			if(DoButton_CheckBox(&g_Config.m_KaizoPredictVanillaHammerFix, Localize("Fix Vanilla hammer hit prediction through walls"), g_Config.m_KaizoPredictVanillaHammerFix, &Button))
+			{
+				g_Config.m_KaizoPredictVanillaHammerFix ^= 1;
+			}
+
 			// dangerous settings, some communities may consider it a cheat, chill communities may not, use at your own risk!
 			Right.HSplitTop(40.0f, &Label, &SettingsBox);
 			Ui()->DoLabel(&Label, Localize("Dangerous Settings!"), 20.0f, TEXTALIGN_ML);
@@ -251,8 +252,6 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 			{
 				g_Config.m_KaizoOldModsZooming ^= 1;
 			}
-
-			Right.HSplitTop(2.0f, nullptr, &Right);
 
 			Right.HSplitTop(20.0f, &Button, &Right);
 			if(DoButton_CheckBox(&g_Config.m_KaizoShowRechargeBar, Localize("Show weapon recharge bar"), g_Config.m_KaizoShowRechargeBar, &Button))
