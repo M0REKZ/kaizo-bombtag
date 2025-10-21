@@ -28,7 +28,8 @@ public:
 	int m_ModifierCombination;
 };
 
-static CKeyInfo gs_aKeys[] = {
+#define NUM_KAIZO_KEYBINDS 1
+static CKeyInfo gs_aKeys[NUM_KAIZO_KEYBINDS] = {
 	{Localizable("Rescue"), "say /rescue", 0, 0},
 };
 
@@ -285,7 +286,7 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 				}
 			}
 
-			for(int i = 0; i < 1; i++)
+			for(int i = 0; i < NUM_KAIZO_KEYBINDS; i++)
 			{
 				const CKeyInfo &Key = gs_aKeys[i];
 
