@@ -22,22 +22,29 @@
 
 using namespace FontIcons;
 
-void CMenusStart::RenderStartMenu(CUIRect MainView)
+//+KZ modified start menu
+void CMenusStart::RenderKaizoStartMenu(CUIRect MainView)
 {
-	//+KZ
-	if(g_Config.m_KaizoStartMenu)
-	{
-		RenderKaizoStartMenu(MainView);
-		return;
-	}
-
 	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
+
+    // +KZ render some background thing
+    Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(0, 0, 0, 0.2f);
+    IGraphics::CFreeformItem FreeformItem(
+        0, 0,
+        MainView.w/2 + 30, 0,
+        0, Ui()->Screen()->h,
+        MainView.w/2, Ui()->Screen()->h
+    );
+    Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
+	Graphics()->QuadsEnd();
 
 	// render logo
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_BANNER].m_Id);
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(1, 1, 1, 1);
-	IGraphics::CQuadItem QuadItem(MainView.w / 2 - 170, 60, 360, 103);
+	IGraphics::CQuadItem QuadItem(MainView.w / 4 - 170 * 1.2f, 60, 360 * 1.2f, 103 * 1.2f);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();
 
@@ -49,7 +56,7 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 	CUIRect ExtMenu;
 	MainView.VSplitLeft(30.0f, nullptr, &ExtMenu);
-	ExtMenu.VSplitLeft(100.0f, &ExtMenu, nullptr);
+	ExtMenu.VSplitRight(100.0f, nullptr, &ExtMenu);
 
 	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
 	static CButtonContainer s_DiscordButton;
@@ -109,8 +116,9 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	if(GameClient()->m_Menus.DoButton_Menu(&s_NewsButton, Localize("News"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, g_Config.m_UiUnreadNews ? ColorRGBA(0.0f, 1.0f, 0.0f, 0.25f) : ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)) || CheckHotKey(KEY_N))
 		NewPage = CMenus::PAGE_NEWS;
 
-	CUIRect Menu;
-	MainView.VMargin(VMargin, &Menu);
+	CUIRect Menu, MenuContainer;
+	MainView.VSplitMid(&MenuContainer, nullptr);
+    MenuContainer.VMargin(30.f, &Menu);
 	Menu.HSplitBottom(25.0f, &Menu, nullptr);
 
 	Menu.HSplitBottom(40.0f, &Menu, &Button);
@@ -178,7 +186,7 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 	// render version
 	CUIRect CurVersion, ConsoleButton;
-	MainView.HSplitBottom(45.0f, nullptr, &CurVersion);
+	MainView.HSplitTop(45.0f, &CurVersion, nullptr);
 	CurVersion.VSplitRight(40.0f, &CurVersion, nullptr);
 	CurVersion.HSplitTop(20.0f, &ConsoleButton, &CurVersion);
 	CurVersion.HSplitTop(5.0f, nullptr, &CurVersion);
@@ -281,11 +289,4 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		GameClient()->m_Menus.SetShowStart(false);
 		GameClient()->m_Menus.SetMenuPage(NewPage);
 	}
-}
-
-bool CMenusStart::CheckHotKey(int Key) const
-{
-	return !Input()->ShiftIsPressed() && !Input()->ModifierIsPressed() && !Input()->AltIsPressed() && // no modifier
-	       Input()->KeyPress(Key) &&
-	       !GameClient()->m_GameConsole.IsActive();
 }

@@ -2439,6 +2439,7 @@ if(CLIENT)
     components/menus_settings_assets.cpp
     components/menus_settings_controls.cpp
     components/menus_settings_controls.h
+    components/menus_start_kz.cpp
     components/menus_start.cpp
     components/menus_start.h
     components/motd.cpp
