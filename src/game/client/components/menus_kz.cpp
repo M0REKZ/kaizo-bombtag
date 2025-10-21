@@ -13,7 +13,7 @@ enum
 {
 	KAIZO_SETTINGS_TAB_KAIZO = 0,
 	KAIZO_SETTINGS_TAB_BINDS,
-	KAIZO_SETTINGS_TAB_CREDITS,
+	KAIZO_SETTINGS_TAB_INFO,
 	NUM_KAIZO_SETTINGS_TABS,
 };
 
@@ -48,7 +48,7 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 	const char *apTabNames[NUM_KAIZO_SETTINGS_TABS] = {
 		Localize("Kaizo"),
 		Localize("Binds"),
-		Localize("Credits"),
+		Localize("Info"),
 		};
 
 	for(int Tab = KAIZO_SETTINGS_TAB_KAIZO; Tab < NUM_KAIZO_SETTINGS_TABS; ++Tab)
@@ -295,7 +295,7 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 			}
 			break;
 		}
-		case KAIZO_SETTINGS_TAB_CREDITS:
+		case KAIZO_SETTINGS_TAB_INFO:
 		{
 			CUIRect ImageRect;
 			SettingsBox.HSplitTop(30.0f, nullptr, &SettingsBox);
