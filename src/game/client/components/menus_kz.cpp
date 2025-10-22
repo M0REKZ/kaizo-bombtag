@@ -28,13 +28,14 @@ public:
 	int m_ModifierCombination;
 };
 
-#define NUM_KAIZO_KEYBINDS 5
+#define NUM_KAIZO_KEYBINDS 6
 static CKeyInfo gs_aKeys[NUM_KAIZO_KEYBINDS] = {
 	{Localizable("Rescue"), "say /rescue", 0, 0},
 	{Localizable("Equip Portal Gun"), "say /portalgun", 0, 0},
 	{Localizable("Equip Attractor Beam"), "say /attractorbeam", 0, 0},
 	{Localizable("Orange Portal"), "say /orangeportal", 0, 0},
 	{Localizable("Blue Portal"), "say /blueportal", 0, 0},
+	{Localizable("Drop Flag"), "say /drop flag", 0, 0},
 };
 
 void CMenus::RenderSettingsKaizo(CUIRect MainView)
