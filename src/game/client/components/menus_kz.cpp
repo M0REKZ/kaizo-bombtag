@@ -203,6 +203,14 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 				g_Config.m_KaizoHudRealVelocity ^= 1;
 			}
 
+			Left.HSplitTop(2.0f, nullptr, &Left);
+
+			Left.HSplitTop(20.0f, &Button, &Left);
+			if(DoButton_CheckBox(&g_Config.m_KaizoPredictGoresGrenadeTele, Localize("Predict Gores grenade teleport"), g_Config.m_KaizoPredictGoresGrenadeTele, &Button))
+			{
+				g_Config.m_KaizoPredictGoresGrenadeTele ^= 1;
+			}
+
 			// PvP Settings
 			Right.HSplitTop(20.0f, &Label, &SettingsBox);
 			Ui()->DoLabel(&Label, Localize("PvP Settings"), 20.0f, TEXTALIGN_ML);

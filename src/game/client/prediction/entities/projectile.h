@@ -54,6 +54,14 @@ private:
 	int m_Bouncing;
 	bool m_Freeze;
 	int m_TuneZone;
+
+	//+KZ
+	public:
+	bool m_GoresTeleportGrenade = false;
+	int GetOwnerId() const { return m_Owner; }
+	int GetStartTick() { return m_StartTick; }
+	int GetType() { return m_Type; }
+	void Reset() { m_MarkedForDestroy = true; }
 };
 
 #endif

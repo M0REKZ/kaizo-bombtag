@@ -2496,6 +2496,7 @@ if(CLIENT)
     prediction/entities/plasma.h
     prediction/entities/projectile.cpp
     prediction/entities/projectile.h
+    prediction/entity_kz.cpp
     prediction/entity.cpp
     prediction/entity.h
     prediction/gameworld_kz.cpp

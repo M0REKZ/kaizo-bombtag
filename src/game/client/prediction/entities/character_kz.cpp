@@ -7,6 +7,7 @@
 #include <game/collision.h>
 #include "character.h"
 #include <generated/client_data.h>
+#include "projectile.h"
 
 void CCharacter::KaizoPredictNormalTiles(int Index)
 {
@@ -304,6 +305,8 @@ bool CCharacter::KaizoPredictFireWeapon()
 		return false;
 	}
 
+    vec2 ProjStartPos = m_Pos + Direction * m_ProximityRadius * 0.75f;
+
     bool Fired = false;
 
     // From Pointer's TW+
@@ -322,6 +325,67 @@ bool CCharacter::KaizoPredictFireWeapon()
 
                 Fired = true;
             }
+            break;
+        }
+    }
+    else if(g_Config.m_KaizoPredictGoresGrenadeTele && g_Config.m_SvGoresGrenadeTele)
+    {
+        switch (m_Core.m_ActiveWeapon)
+        {
+            case WEAPON_GRENADE:
+            {
+                bool gores_dontfire = false;
+
+                for(CProjectile *pProj = (CProjectile *)GameWorld()->FindFirst(CGameWorld::ENTTYPE_PROJECTILE); pProj; pProj = (CProjectile *)pProj->TypeNext())
+                {
+                    if(pProj->m_GoresTeleportGrenade && pProj->GetOwnerId() == GetCid() && pProj->GetType() == WEAPON_GRENADE)
+                    {
+                        gores_dontfire = true;
+
+                        bool Found;
+                        vec2 PossiblePos;
+
+                        Found = GetNearestAirPos(pProj->GetPos((GameWorld()->GameTick() - pProj->GetStartTick() - 1) / (float)GameWorld()->GameTickSpeed()), pProj->GetPos((GameWorld()->GameTick() - pProj->GetStartTick()) / (float)GameWorld()->GameTickSpeed()), &PossiblePos);
+
+                        if(Found)
+                        {
+                            m_Core.m_Pos = PossiblePos;
+                            m_Core.m_Vel = vec2(0, 0);
+                            m_DontMixPredictedPos = true;
+
+                            pProj->Reset();
+                        }
+
+                        Fired = true;
+
+                        break;
+                    }
+                }
+
+                if(!gores_dontfire)
+                {
+                    int Lifetime = (int)(GameWorld()->GameTickSpeed() * GetTuning(m_TuneZone)->m_GrenadeLifetime);
+
+                    CProjectile *p = new CProjectile(
+                        GameWorld(),
+                        WEAPON_GRENADE, // Type
+                        GetCid(), // Owner
+                        ProjStartPos, // Pos
+                        Direction, // Dir
+                        Lifetime, // Span
+                        false, // Freeze
+                        true, // Explosive
+                        SOUND_GRENADE_EXPLODE // SoundImpact
+                    ); // SoundImpact
+
+                    if(!p)
+                        return false;
+
+                    p->m_GoresTeleportGrenade = true;
+
+                    Fired = true;
+                }
+	        }
             break;
         }
     }

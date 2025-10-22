@@ -70,6 +70,9 @@ public:
 		m_Id = -1;
 		m_pGameWorld = nullptr;
 	}
+
+	//+KZ
+	bool GetNearestAirPos(vec2 Pos, vec2 PrevPos, vec2 *pOutPos);
 };
 
 #endif

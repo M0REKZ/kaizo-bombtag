@@ -213,6 +213,9 @@ CProjectile::CProjectile(CGameWorld *pGameWorld, int Id, const CProjectileData *
 	m_Id = Id;
 	m_Number = pProj->m_SwitchNumber;
 	m_Layer = m_Number > 0 ? LAYER_SWITCH : LAYER_GAME;
+
+	//+KZ
+	m_GoresTeleportGrenade = g_Config.m_KaizoPredictGoresGrenadeTele && g_Config.m_SvGoresGrenadeTele && pProj->m_Type == WEAPON_GRENADE;
 }
 
 CProjectileData CProjectile::GetData() const
@@ -229,6 +232,9 @@ CProjectileData CProjectile::GetData() const
 	Result.m_Freeze = m_Freeze;
 	Result.m_TuneZone = m_TuneZone;
 	Result.m_SwitchNumber = m_Number;
+
+	//+KZ
+	Result.m_GoresTeleportGrenade = m_GoresTeleportGrenade;
 	return Result;
 }
 
