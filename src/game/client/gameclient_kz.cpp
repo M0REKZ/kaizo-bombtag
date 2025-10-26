@@ -221,8 +221,14 @@ void CGameClient::GetKaizoInfo(CServerInfo *pServerInfo)
 
     //Set Gameinfo values
 
-    //Danger setting: allow zooming, but only do it if the server does not support ALLOW_ZOOM flag, is not DDNet based and, is not Vanilla and is not FNG
-    if(m_GameInfo.m_GameInfoVersionKZ < 0 && g_Config.m_KaizoOldModsZooming && !m_GameInfo.m_PredictVanilla && !m_GameInfo.m_PredictFNG)
+    //https://github.com/M0REKZ/kaizo-network/issues/17
+    bool IsZoomAllowed = (
+                        str_find_nocase(pServerInfo->m_aGameType, "race") ||
+                        str_find_nocase(pServerInfo->m_aGameType, "monster")
+                        );
+
+    //Danger setting: allow zooming, but only do it if it is not 100000% prohibited
+    if(IsZoomAllowed && m_GameInfo.m_GameInfoVersionKZ < 0 && g_Config.m_KaizoOldModsZooming)
         m_GameInfo.m_AllowZoom = true;
 }
 
