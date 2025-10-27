@@ -70,7 +70,7 @@ void CCharacter::HandleSubTickStartFinish()
             FrontCorners[j] = Collision()->GetFrontTileIndex(GameCorners[j]);
         }
 
-        if(GameIndex == TILE_START || FrontIndex == TILE_START ||
+        if(GameServer()->m_pController->HandleCharacterSubTickStart(this, CheckingPos, i, Length) || GameIndex == TILE_START || FrontIndex == TILE_START ||
             GameCorners[0] == TILE_START || GameCorners[1] == TILE_START || GameCorners[2] == TILE_START || GameCorners[3] == TILE_START ||
             FrontCorners[0] == TILE_START || FrontCorners[1] == TILE_START || FrontCorners[2] == TILE_START || FrontCorners[3] == TILE_START)
         {
@@ -79,7 +79,7 @@ void CCharacter::HandleSubTickStartFinish()
             m_StartedTickKZ = Server()->Tick();
         }
 
-        if(m_FinishSubTick < 0 && m_StartSubTick >= 0 && (GameIndex == TILE_FINISH || FrontIndex == TILE_FINISH ||
+        if(GameServer()->m_pController->HandleCharacterSubTickFinish(this, CheckingPos, i, Length) && m_FinishSubTick < 0 && m_StartSubTick >= 0 && (GameIndex == TILE_FINISH || FrontIndex == TILE_FINISH ||
             GameCorners[0] == TILE_FINISH || GameCorners[1] == TILE_FINISH || GameCorners[2] == TILE_FINISH || GameCorners[3] == TILE_FINISH ||
             FrontCorners[0] == TILE_FINISH || FrontCorners[1] == TILE_FINISH || FrontCorners[2] == TILE_FINISH || FrontCorners[3] == TILE_FINISH))
         {

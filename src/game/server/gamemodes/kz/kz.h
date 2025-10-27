@@ -38,16 +38,30 @@ public:
 	bool OnEntityKZ(int Index, int x, int y, int Layer, int Flags, bool Initial, unsigned char Number = 0, int64_t Value1 = 0, int64_t Value2 = 0, int64_t Value3 = 0) override;
 	void OnNewRecordKZ(int ClientId, float Time, float PrevTime) override;
 	void HandleCharacterQuad(class CCharacter *pChr, SKZQuadData *pQuadData) override;
+	bool HandleCharacterSubTickStart(class CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) override;
+	bool HandleCharacterSubTickFinish(class CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) override;
 
 	bool OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number = 0) override;
 	virtual void Snap(int SnappingClient) override;
 
+	//Kaizo Flags (for fun)
 	class CFlag *m_apFlags[2];
-
 	int m_flagstand_temp_i_0; //+KZ from tw_plus
 	int m_flagstand_temp_i_1; //same
-
 	void FlagTick();
+
+	//K-FastCap Flags
+	vec2 m_aFastCapPositions[2][10]; //Team, position index
+	int m_aFastCapNoPositions[2];    //Team
+	int m_aFastCapSnapIds[2][10];    //Team, position index
+
 	void DoCrown();
+
+	enum CKZGameType
+	{
+		KZ_GAMETYPE_KAIZO = 0,
+		KZ_GAMETYPE_GORES,
+		KZ_GAMETYPE_FASTCAP,
+	} m_KZGameType;
 };
 #endif // GAME_SERVER_GAMEMODES_DDRACE_H

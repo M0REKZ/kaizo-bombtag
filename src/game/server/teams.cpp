@@ -14,6 +14,9 @@
 #include <game/server/entities/character.h>
 #include <game/team_state.h>
 
+//+KZ
+#include <game/server/entities/kz/kz_pickup.h>
+
 CGameTeams::CGameTeams(CGameContext *pGameContext) :
 	m_pGameContext(pGameContext)
 {
@@ -64,6 +67,13 @@ void CGameTeams::ResetRoundState(int Team)
 			GameServer()->m_apPlayers[i]->m_SwapTargetsClientId = -1;
 			m_aLastSwap[i] = 0;
 		}
+	}
+
+	//+KZ Reset the entities that need to be reset
+	for(CEntity *pEnt = GameServer()->m_World.FindFirst(CGameWorld::CUSTOM_ENTTYPE_KZPICKUP); pEnt; pEnt = pEnt->TypeNext())
+	{
+		class CKZPickup *pPickup = (CKZPickup *)pEnt;
+		pPickup->m_SpawnTickTeam[Team] = -1;
 	}
 }
 

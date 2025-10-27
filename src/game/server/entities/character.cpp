@@ -805,6 +805,9 @@ void CCharacter::FireWeapon()
 		float FireDelay;
 		GetTuning(m_TuneZone)->Get(offsetof(CTuningParams, m_HammerFireDelay) / sizeof(CTuneParam) + m_Core.m_ActiveWeapon, &FireDelay);
 		m_ReloadTimer = FireDelay * Server()->TickSpeed() / 1000;
+
+		if(g_Config.m_SvKaizoVanillaMode && m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
+			m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo--;
 	}
 	else if(m_KaizoNetworkChar.m_RealCurrentWeapon >= 0)
 	{
@@ -3665,13 +3668,32 @@ bool CCharacter::TakeDamageVanilla(vec2 Force, int Dmg, int From, int Weapon)
 	if(m_NODAMAGE || IsSuper() || m_Core.m_Invincible)
 		return false;
 
-	// m_pPlayer only inflicts half damage on self //+KZ no
-	//if(From == m_pPlayer->GetCid())
-	//	Dmg = maximum(1, Dmg/2);
+	// m_pPlayer only inflicts half damage on self //+KZ modified for damage obstacles
+	if(Weapon >= 0 && From == m_pPlayer->GetCid())
+		Dmg = maximum(1, Dmg/2);
 
 	int OldHealth = m_Health;
 	if(Dmg)
 	{
+		if(g_Config.m_SvKaizoVanillaMode && m_Armor)
+		{
+			if(Dmg > 1)
+			{
+				m_Health--;
+				Dmg--;
+			}
+
+			if(Dmg > m_Armor)
+			{
+				Dmg -= m_Armor;
+				m_Armor = 0;
+			}
+			else
+			{
+				m_Armor -= Dmg;
+				Dmg = 0;
+			}
+		}
 
 		m_Health -= Dmg;
 	}

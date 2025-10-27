@@ -369,7 +369,11 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 				TeamMask.reset(PlayerTeam);
 			}
 
-			pChr->TakeDamage(ForceDir * Dmg * 2, (int)Dmg, Owner, Weapon);
+			//+KZ modified
+			if(g_Config.m_SvKaizoVanillaMode && Owner == pChr->GetPlayer()->GetCid())
+				pChr->TakeDamageVanilla(ForceDir * Dmg * 2, (int)Dmg, Owner, Weapon);
+			else
+				pChr->TakeDamage(ForceDir * Dmg * 2, (int)Dmg, Owner, Weapon);
 		}
 	}
 }

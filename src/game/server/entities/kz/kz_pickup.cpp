@@ -136,13 +136,19 @@ void CKZPickup::Tick()
 
 			case POWERUP_WEAPON:
 
-				if(m_Subtype >= 0 && m_Subtype < KZ_CUSTOM_WEAPONS_END && (!pChr->GetWeaponGot(m_Subtype) || pChr->GetWeaponAmmo(m_Subtype) != -1))
+				if(m_Subtype >= 0 && m_Subtype < KZ_CUSTOM_WEAPONS_END && (!pChr->GetWeaponGot(m_Subtype) || (pChr->GetWeaponAmmo(m_Subtype) != -1 && pChr->GetWeaponAmmo(m_Subtype) != 10)))
 				{
 
 						if((m_Subtype == WEAPON_GUN || m_Subtype == WEAPON_HAMMER) && !pChr->GetWeaponGot(m_Subtype))
 						{
 							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
 							pChr->GiveWeapon(m_Subtype, false);
+						}
+						else if(m_Subtype == WEAPON_GRENADE && (!pChr->GetWeaponGot(m_Subtype) || (pChr->GetWeaponAmmo(m_Subtype) != -1 && pChr->GetWeaponAmmo(m_Subtype) != 10)))
+						{
+							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, pChr->TeamMask());
+							pChr->GiveWeapon(m_Subtype, false);
+							pChr->SetWeaponAmmo(m_Subtype, 10); //+KZ like vanilla
 						}
 						else if(m_Subtype == KZ_CUSTOM_WEAPON_PORTAL_GUN && !pChr->GetWeaponGot(m_Subtype))
 						{
@@ -183,7 +189,7 @@ void CKZPickup::Tick()
 				break;
 			};
 
-			if(!m_Dropped && Picked && (m_Type != POWERUP_WEAPON))
+			if(!m_Dropped && Picked && (m_Type == POWERUP_WEAPON ? m_Subtype < KZ_CUSTOM_WEAPONS_START : true))
 			{
 				char aBuf[256];
 				str_format(aBuf, sizeof(aBuf), "pickup player='%d:%s' item=%d",

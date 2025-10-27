@@ -318,6 +318,14 @@ public:
 	int m_FinishedTickKZ = -1;
 	vec2 m_PrevVelKZ;
 	void HandleSubTickStartFinish();
+
+	enum CKZFastCapState
+	{
+		KZ_FASTCAP_STATE_NOTSTARTED = 0,
+		KZ_FASTCAP_STATE_TEAMRED = 1,
+		KZ_FASTCAP_STATE_TEAMBLUE = 2,
+		KZ_FASTCAP_STATE_FINISHED = 3,
+	} m_KZFastCapState;
 };
 
 #endif

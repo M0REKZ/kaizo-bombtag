@@ -807,6 +807,7 @@ MACRO_CONFIG_STR(SvKaizoNetworkName, sv_kaizo_network_name, 32, "Kaizo Network",
 MACRO_CONFIG_STR(SvKaizoSecretMap, sv_kaizo_secret_map, 16, "", CFGFLAG_SERVER, "If set, replaces map name in server browser")
 MACRO_CONFIG_INT(SvKaizoLaserRecoverJump, sv_kaizo_laser_recover_jump, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Player recovers jump when hit by laser")
 MACRO_CONFIG_INT(SvKaizoMaxVel, sv_kaizo_max_vel, 300, 0, 9999, CFGFLAG_SERVER | CFGFLAG_GAME, "Max player velocity to prevent high CPU usage (due to Kaizo tiles collision)")
+MACRO_CONFIG_INT(SvKaizoVanillaMode, sv_kaizo_vanilla_mode, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Get damaged by your own weapons like in vanilla and be able to collect health and armor")
 
 //Compat configs
 

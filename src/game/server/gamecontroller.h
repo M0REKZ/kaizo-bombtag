@@ -169,6 +169,8 @@ public:
 	virtual bool OnEntityKZ(int Index, int x, int y, int Layer, int Flags, bool Initial, unsigned char Number = 0, int64_t Value1 = 0, int64_t Value2 = 0, int64_t Value3 = 0) { return false; };
 	virtual void OnNewRecordKZ(int ClientId, float Time, float PrevTime) {};
 	virtual void HandleCharacterQuad(CCharacter *pChr, SKZQuadData *pQuadData) {};
+	virtual bool HandleCharacterSubTickStart(CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) { return false; };
+	virtual bool HandleCharacterSubTickFinish(CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) { return false; };
 	bool m_ShowHealth = false;
 	//Time for Moving tiles:
 	double GetTime() { return static_cast<double>(Server()->Tick() - m_RoundStartTick)/Server()->TickSpeed(); }

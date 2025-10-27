@@ -642,6 +642,11 @@ void IGameController::Snap(int SnappingClient)
 		pGameInfoEx->m_Flags2 |= GAMEINFOFLAG2_HUD_HEALTH_ARMOR;
 	if(pPlayer && pPlayer->GetCharacter() && pPlayer->GetCharacter()->m_SpecTile)
 		pGameInfoEx->m_Flags ^= GAMEINFOFLAG_BUG_DDRACE_INPUT; 
+	if(g_Config.m_SvKaizoVanillaMode)
+	{
+		pGameInfoEx->m_Flags ^= GAMEINFOFLAG_PREDICT_DDRACE;
+		pGameInfoEx->m_Flags2 |= GAMEINFOFLAG2_HUD_AMMO;
+	}
 
 	if(Server()->IsSixup(SnappingClient))
 	{

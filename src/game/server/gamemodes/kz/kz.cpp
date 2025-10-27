@@ -1,6 +1,6 @@
 // Copyright (C) Benjamín Gajardo (also known as +KZ)
 
-// Flags related code is not under +KZ copyright, that code was taken from the following mods:
+// Flags related code is not under +KZ copyright, that code has changes from the following mods:
 // Pointer's TW+
 // ddnet-insta
 
@@ -24,6 +24,8 @@
 #define TEST_TYPE_NAME "Kaizo (Test)"
 #define GORES_TYPE_NAME "K-Gores"
 #define TEST_GORES_TYPE_NAME "K-Gores (Test)"
+#define FASTCAP_TYPE_NAME "K-FastCap"
+#define TEST_FASTCAP_TYPE_NAME "K-FastCap (Test)"
 
 CGameControllerKZ::CGameControllerKZ(class CGameContext *pGameServer) :
 	CGameControllerDDRace(pGameServer)
@@ -31,10 +33,17 @@ CGameControllerKZ::CGameControllerKZ(class CGameContext *pGameServer) :
 	if(!str_comp_nocase(Config()->m_SvGametype, "gores") || !str_comp_nocase(Config()->m_SvGametype, "k-gores") || !str_comp_nocase(Config()->m_SvGametype, "kgores"))
 	{
 		m_pGameType = g_Config.m_SvTestingCommands ? TEST_GORES_TYPE_NAME : GORES_TYPE_NAME;
+		m_KZGameType = CGameControllerKZ::KZ_GAMETYPE_GORES;
+	}
+	if(!str_comp_nocase(Config()->m_SvGametype, "fastcap") || !str_comp_nocase(Config()->m_SvGametype, "k-fastcap") || !str_comp_nocase(Config()->m_SvGametype, "kfastcap"))
+	{
+		m_pGameType = g_Config.m_SvTestingCommands ? TEST_FASTCAP_TYPE_NAME : FASTCAP_TYPE_NAME;
+		m_KZGameType = CGameControllerKZ::KZ_GAMETYPE_FASTCAP;
 	}
 	else
 	{
 		m_pGameType = g_Config.m_SvTestingCommands ? TEST_TYPE_NAME : GAME_TYPE_NAME;
+		m_KZGameType = CGameControllerKZ::KZ_GAMETYPE_KAIZO;
 	}
 	m_GameFlags = protocol7::GAMEFLAG_RACE | protocol7::GAMEFLAG_FLAGS;
 
@@ -43,9 +52,33 @@ CGameControllerKZ::CGameControllerKZ(class CGameContext *pGameServer) :
 
 	m_flagstand_temp_i_0 = 0;
 	m_flagstand_temp_i_1 = 0; 
+
+	m_aFastCapNoPositions[0] = 0;
+	m_aFastCapNoPositions[1] = 0;
+
+	for(int i = 0; i < 2; i++)
+	{
+		for(int j = 0; j < 10; j++)
+		{
+			m_aFastCapSnapIds[i][j] = -1;
+		}
+	}
+
+	if(g_Config.m_SvKaizoVanillaMode)
+		m_ShowHealth = true;
 }
 
-CGameControllerKZ::~CGameControllerKZ() = default;
+CGameControllerKZ::~CGameControllerKZ()
+{
+	for(int i = 0; i < 2; i++)
+	{
+		for(int j = 0; j < 10; j++)
+		{
+			if(m_aFastCapSnapIds[i][j] != -1)
+				Server()->SnapFreeId(m_aFastCapSnapIds[i][j]);
+		}
+	}
+}
 
 CScore *CGameControllerKZ::Score()
 {
@@ -59,7 +92,8 @@ void CGameControllerKZ::HandleCharacterTiles(CCharacter *pChr, int MapIndex)
 
 void CGameControllerKZ::SetArmorProgress(CCharacter *pCharacter, int Progress)
 {
-	CGameControllerDDRace::SetArmorProgress(pCharacter, Progress);
+	if(!g_Config.m_SvKaizoVanillaMode)
+		CGameControllerDDRace::SetArmorProgress(pCharacter, Progress);
 }
 
 void CGameControllerKZ::OnPlayerConnect(CPlayer *pPlayer)
@@ -130,42 +164,91 @@ void CGameControllerKZ::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoCh
 
 bool CGameControllerKZ::OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number)
 {
-	// +KZ first Kaizo Network bug affecting many maps, must be activated in some cases
-	if(GameServer()->EmulateBug(BUG_KAIZO_DUPLICATEDENTITIES))
-		CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
-
 	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
-	int Team = -1;
-	if(Index == ENTITY_FLAGSTAND_RED)
-		Team = TEAM_RED;
-	if(Index == ENTITY_FLAGSTAND_BLUE)
-		Team = TEAM_BLUE;
 
-	//twplus begin +KZ
-	if(!(Team == -1 || m_apFlags[Team]))
+	if(g_Config.m_SvKaizoVanillaMode)
 	{
-		CFlag *F = new CFlag(&GameServer()->m_World, Team);
-		//F->m_StandPos = Pos;
-		F->m_Pos = Pos;
-		m_apFlags[Team] = F;
-		GameServer()->m_World.InsertEntity(F);
+		//In vanilla mode, health and armor pickups are CKZPickup
+		if(Index == ENTITY_HEALTH_1 || Index == ENTITY_ARMOR_1)
+		{
+			CKZPickup *pPickup = new CKZPickup(&GameServer()->m_World, Index == ENTITY_ARMOR_1 ? POWERUP_ARMOR : POWERUP_HEALTH, 0, Layer, Number, Flags);
+			pPickup->m_Pos = Pos;
+			return true;
+		}
+
+		if(Index == ENTITY_WEAPON_SHOTGUN || Index == ENTITY_WEAPON_LASER)
+		{
+			return true; //dont allow shotgun and laser, since they were modified for ddrace
+		}
+
+		if(Index == ENTITY_WEAPON_GRENADE)
+		{
+			CKZPickup *pPickup = new CKZPickup(&GameServer()->m_World, POWERUP_WEAPON, WEAPON_GRENADE, Layer, Number, Flags);
+			pPickup->m_Pos = Pos;
+			return true;
+		}
 	}
-	
-	if (Team == TEAM_RED && m_flagstand_temp_i_0 < 10) {
-		//m_flagstands_0[m_flagstand_temp_i_0] = Pos;
-		m_apFlags[Team]->m_StandPositions[m_flagstand_temp_i_0] = Pos;
-		m_flagstand_temp_i_0++;
-		m_apFlags[Team]->m_no_stands = m_flagstand_temp_i_0;
-	}
-	if (Team == TEAM_BLUE && m_flagstand_temp_i_1 < 10) {
-		//m_flagstands_1[m_flagstand_temp_i_1] = Pos;
-		m_apFlags[Team]->m_StandPositions[m_flagstand_temp_i_1] = Pos;
-		m_flagstand_temp_i_1++;
-		m_apFlags[Team]->m_no_stands = m_flagstand_temp_i_1;
-	}
-	if (Team == -1)
+
+	if(m_KZGameType == CGameControllerKZ::KZ_GAMETYPE_FASTCAP)
 	{
-		return CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);;
+		int Team = -1;
+		if(Index == ENTITY_FLAGSTAND_RED)
+			Team = TEAM_RED;
+		if(Index == ENTITY_FLAGSTAND_BLUE)
+			Team = TEAM_BLUE;
+
+		if(Team != -1)
+		{
+			if(m_aFastCapNoPositions[Team] < 10)
+			{
+				m_aFastCapPositions[Team][m_aFastCapNoPositions[Team]] = Pos;
+				m_aFastCapSnapIds[Team][m_aFastCapNoPositions[Team]] = Server()->SnapNewId();
+				m_aFastCapNoPositions[Team]++;
+			}
+		}
+		else
+		{
+			return CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
+		}
+	}
+	else
+	{
+		// +KZ first Kaizo Network bug affecting many maps, must be activated in some cases
+		if(GameServer()->EmulateBug(BUG_KAIZO_DUPLICATEDENTITIES))
+			CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
+
+		int Team = -1;
+		if(Index == ENTITY_FLAGSTAND_RED)
+			Team = TEAM_RED;
+		if(Index == ENTITY_FLAGSTAND_BLUE)
+			Team = TEAM_BLUE;
+
+		//twplus begin +KZ
+		if(!(Team == -1 || m_apFlags[Team]))
+		{
+			CFlag *F = new CFlag(&GameServer()->m_World, Team);
+			//F->m_StandPos = Pos;
+			F->m_Pos = Pos;
+			m_apFlags[Team] = F;
+			GameServer()->m_World.InsertEntity(F);
+		}
+		
+		if (Team == TEAM_RED && m_flagstand_temp_i_0 < 10) {
+			//m_flagstands_0[m_flagstand_temp_i_0] = Pos;
+			m_apFlags[Team]->m_StandPositions[m_flagstand_temp_i_0] = Pos;
+			m_flagstand_temp_i_0++;
+			m_apFlags[Team]->m_no_stands = m_flagstand_temp_i_0;
+		}
+		if (Team == TEAM_BLUE && m_flagstand_temp_i_1 < 10) {
+			//m_flagstands_1[m_flagstand_temp_i_1] = Pos;
+			m_apFlags[Team]->m_StandPositions[m_flagstand_temp_i_1] = Pos;
+			m_flagstand_temp_i_1++;
+			m_apFlags[Team]->m_no_stands = m_flagstand_temp_i_1;
+		}
+		if (Team == -1)
+		{
+			return CGameControllerDDRace::OnEntity(Index, x, y, Layer, Flags, Initial, Number);
+		}
 	}
 
 	return true;
@@ -175,48 +258,118 @@ void CGameControllerKZ::Snap(int SnappingClient)
 {
 	CGameControllerDDRace::Snap(SnappingClient);
 
-	int FlagCarrierRed = FLAG_MISSING;
-	if(m_apFlags[TEAM_RED])
+	if(m_KZGameType == CGameControllerKZ::KZ_GAMETYPE_FASTCAP)
 	{
-		if(m_apFlags[TEAM_RED]->m_AtStand)
-			FlagCarrierRed = FLAG_ATSTAND;
-		else if(m_apFlags[TEAM_RED]->GetCarrier() && m_apFlags[TEAM_RED]->GetCarrier()->GetPlayer())
-			FlagCarrierRed = m_apFlags[TEAM_RED]->GetCarrier()->GetPlayer()->GetCid();
+		//Snap Flags
+		for(int Team = 0; Team < 2; Team++)
+		{
+			for(int j = 0; j < m_aFastCapNoPositions[Team] ; j++)
+			{
+				if(Server()->IsSixup(SnappingClient))
+				{
+					protocol7::CNetObj_Flag *pFlag = Server()->SnapNewItem<protocol7::CNetObj_Flag>(m_aFastCapSnapIds[Team][j]);
+					if(!pFlag)
+						return;
+					pFlag->m_X = round_to_int(m_aFastCapPositions[Team][j].x);
+					pFlag->m_Y = round_to_int(m_aFastCapPositions[Team][j].y);
+					pFlag->m_Team = Team;
+				}
+				else
+				{
+					CNetObj_Flag *pFlag = Server()->SnapNewItem<CNetObj_Flag>(m_aFastCapSnapIds[Team][j]);
+					if(!pFlag)
+						return;
+					pFlag->m_X = round_to_int(m_aFastCapPositions[Team][j].x);
+					pFlag->m_Y = round_to_int(m_aFastCapPositions[Team][j].y);
+					pFlag->m_Team = Team;
+				}
+			}
+		}
+
+		//Snap Carrier
+		int FlagCarrierRed = FLAG_ATSTAND, FlagCarrierBlue = FLAG_ATSTAND;
+
+		CCharacter *pChr = GameServer()->GetPlayerChar(SnappingClient);
+
+		if(pChr && pChr->GetPlayer() && pChr->m_KZFastCapState != CCharacter::KZ_FASTCAP_STATE_NOTSTARTED)
+		{
+			if(pChr->m_KZFastCapState == CCharacter::KZ_FASTCAP_STATE_TEAMBLUE)
+			{
+				FlagCarrierBlue = pChr->GetPlayer()->GetCid();
+			}
+			else if(pChr->m_KZFastCapState == CCharacter::KZ_FASTCAP_STATE_TEAMRED)
+			{
+				FlagCarrierRed = pChr->GetPlayer()->GetCid();
+			}
+		}
+
+		if(Server()->IsSixup(SnappingClient))
+		{
+			protocol7::CNetObj_GameDataFlag *pGameDataObj = Server()->SnapNewItem<protocol7::CNetObj_GameDataFlag>(0);
+			if(!pGameDataObj)
+				return;
+
+			pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
+			pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+		}
 		else
-			FlagCarrierRed = FLAG_TAKEN;
-	}
+		{
+			CNetObj_GameData *pGameDataObj = Server()->SnapNewItem<CNetObj_GameData>(0);
+			if(!pGameDataObj)
+				return;
 
-	int FlagCarrierBlue = FLAG_MISSING;
-	if(m_apFlags[TEAM_BLUE])
-	{
-		if(m_apFlags[TEAM_BLUE]->m_AtStand)
-			FlagCarrierBlue = FLAG_ATSTAND;
-		else if(m_apFlags[TEAM_BLUE]->GetCarrier() && m_apFlags[TEAM_BLUE]->GetCarrier()->GetPlayer())
-			FlagCarrierBlue = m_apFlags[TEAM_BLUE]->GetCarrier()->GetPlayer()->GetCid();
-		else
-			FlagCarrierBlue = FLAG_TAKEN;
-	}
+			pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
+			pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
 
-	if(Server()->IsSixup(SnappingClient))
-	{
-		protocol7::CNetObj_GameDataFlag *pGameDataObj = Server()->SnapNewItem<protocol7::CNetObj_GameDataFlag>(0);
-		if(!pGameDataObj)
-			return;
-
-		pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
-		pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+			pGameDataObj->m_TeamscoreRed = 0;
+			pGameDataObj->m_TeamscoreBlue = 0;
+		}
 	}
 	else
 	{
-		CNetObj_GameData *pGameDataObj = Server()->SnapNewItem<CNetObj_GameData>(0);
-		if(!pGameDataObj)
-			return;
+		int FlagCarrierRed = FLAG_MISSING;
+		if(m_apFlags[TEAM_RED])
+		{
+			if(m_apFlags[TEAM_RED]->m_AtStand)
+				FlagCarrierRed = FLAG_ATSTAND;
+			else if(m_apFlags[TEAM_RED]->GetCarrier() && m_apFlags[TEAM_RED]->GetCarrier()->GetPlayer())
+				FlagCarrierRed = m_apFlags[TEAM_RED]->GetCarrier()->GetPlayer()->GetCid();
+			else
+				FlagCarrierRed = FLAG_TAKEN;
+		}
 
-		pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
-		pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+		int FlagCarrierBlue = FLAG_MISSING;
+		if(m_apFlags[TEAM_BLUE])
+		{
+			if(m_apFlags[TEAM_BLUE]->m_AtStand)
+				FlagCarrierBlue = FLAG_ATSTAND;
+			else if(m_apFlags[TEAM_BLUE]->GetCarrier() && m_apFlags[TEAM_BLUE]->GetCarrier()->GetPlayer())
+				FlagCarrierBlue = m_apFlags[TEAM_BLUE]->GetCarrier()->GetPlayer()->GetCid();
+			else
+				FlagCarrierBlue = FLAG_TAKEN;
+		}
 
-		pGameDataObj->m_TeamscoreRed = 0;
-		pGameDataObj->m_TeamscoreBlue = 0;
+		if(Server()->IsSixup(SnappingClient))
+		{
+			protocol7::CNetObj_GameDataFlag *pGameDataObj = Server()->SnapNewItem<protocol7::CNetObj_GameDataFlag>(0);
+			if(!pGameDataObj)
+				return;
+
+			pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
+			pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+		}
+		else
+		{
+			CNetObj_GameData *pGameDataObj = Server()->SnapNewItem<CNetObj_GameData>(0);
+			if(!pGameDataObj)
+				return;
+
+			pGameDataObj->m_FlagCarrierRed = FlagCarrierRed;
+			pGameDataObj->m_FlagCarrierBlue = FlagCarrierBlue;
+
+			pGameDataObj->m_TeamscoreRed = 0;
+			pGameDataObj->m_TeamscoreBlue = 0;
+		}
 	}
 }
 
@@ -585,4 +738,79 @@ void CGameControllerKZ::HandleCharacterQuad(CCharacter *pChr, SKZQuadData *pQuad
 		GameServer()->SendChatTarget(ClientId, "You are now out of the solo part");
 		pChr->SetSolo(false);
 	}
+}
+
+bool CGameControllerKZ::HandleCharacterSubTickStart(CCharacter *pChr, vec2 Pos, int SubTick, int Divisor)
+{
+	if(m_KZGameType != CGameControllerKZ::KZ_GAMETYPE_FASTCAP)
+		return false; //only handle start tile
+
+	if(pChr->m_KZFastCapState == CCharacter::KZ_FASTCAP_STATE_NOTSTARTED)
+	{
+		for(int Team = 0; Team < 2; Team++)
+		{
+			for(int j = 0; j < m_aFastCapNoPositions[Team] ; j++)
+			{
+				if(distance(Pos, m_aFastCapPositions[Team][j]) < CFlag::ms_PhysSize + pChr->GetProximityRadius())
+				{
+					pChr->m_KZFastCapState = Team == TEAM_RED ? CCharacter::KZ_FASTCAP_STATE_TEAMRED : CCharacter::KZ_FASTCAP_STATE_TEAMBLUE;
+					GameServer()->CreateSoundGlobal(SOUND_CTF_GRAB_PL, pChr->GetPlayer()->GetCid());
+
+					//Set the variables before calling OnCharacterStart, since it needs them
+					pChr->m_StartSubTick = SubTick;
+					pChr->m_StartDivisor = Divisor;
+					pChr->m_StartedTickKZ = Server()->Tick();
+
+					Teams().OnCharacterStart(pChr->GetPlayer()->GetCid());
+					pChr->m_LastTimeCp = -1;
+					pChr->m_LastTimeCpBroadcasted = -1;
+					for(float &CurrentTimeCp : pChr->m_aCurrentTimeCp)
+					{
+						CurrentTimeCp = 0.0f;
+					}
+
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool CGameControllerKZ::HandleCharacterSubTickFinish(CCharacter *pChr, vec2 Pos, int SubTick, int Divisor)
+{
+	if(m_KZGameType != CGameControllerKZ::KZ_GAMETYPE_FASTCAP)
+		return true; //handle finish tile instead
+
+	const ERaceState PlayerDDRaceState = pChr->m_DDRaceState;
+	if(PlayerDDRaceState != ERaceState::STARTED)
+	{
+		return false;
+	}
+
+	if(pChr->m_KZFastCapState != CCharacter::KZ_FASTCAP_STATE_NOTSTARTED && pChr->m_KZFastCapState != CCharacter::KZ_FASTCAP_STATE_FINISHED)
+	{
+		int Team = pChr->m_KZFastCapState == CCharacter::KZ_FASTCAP_STATE_TEAMRED ? TEAM_BLUE : TEAM_RED;
+		
+		for(int j = 0; j < m_aFastCapNoPositions[Team] ; j++)
+		{
+			if(distance(Pos, m_aFastCapPositions[Team][j]) < CFlag::ms_PhysSize + pChr->GetProximityRadius())	
+			{
+				pChr->m_KZFastCapState = CCharacter::KZ_FASTCAP_STATE_FINISHED;
+				GameServer()->CreateSoundGlobal(SOUND_CTF_CAPTURE, pChr->GetPlayer()->GetCid());
+
+				//Set the variables before calling OnCharacterFinish, since it needs them
+				pChr->m_FinishSubTick = SubTick;
+				pChr->m_FinishDivisor = Divisor;
+				pChr->m_FinishedTickKZ = Server()->Tick();
+
+				Teams().OnCharacterFinish(pChr->GetPlayer()->GetCid());
+
+				return true;
+			}
+		}	
+	}
+	
+	return false;
 }
