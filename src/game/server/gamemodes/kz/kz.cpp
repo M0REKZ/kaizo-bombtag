@@ -261,35 +261,38 @@ void CGameControllerKZ::Snap(int SnappingClient)
 	if(m_KZGameType == CGameControllerKZ::KZ_GAMETYPE_FASTCAP)
 	{
 		//Snap Flags
-		for(int Team = 0; Team < 2; Team++)
+		CCharacter *pChr = GameServer()->GetPlayerChar(SnappingClient);
+
+		if(pChr && pChr->m_KZFastCapState != CCharacter::KZ_FASTCAP_STATE_FINISHED)
 		{
-			for(int j = 0; j < m_aFastCapNoPositions[Team] ; j++)
+			for(int Team = 0; Team < 2; Team++)
 			{
-				if(Server()->IsSixup(SnappingClient))
+				for(int j = 0; j < m_aFastCapNoPositions[Team] ; j++)
 				{
-					protocol7::CNetObj_Flag *pFlag = Server()->SnapNewItem<protocol7::CNetObj_Flag>(m_aFastCapSnapIds[Team][j]);
-					if(!pFlag)
-						return;
-					pFlag->m_X = round_to_int(m_aFastCapPositions[Team][j].x);
-					pFlag->m_Y = round_to_int(m_aFastCapPositions[Team][j].y);
-					pFlag->m_Team = Team;
-				}
-				else
-				{
-					CNetObj_Flag *pFlag = Server()->SnapNewItem<CNetObj_Flag>(m_aFastCapSnapIds[Team][j]);
-					if(!pFlag)
-						return;
-					pFlag->m_X = round_to_int(m_aFastCapPositions[Team][j].x);
-					pFlag->m_Y = round_to_int(m_aFastCapPositions[Team][j].y);
-					pFlag->m_Team = Team;
+					if(Server()->IsSixup(SnappingClient))
+					{
+						protocol7::CNetObj_Flag *pFlag = Server()->SnapNewItem<protocol7::CNetObj_Flag>(m_aFastCapSnapIds[Team][j]);
+						if(!pFlag)
+							return;
+						pFlag->m_X = round_to_int(m_aFastCapPositions[Team][j].x);
+						pFlag->m_Y = round_to_int(m_aFastCapPositions[Team][j].y);
+						pFlag->m_Team = Team;
+					}
+					else
+					{
+						CNetObj_Flag *pFlag = Server()->SnapNewItem<CNetObj_Flag>(m_aFastCapSnapIds[Team][j]);
+						if(!pFlag)
+							return;
+						pFlag->m_X = round_to_int(m_aFastCapPositions[Team][j].x);
+						pFlag->m_Y = round_to_int(m_aFastCapPositions[Team][j].y);
+						pFlag->m_Team = Team;
+					}
 				}
 			}
 		}
 
 		//Snap Carrier
 		int FlagCarrierRed = FLAG_ATSTAND, FlagCarrierBlue = FLAG_ATSTAND;
-
-		CCharacter *pChr = GameServer()->GetPlayerChar(SnappingClient);
 
 		if(pChr && pChr->GetPlayer() && pChr->m_KZFastCapState != CCharacter::KZ_FASTCAP_STATE_NOTSTARTED)
 		{
