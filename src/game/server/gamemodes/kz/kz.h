@@ -63,5 +63,7 @@ public:
 		KZ_GAMETYPE_GORES,
 		KZ_GAMETYPE_FASTCAP,
 	} m_KZGameType;
+
+	int m_InitialShields = 0; //for vanilla mode
 };
 #endif // GAME_SERVER_GAMEMODES_DDRACE_H

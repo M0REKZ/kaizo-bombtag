@@ -141,6 +141,11 @@ void CGameControllerKZ::OnCharacterSpawn(class CCharacter *pChr)
 		str_format(aWelcome, sizeof(aWelcome), "--- Welcome to %s! ---", g_Config.m_SvKaizoNetworkName);
 		GameServer()->SendBroadcast(aWelcome, pChr->GetPlayer()->GetCid());
 	}
+
+	if(pChr && g_Config.m_SvKaizoVanillaMode)
+	{
+		pChr->SetArmor(m_InitialShields);
+	}
 }
 
 void CGameControllerKZ::OnReset()
@@ -168,6 +173,11 @@ bool CGameControllerKZ::OnEntity(int Index, int x, int y, int Layer, int Flags, 
 
 	if(g_Config.m_SvKaizoVanillaMode)
 	{
+		if(m_InitialShields < 10 && Index == ENTITY_ARMOR_1)
+		{
+			m_InitialShields++;
+		}
+
 		//In vanilla mode, health and armor pickups are CKZPickup
 		if(Index == ENTITY_HEALTH_1 || Index == ENTITY_ARMOR_1)
 		{
