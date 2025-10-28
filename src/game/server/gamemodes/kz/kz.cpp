@@ -35,7 +35,7 @@ CGameControllerKZ::CGameControllerKZ(class CGameContext *pGameServer) :
 		m_pGameType = g_Config.m_SvTestingCommands ? TEST_GORES_TYPE_NAME : GORES_TYPE_NAME;
 		m_KZGameType = CGameControllerKZ::KZ_GAMETYPE_GORES;
 	}
-	if(!str_comp_nocase(Config()->m_SvGametype, "fastcap") || !str_comp_nocase(Config()->m_SvGametype, "k-fastcap") || !str_comp_nocase(Config()->m_SvGametype, "kfastcap"))
+	else if(!str_comp_nocase(Config()->m_SvGametype, "fastcap") || !str_comp_nocase(Config()->m_SvGametype, "k-fastcap") || !str_comp_nocase(Config()->m_SvGametype, "kfastcap"))
 	{
 		m_pGameType = g_Config.m_SvTestingCommands ? TEST_FASTCAP_TYPE_NAME : FASTCAP_TYPE_NAME;
 		m_KZGameType = CGameControllerKZ::KZ_GAMETYPE_FASTCAP;
