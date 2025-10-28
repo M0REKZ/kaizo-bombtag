@@ -837,7 +837,8 @@ bool CCharacter::TakeDamageVanilla(vec2 Force, int Dmg, int From, int Weapon)
 	GameServer()->CreateDamageInd(m_Pos, Server()->Tick(), OldHealth-m_Health, TeamMask());
 
 	// do damage Hit sound
-		GameServer()->CreateSound(m_Pos, SOUND_HIT, TeamMask());
+    if(Weapon < 0)
+	    GameServer()->CreateSound(m_Pos, SOUND_HIT, TeamMask());
 
 	// check for death
 	if(m_Health <= 0)
