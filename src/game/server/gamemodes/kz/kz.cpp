@@ -187,6 +187,13 @@ bool CGameControllerKZ::OnEntity(int Index, int x, int y, int Layer, int Flags, 
 			pPickup->m_Pos = Pos;
 			return true;
 		}
+
+		if(Index == ENTITY_POWERUP_NINJA)
+		{
+			CKZPickup *pPickup = new CKZPickup(&GameServer()->m_World, POWERUP_NINJA, 0, Layer, Number, Flags);
+			pPickup->m_Pos = Pos;
+			return true;
+		}
 	}
 
 	if(m_KZGameType == CGameControllerKZ::KZ_GAMETYPE_FASTCAP)

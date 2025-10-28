@@ -28,7 +28,7 @@ CEntity(pGameWorld,CGameWorld::CUSTOM_ENTTYPE_KZPICKUP,vec2(0,0),gs_PickupPhysSi
 	m_Number = Number;
 	m_Flags = Flags;
 
-	int SpawnDelay = m_Type == POWERUP_NINJA ? 90 : 0;
+	int SpawnDelay = 0;
 
 	m_Id2 = Server()->SnapNewId();
 
