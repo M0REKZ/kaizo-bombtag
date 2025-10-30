@@ -674,7 +674,7 @@ void CGameWorld::CopyWorld(CGameWorld *pFrom)
 	}
 
 	//+KZ
-	OnCopyWorld();
+	OnCopyWorld(pFrom);
 
 	m_IsValidCopy = true;
 }

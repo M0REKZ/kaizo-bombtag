@@ -124,7 +124,7 @@ private:
 	CCharacter *m_apCharacters[MAX_CLIENTS];
 
 	//+KZ
-	void OnCopyWorld();
+	void OnCopyWorld(CGameWorld *pFrom);
 	void OnGameTile(int X, int Y, const CTile *pTile);
 
 	public:
@@ -137,6 +137,9 @@ private:
 	};
 	
 	SPointerTelePos m_PointerTelePositions[4]; // positions of teleports
+
+public:
+	void OnConnected();
 };
 
 class CCharOrder

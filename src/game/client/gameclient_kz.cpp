@@ -17,6 +17,8 @@ void CGameClient::OnKaizoConnected()
     m_WaitingForPointerTWPlusInfo = false;   
     m_aClients[0].m_SentCustomClient = false; //to send custom client on connect
     m_SendingCustomClientTicks = 25; // too
+
+    m_GameWorld.OnConnected();
 }
 
 void CGameClient::DoKaizoPredictionEffects(CCharacter *pCharacter)
