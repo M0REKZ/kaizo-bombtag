@@ -2446,10 +2446,17 @@ void CGameClient::OnPredict()
 	// predict //+KZ modified for fast input commit
 	int PredictionTick = Client()->GetPredictionTick();
 	int FinalTick = Client()->PredGameTick(g_Config.m_ClDummy) + g_Config.m_KaizoFastInput;
+	int FinalTickOthers = g_Config.m_KaizoFastInputOthers ? FinalTick : Client()->PredGameTick(g_Config.m_ClDummy);
 	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= FinalTick; Tick++)
 	{
 		// fetch the previous characters
 		if(Tick == FinalTick) //+KZ modified for fast input commit
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+				if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
+					m_aClients[i].m_PrevPredicted = pChar->GetCore();
+		}
+		if(Tick == FinalTickOthers) //+KZ from tater client
 		{
 			for(int i = 0; i < MAX_CLIENTS; i++)
 				if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
@@ -2564,6 +2571,12 @@ void CGameClient::OnPredict()
 		{
 			m_PrevPredictedWorld.CopyWorld(&m_PredictedWorld);
 
+			for(int i = 0; i < MAX_CLIENTS; i++)
+				if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
+					m_aClients[i].m_Predicted = pChar->GetCore();
+		}
+		if(Tick == FinalTickOthers) //+KZ from tclient
+		{
 			for(int i = 0; i < MAX_CLIENTS; i++)
 				if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
 					m_aClients[i].m_Predicted = pChar->GetCore();
@@ -3771,6 +3784,11 @@ vec2 CGameClient::GetSmoothPos(int ClientId)
 			int SmoothTick;
 			float SmoothIntra;
 			Client()->GetSmoothTick(&SmoothTick, &SmoothIntra, MixAmount);
+
+			//+KZ from tclient
+			if(ClientId != m_Snap.m_LocalClientId && g_Config.m_KaizoFastInputOthers && g_Config.m_KaizoFastInput)
+				SmoothTick += g_Config.m_KaizoFastInput;
+
 			if(SmoothTick > 0 && m_aClients[ClientId].m_aPredTick[(SmoothTick - 1) % 200] >= Client()->PrevGameTick(g_Config.m_ClDummy) && m_aClients[ClientId].m_aPredTick[SmoothTick % 200] <= Client()->PredGameTick(g_Config.m_ClDummy))
 				Pos[i] = mix(m_aClients[ClientId].m_aPredPos[(SmoothTick - 1) % 200][i], m_aClients[ClientId].m_aPredPos[SmoothTick % 200][i], SmoothIntra);
 		}

@@ -819,6 +819,7 @@ MACRO_CONFIG_INT(SvGoresGrenadeTele, sv_kog_grenade_tele, 0, 0, 1, CFGFLAG_SERVE
 //Client configs
 
 MACRO_CONFIG_INT(KaizoFastInput, kaizo_fast_input, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable fast input")
+MACRO_CONFIG_INT(KaizoFastInputOthers, kaizo_fast_input_others, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable fast input for other players")
 MACRO_CONFIG_INT(KaizoShowCrowns, kaizo_show_crowns, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show crowns on top of the players in Kaizo servers")
 MACRO_CONFIG_INT(KaizoPredictDDNetTeleport, kaizo_predict_ddnet_teleport, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict DDNet teleports if there is only 1 exit")
 MACRO_CONFIG_INT(KaizoInstaShieldShield, kaizo_instashield_shield, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable InstaShield Shield")

@@ -119,6 +119,14 @@ void CMenus::RenderSettingsKaizo(CUIRect MainView)
 			Left.HSplitTop(2.0f, nullptr, &Left);
 
 			Left.HSplitTop(20.0f, &Button, &Left);
+			if(DoButton_CheckBox(&g_Config.m_KaizoFastInputOthers, Localize("Fast input others"), g_Config.m_KaizoFastInputOthers, &Button))
+			{
+				g_Config.m_KaizoFastInputOthers ^= 1;
+			}
+
+			Left.HSplitTop(2.0f, nullptr, &Left);
+
+			Left.HSplitTop(20.0f, &Button, &Left);
 			if(DoButton_CheckBox(&g_Config.m_KaizoShowCrowns, Localize("Show crowns on Kaizo servers"), g_Config.m_KaizoShowCrowns, &Button))
 			{
 				g_Config.m_KaizoShowCrowns ^= 1;
