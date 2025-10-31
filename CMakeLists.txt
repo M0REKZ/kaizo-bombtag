@@ -2792,6 +2792,7 @@ if(SERVER)
     antibot.h
     authmanager.cpp
     authmanager.h
+    databases/connection_kz.cpp
     databases/connection.cpp
     databases/connection.h
     databases/connection_pool.cpp
@@ -2892,6 +2893,7 @@ if(SERVER)
     score_kz.cpp
     score.cpp
     score.h
+    scoreworker_kz.cpp
     scoreworker.cpp
     scoreworker.h
     teams.cpp

@@ -177,6 +177,10 @@ private:
 	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS];
 
 	CKZSubTickKeep m_SavedSubtick;
+
+public:
+	char *GetKaizoString(const CSaveTeam *pTeam);
+	int FromKaizoString(const char *pString);
 };
 
 class CSaveHotReloadTee
@@ -232,6 +236,11 @@ private:
 	int m_HighestSwitchNumber = 0;
 	int m_TeamLocked = 0;
 	int m_Practice = 0;
+
+	//+KZ
+	public:
+	char *GetKaizoString();
+	int FromKaizoString(const char *pString);
 };
 
 #endif // GAME_SERVER_SAVE_H

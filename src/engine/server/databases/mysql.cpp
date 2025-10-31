@@ -299,11 +299,17 @@ bool CMysqlConnection::ConnectImpl()
 		FormatCreateSaves(aCreateSaves, sizeof(aCreateSaves), /* Backup */ false);
 		FormatCreatePoints(aCreatePoints, sizeof(aCreatePoints));
 
+		//+KZ
+		char aCreateKaizoSaves[1024];
+		FormatCreateKaizoSaves(aCreateKaizoSaves, sizeof(aCreateKaizoSaves), false);
+
 		if(!PrepareAndExecuteStatement(aCreateRace) ||
 			!PrepareAndExecuteStatement(aCreateTeamrace) ||
 			!PrepareAndExecuteStatement(aCreateMaps) ||
 			!PrepareAndExecuteStatement(aCreateSaves) ||
-			!PrepareAndExecuteStatement(aCreatePoints))
+			!PrepareAndExecuteStatement(aCreatePoints) ||
+			!PrepareAndExecuteStatement(aCreateKaizoSaves) //+KZ
+			)
 		{
 			return false;
 		}
