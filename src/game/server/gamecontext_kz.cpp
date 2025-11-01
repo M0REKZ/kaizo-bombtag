@@ -2,6 +2,7 @@
 
 // SendGameMsg taken from ddnet-insta by Chillerdragon, it is not under +KZ copyright
 // SetPlayerLastAckedTick is SetPlayerLastAckedSnapshot from ICTFX
+// CheckBotPointer is from Pointer's TW+ (modified)
 
 #include "gamecontext.h"
 
@@ -168,6 +169,81 @@ void CGameContext::CreateMapSoundEventForClient(vec2 Pos, int Id, int ClientId, 
 		pEvent->m_Y = (int)Pos.y;
 		pEvent->m_SoundId = Id;
 	}
+}
+
+bool CGameContext::HandleClientMessage(const char *pMsg, int ClientId)
+{
+	if(!m_apPlayers[ClientId])
+		return false;
+
+	// anti adbot +KZ POINTER
+	if(g_Config.m_SvKaizoAntibot && m_apPlayers[ClientId]->m_MsgBotCount < 5)
+	{
+		if(m_apPlayers[ClientId] && CheckBotPointer(ClientId, pMsg) && !Server()->GetAuthedState(ClientId))
+		{
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "ban %i 15 \"Bot detected. Please use the ddnet client: https://ddnet.org/\"", ClientId);
+			Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "chat/blocked", pMsg);
+			Console()->ExecuteLine(aBuf);
+			return true;
+		}
+
+		m_apPlayers[ClientId]->m_MsgBotCount++;
+	}
+
+	return false;
+}
+
+bool CGameContext::CheckBotPointer(int ClientID, const char* msg)
+{
+	int count = 0; // amount of flagged strings (some strings may count more than others)
+	// fancy alphabet detection
+	int fancy_count = 0;
+	const char* alphabet_fancy[] = {
+		"𝕢", "𝕨", "𝕖", "𝕣", "𝕥", "𝕪", "𝕦", "𝕚", "𝕠", "𝕡", "𝕒", "𝕤", "𝕕", "𝕗", "𝕘", "𝕙", "𝕛", "𝕜", "𝕝", "𝕫", "𝕩", "	", "𝕧", "𝕓", "𝕟", "𝕞",
+		"ｑ", "ｗ", "ｅ", "ｒ", "ｔ", "ｙ", "ｕ", "ｉ", "ｏ", "ｐ", "ａ", "ｓ", "ｄ", "ｆ", "ｇ", "ｈ", "ｊ", "ｋ", "ｌ", "ｚ", "ｘ", "ｃ", "ｖ", "ｂ", "ｎ", "ｍ",
+		"🆀", "🆆", "🅴", "🆁", "🆃", "🆈", "🆄", "🅸", "🅾", "🅿", "🅰", "🆂", "🅳", "🅵", "🅶", "🅷", "🅹", "🅺", "🅻", "🆉", "🆇", "🅲", "🆅", "🅱", "🅽", "🅼",
+		"🅀", "🅆", "🄴", "🅁", "🅃", "🅈", "🅄", "🄸", "🄾", "🄿", "🄰", "🅂", "🄳", "🄵", "🄶", "🄷", "🄹", "🄺", "🄻", "🅉", "🅇", "🄲", "🅅", "🄱", "🄽", "🄼",
+		"ⓠ", "ⓦ", "ⓔ", "ⓡ", "ⓣ", "ⓨ", "ⓤ", "ⓘ", "ⓞ", "ⓟ", "ⓐ", "ⓢ", "ⓓ", "ⓕ", "ⓖ", "ⓗ", "ⓙ", "ⓚ", "ⓛ", "ⓩ", "ⓧ", "ⓒ", "ⓥ", "ⓑ", "ⓝ", "ⓜ",
+	};
+
+	for (const char * Alp : alphabet_fancy)
+	{
+		if (str_find_nocase(msg, Alp))
+			fancy_count++;
+	}
+
+	if(fancy_count > 3)
+		count += 2;
+
+	
+	// general needles to disallow
+	const char* disallowedStrings[] = {
+		"krx", "discord.gg", "http", "free", "bot client", "cheat", ".xyz", "t.me", "hack",
+		"porn", "ЧИТЫ", "читы", "crack", "кряк", "@", "канал", "TAS", "КАНАЛ", "КРЯК", "tg:",
+		"СПАМИТЬ", "ТАСОМ", "КРХ", "спамить", "тасом", "крх"
+	};
+
+	for(const char * String : disallowedStrings)
+	{
+		if(str_find_nocase(msg, String))
+			count++;
+	}
+
+	//check for name too
+	for(const char * String : disallowedStrings)
+	{
+		if (str_find_nocase(Server()->ClientName(ClientID), String))
+			count++;
+	}
+	
+	// anti whisper ad bot
+	if (str_find_nocase(msg, "bro, check out this client"))
+		count += 2;
+	if (count >= 2) {
+		return true;
+	} else
+		return false;
 }
 
 void CGameContext::ConRejoinShutdown(IConsole::IResult *pResult, void *pUserData)

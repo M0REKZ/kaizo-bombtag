@@ -250,6 +250,10 @@ public:
 	int m_LastAckedTick = -1; //to send ping
 
 	void OnKaizoSnap(int SnappingClient, int Id);
+	void OnKaizoTick();
+	void KaizoAntibotTick();
+
+	int m_MsgBotCount = 0;
 };
 
 #endif

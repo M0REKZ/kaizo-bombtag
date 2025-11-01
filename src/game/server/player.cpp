@@ -149,6 +149,9 @@ void CPlayer::Reset()
 	m_RescueMode = RESCUEMODE_AUTO;
 
 	m_CameraInfo.Reset();
+
+	//+KZ
+	m_MsgBotCount = 0;
 }
 
 static int PlayerFlags_SixToSeven(int Flags)
@@ -164,6 +167,8 @@ static int PlayerFlags_SixToSeven(int Flags)
 
 void CPlayer::Tick()
 {
+	OnKaizoTick();
+
 	if(m_ScoreQueryResult != nullptr && m_ScoreQueryResult->m_Completed && m_SentSnaps >= 3)
 	{
 		ProcessScoreResult(*m_ScoreQueryResult);

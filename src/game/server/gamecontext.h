@@ -646,6 +646,9 @@ public:
 	void CreateMapSoundEvent(vec2 Pos, int Id, CClientMask Mask = CClientMask().set());
 	void CreateMapSoundEventForClient(vec2 Pos, int Id, int ClientId, CClientMask Mask = CClientMask().set());
 
+	bool HandleClientMessage(const char *pMsg, int ClientId);
+	bool CheckBotPointer(int ClientID, const char *msg);
+
 	void RegisterKZCommands();
 
 	static void ConRejoinShutdown(IConsole::IResult *pResult, void *pUserData);
