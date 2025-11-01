@@ -5,7 +5,7 @@
 
 This is the source code for Kaizo Network by +KZ, based on DDNet
 
-Make sure to follow the terms of the license if you use Kaizo Network specific code.
+Make sure to follow the terms of the new license if you use Kaizo Network specific code.
 
 I tried to separate Kaizo Network code from DDNet code but that is not possible in some cases.
 
@@ -19,6 +19,7 @@ This repo also uses code from the following mods that are NOT made by +KZ:
 * [T-Client](https://github.com/sjrc6/TaterClient-ddnet)
 * [Teeworlds Gamer](https://github.com/Dune-jr/teeworlds/tree/gamer)
 * [ICTFX](https://github.com/teeworlds-instagib-elo/iCTFX)
+* [FoxNet](https://github.com/FoxNet-DDNet/FoxNet)
 * ...and other mods and rejected DDNet Pull requests.
 
 Other credits:
