@@ -224,6 +224,12 @@ int CSaveTeam::FromKaizoString(const char *pString)
 int CSaveTee::FromKaizoString(const char *pString)
 {
 	int Num;
+	int tempBluePortal = 0;
+	int tempNODAMAGE = 0;
+	int tempHasRecoverJumpLaser = 0;
+
+	int tempGotCustomWeapon[KZ_NUM_CUSTOM_WEAPONS] = {0};
+
 	Num = sscanf(pString,
 		"%d\t" //Health
         "%d\t" //Custom Weapon
@@ -242,16 +248,26 @@ int CSaveTee::FromKaizoString(const char *pString)
 
         &m_Health,
         &m_CustomWeapon,
-        &m_BluePortal,
+        &tempBluePortal,
         &m_TuneZoneOverrideKZ,
-        &m_NODAMAGE,
-        &m_HasRecoverJumpLaser,
+        &tempNODAMAGE,
+        &tempHasRecoverJumpLaser,
 
-        &m_aCustomWeapons[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START].m_Ammo, &m_aCustomWeapons[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START].m_Got,
-        &m_aCustomWeapons[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START].m_Ammo, &m_aCustomWeapons[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START].m_Got,
+        &m_aCustomWeapons[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START].m_Ammo, &tempGotCustomWeapon[KZ_CUSTOM_WEAPON_PORTAL_GUN - KZ_CUSTOM_WEAPONS_START],
+        &m_aCustomWeapons[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START].m_Ammo, &tempGotCustomWeapon[KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM - KZ_CUSTOM_WEAPONS_START],
 
         &m_SavedSubtick.m_StartSubTick, &m_SavedSubtick.m_StartedTickKZ, &m_SavedSubtick.m_StartDivisor,
         &m_SavedSubtick.m_FinishSubTick, &m_SavedSubtick.m_FinishedTickKZ, &m_SavedSubtick.m_FinishDivisor
         );
+
+	m_BluePortal = tempBluePortal;
+	m_NODAMAGE = tempNODAMAGE;
+	m_HasRecoverJumpLaser = tempHasRecoverJumpLaser;
+
+	for(int i = 0; i < KZ_NUM_CUSTOM_WEAPONS; i++)
+	{
+		m_aCustomWeapons[i].m_Got = tempGotCustomWeapon[i];
+	}
+
 	return 0; //evil
 }
