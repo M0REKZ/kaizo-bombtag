@@ -312,7 +312,7 @@ void CKZPickup::Snap(int SnappingClient)
 				postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
 
 				GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1,Server()->Tick() % 3);
-				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags | PICKUPFLAG_NO_PREDICT);
 			}
 			else if(m_Subtype == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
 			{
@@ -322,7 +322,7 @@ void CKZPickup::Snap(int SnappingClient)
 				postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
 
 				GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1, LASERTYPE_DRAGGER, -1, -1, LASERFLAG_NO_PREDICT);
-				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags | PICKUPFLAG_NO_PREDICT);
 			}
 		}
 		else
