@@ -540,7 +540,7 @@ void CGameContext::SendDiscordRecordMessage(int ClientID, float Time, float Prev
 	char aStr[500];
 	aStr[0] = '\0';
 
-	str_format(aStr, sizeof(aStr),"New record on map %s by %s: %d minute(s) %5.2f second(s)!!!", Server()->GetMapName(), Server()->ClientName(ClientID), (int)Time / 60, Time - ((int)Time / 60 * 60));
+	str_format(aStr, sizeof(aStr),"New record on map %s by %s: %d minute(s) %f second(s)!!!", Server()->GetMapName(), Server()->ClientName(ClientID), (int)Time / 60, Time - ((int)Time / 60 * 60));
 
 	str_format(
 		aPayload,
