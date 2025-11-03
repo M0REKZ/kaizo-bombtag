@@ -6,18 +6,28 @@
 const char * str_format_time_kz(float Time)
 {
     static char stringvar[256];
-	float tempvar;
+	float tempvar, floattime;
+	floattime = ((int)Time) % 60 + std::modf(Time, &tempvar);
 	if(Time >= 60.f) //+KZ minutes
 	{
 		if(Time / 60.f >= 60) //+KZ hours
 		{
-			str_format(stringvar, sizeof(stringvar), "%d:%d:%f", (int)(Time / 60) / 60, (int)Time / 60, ((int)Time) % 60 + std::modf(Time, &tempvar));
+			if(floattime < 10)
+				str_format(stringvar, sizeof(stringvar), "%0d:%0d:0%f", (int)(Time / 60) / 60, (int)Time / 60, floattime);
+			else
+				str_format(stringvar, sizeof(stringvar), "%0d:%0d:%f", (int)(Time / 60) / 60, (int)Time / 60, floattime);
 		}
-		str_format(stringvar, sizeof(stringvar), "%d:%f", (int)Time / 60, ((int)Time) % 60 + std::modf(Time, &tempvar));
+		else
+		{
+			if(floattime < 10)
+				str_format(stringvar, sizeof(stringvar), "%0d:0%f", (int)Time / 60, floattime);
+			else
+				str_format(stringvar, sizeof(stringvar), "%0d:%f", (int)Time / 60, floattime);
+		}
 	}
 	else
 	{
-		str_format(stringvar, sizeof(stringvar), "%f", ((int)Time) % 60 + std::modf(Time, &tempvar));
+		str_format(stringvar, sizeof(stringvar), "%f", floattime);
 	}
 
     return stringvar;
