@@ -20,7 +20,7 @@
 
 #include <memory>
 
-void CScore::SaveScoreFloat(int ClientId, float Time, const char *pTimestamp, const float aTimeCp[NUM_CHECKPOINTS], bool NotEligible)
+void CScore::SaveScoreFloat(int ClientId, double Time, const char *pTimestamp, const float aTimeCp[NUM_CHECKPOINTS], bool NotEligible)
 {
 	CConsole *pCon = (CConsole *)GameServer()->Console();
 	if(pCon->Cheated() || NotEligible)
@@ -45,7 +45,7 @@ void CScore::SaveScoreFloat(int ClientId, float Time, const char *pTimestamp, co
 	m_pPool->ExecuteWrite(CScoreWorker::SaveScore, std::move(Tmp), "save score");
 }
 
-void CScore::SaveTeamScoreFloat(int Team, int *pClientIds, unsigned int Size, float Time, const char *pTimestamp)
+void CScore::SaveTeamScoreFloat(int Team, int *pClientIds, unsigned int Size, double Time, const char *pTimestamp)
 {
 	CConsole *pCon = (CConsole *)GameServer()->Console();
 	if(pCon->Cheated())

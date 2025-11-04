@@ -97,7 +97,7 @@ public:
 	bool ExecuteUpdate(int *pNumUpdated, char *pError, int ErrorSize) override;
 
 	bool IsNull(int Col) override;
-	float GetFloat(int Col) override;
+	double GetFloat(int Col) override; //+KZ to double
 	int GetInt(int Col) override;
 	int64_t GetInt64(int Col) override;
 	void GetString(int Col, char *pBuffer, int BufferSize) override;
@@ -523,12 +523,12 @@ bool CMysqlConnection::IsNull(int Col)
 	return IsNull;
 }
 
-float CMysqlConnection::GetFloat(int Col)
+double CMysqlConnection::GetFloat(int Col) //+KZ to double
 {
 	Col -= 1;
 
 	MYSQL_BIND Bind;
-	float Value;
+	double Value;
 	my_bool IsNull;
 	mem_zero(&Bind, sizeof(Bind));
 	Bind.buffer_type = MYSQL_TYPE_FLOAT;

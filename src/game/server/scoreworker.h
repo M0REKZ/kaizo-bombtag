@@ -48,7 +48,7 @@ struct CScorePlayerResult : ISqlResult
 		char m_aBroadcast[1024];
 		struct
 		{
-			std::optional<float> m_Time;
+			std::optional<double> m_Time; //+KZ modified double
 			float m_aTimeCp[NUM_CHECKPOINTS];
 			int m_Birthday; // 0 indicates no birthday
 			char m_aRequestedPlayer[MAX_NAME_LENGTH];
@@ -70,7 +70,7 @@ struct CScoreLoadBestTimeResult : ISqlResult
 		m_CurrentRecord(0)
 	{
 	}
-	float m_CurrentRecord;
+	double m_CurrentRecord; //+KZ modified double
 };
 
 struct CSqlLoadBestTimeRequest : ISqlData
@@ -140,7 +140,7 @@ struct CSqlScoreData : ISqlData
 	char m_aName[MAX_MAP_LENGTH];
 
 	int m_ClientId;
-	float m_Time;
+	double m_Time; //+KZ modified double
 	char m_aTimestamp[TIMESTAMP_STR_LENGTH];
 	float m_aCurrentTimeCp[NUM_CHECKPOINTS];
 	int m_Num;
@@ -191,7 +191,7 @@ struct CSqlTeamScoreData : ISqlData
 
 	char m_aGameUuid[UUID_MAXSTRSIZE];
 	char m_aMap[MAX_MAP_LENGTH];
-	float m_Time;
+	double m_Time; //+KZ modified double
 	char m_aTimestamp[TIMESTAMP_STR_LENGTH];
 	unsigned int m_Size;
 	char m_aaNames[MAX_CLIENTS][MAX_NAME_LENGTH];
@@ -245,7 +245,7 @@ public:
 		m_RecordStopTick = -1;
 	}
 
-	void Set(float Time, const float aTimeCp[NUM_CHECKPOINTS])
+	void Set(double Time, const float aTimeCp[NUM_CHECKPOINTS]) //+KZ modified double
 	{
 		m_BestTime = Time;
 		for(int i = 0; i < NUM_CHECKPOINTS; i++)
@@ -258,11 +258,11 @@ public:
 			m_aBestTimeCp[i] = aTimeCp[i];
 	}
 
-	float m_BestTime;
+	double m_BestTime; //+KZ modified double
 	float m_aBestTimeCp[NUM_CHECKPOINTS];
 
 	int m_RecordStopTick;
-	float m_RecordFinishTime;
+	double m_RecordFinishTime; //+KZ modified double
 };
 
 struct CTeamrank

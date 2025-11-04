@@ -721,7 +721,7 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 {
 
 	//+KZ
-		float Time = (float)TimeTicks/Server()->TickSpeed();
+		double Time = (double)TimeTicks/Server()->TickSpeed();
 		//+KZ subtick time
 		if(m_aTeamTimeOverride[Team] >= 0)
 		{
@@ -732,9 +732,9 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 		{
 			if(m_aKZSubTickKeep[Team].m_FinishedTickKZ >=0 && (m_aKZSubTickKeep[Team].m_FinishedTickKZ == m_aKZSubTickKeep[Team].m_StartedTickKZ)) //in the same tick
 			{
-				float IntervalTime = ((float)(m_aKZSubTickKeep[Team].m_FinishSubTick - m_aKZSubTickKeep[Team].m_StartSubTick)/m_aKZSubTickKeep[Team].m_StartDivisor);
-				IntervalTime /= (float)Server()->TickSpeed();
-				float PrevTime = Time;
+				double IntervalTime = ((double)(m_aKZSubTickKeep[Team].m_FinishSubTick - m_aKZSubTickKeep[Team].m_StartSubTick)/m_aKZSubTickKeep[Team].m_StartDivisor);
+				IntervalTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
 				Time = IntervalTime;
 				//+KZ check for nan, if it is nan revert to normal time
 				if(std::isnan(Time))
@@ -742,13 +742,13 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 			}
 			else //different ticks
 			{
-				Time = (TimeTicks - 1) / (float)Server()->TickSpeed();
+				Time = (TimeTicks - 1) / (double)Server()->TickSpeed();
 
 				if(m_aKZSubTickKeep[Team].m_StartSubTick >= 0)
 				{
-					float MinusTime = 1.0f - ((float)m_aKZSubTickKeep[Team].m_StartSubTick/m_aKZSubTickKeep[Team].m_StartDivisor);
-					MinusTime /= (float)Server()->TickSpeed();
-					float PrevTime = Time;
+					double MinusTime = 1.0f - ((double)m_aKZSubTickKeep[Team].m_StartSubTick/m_aKZSubTickKeep[Team].m_StartDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
 					Time += MinusTime;
 					//+KZ check for nan, if it is nan revert to normal time
 					if(std::isnan(Time))
@@ -757,9 +757,9 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 
 				if(m_aKZSubTickKeep[Team].m_FinishSubTick >= 0)
 				{
-					float MinusTime = ((float)m_aKZSubTickKeep[Team].m_FinishSubTick/m_aKZSubTickKeep[Team].m_FinishDivisor);
-					MinusTime /= (float)Server()->TickSpeed();
-					float PrevTime = Time;
+					double MinusTime = ((double)m_aKZSubTickKeep[Team].m_FinishSubTick/m_aKZSubTickKeep[Team].m_FinishDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
 					Time += MinusTime;
 					//+KZ check for nan, if it is nan revert to normal time
 					if(std::isnan(Time))
@@ -807,7 +807,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	if(!Player || !Player->IsPlaying())
 		return;
 
-	float Time = TimeTicks / (float)Server()->TickSpeed();
+	double Time = TimeTicks / (float)Server()->TickSpeed();
 
 	//+KZ subtick time
 	if(m_Core.Team(Player->GetCid()))
@@ -818,9 +818,9 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		{
 			if(m_aKZSubTickKeep[Team].m_FinishedTickKZ >=0 && (m_aKZSubTickKeep[Team].m_FinishedTickKZ == m_aKZSubTickKeep[Team].m_StartedTickKZ)) //in the same tick
 			{
-				float IntervalTime = ((float)(m_aKZSubTickKeep[Team].m_FinishSubTick - m_aKZSubTickKeep[Team].m_StartSubTick)/m_aKZSubTickKeep[Team].m_StartDivisor);
-				IntervalTime /= (float)Server()->TickSpeed();
-				float PrevTime = Time;
+				double IntervalTime = ((double)(m_aKZSubTickKeep[Team].m_FinishSubTick - m_aKZSubTickKeep[Team].m_StartSubTick)/m_aKZSubTickKeep[Team].m_StartDivisor);
+				IntervalTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
 				Time = IntervalTime;
 				//+KZ check for nan, if it is nan revert to normal time
 				if(std::isnan(Time))
@@ -828,13 +828,13 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 			}
 			else //different ticks
 			{
-				Time = (TimeTicks - 1) / (float)Server()->TickSpeed();
+				Time = (TimeTicks - 1) / (double)Server()->TickSpeed();
 
 				if(m_aKZSubTickKeep[Team].m_StartSubTick >= 0)
 				{
-					float MinusTime = 1.0f - ((float)m_aKZSubTickKeep[Team].m_StartSubTick/m_aKZSubTickKeep[Team].m_StartDivisor);
-					MinusTime /= (float)Server()->TickSpeed();
-					float PrevTime = Time;
+					double MinusTime = 1.0f - ((double)m_aKZSubTickKeep[Team].m_StartSubTick/m_aKZSubTickKeep[Team].m_StartDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
 					Time += MinusTime;
 					//+KZ check for nan, if it is nan revert to normal time
 					if(std::isnan(Time))
@@ -843,9 +843,9 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 
 				if(m_aKZSubTickKeep[Team].m_FinishSubTick >= 0)
 				{
-					float MinusTime = ((float)m_aKZSubTickKeep[Team].m_FinishSubTick/m_aKZSubTickKeep[Team].m_FinishDivisor);
-					MinusTime /= (float)Server()->TickSpeed();
-					float PrevTime = Time;
+					double MinusTime = ((double)m_aKZSubTickKeep[Team].m_FinishSubTick/m_aKZSubTickKeep[Team].m_FinishDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
 					Time += MinusTime;
 					//+KZ check for nan, if it is nan revert to normal time
 					if(std::isnan(Time))
@@ -858,9 +858,9 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	{
 		if(Player->GetCharacter()->m_FinishedTickKZ >=0 && (Player->GetCharacter()->m_FinishedTickKZ == Player->GetCharacter()->m_StartedTickKZ)) //in the same tick
 		{
-			float IntervalTime = ((float)(Player->GetCharacter()->m_FinishSubTick - Player->GetCharacter()->m_StartSubTick)/Player->GetCharacter()->m_StartDivisor);
-			IntervalTime /= (float)Server()->TickSpeed();
-			float PrevTime = Time;
+			double IntervalTime = ((double)(Player->GetCharacter()->m_FinishSubTick - Player->GetCharacter()->m_StartSubTick)/Player->GetCharacter()->m_StartDivisor);
+			IntervalTime /= (double)Server()->TickSpeed();
+			double PrevTime = Time;
 			Time = IntervalTime;
 			//+KZ check for nan, if it is nan revert to normal time
 			if(std::isnan(Time))
@@ -873,13 +873,13 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		}
 		else //different ticks
 		{
-			Time = (TimeTicks - 1) / (float)Server()->TickSpeed();
+			Time = (TimeTicks - 1) / (double)Server()->TickSpeed();
 
 			if(Player->GetCharacter()->m_StartSubTick >= 0)
 			{
-				float MinusTime = 1.0f - ((float)Player->GetCharacter()->m_StartSubTick/Player->GetCharacter()->m_StartDivisor);
-				MinusTime /= (float)Server()->TickSpeed();
-				float PrevTime = Time;
+				double MinusTime = 1.0f - ((double)Player->GetCharacter()->m_StartSubTick/Player->GetCharacter()->m_StartDivisor);
+				MinusTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
 				Time += MinusTime;
 				//+KZ check for nan, if it is nan revert to normal time
 				if(std::isnan(Time))
@@ -888,9 +888,9 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 
 			if(Player->GetCharacter()->m_FinishSubTick >= 0)
 			{
-				float MinusTime = ((float)Player->GetCharacter()->m_FinishSubTick/Player->GetCharacter()->m_FinishDivisor);
-				MinusTime /= (float)Server()->TickSpeed();
-				float PrevTime = Time;
+				double MinusTime = ((double)Player->GetCharacter()->m_FinishSubTick/Player->GetCharacter()->m_FinishDivisor);
+				MinusTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
 				Time += MinusTime;
 				//+KZ check for nan, if it is nan revert to normal time
 				if(std::isnan(Time))
@@ -914,7 +914,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	SetLastTimeCp(Player, -1);
 	// Note that the "finished in" message is parsed by the client
 	str_format(aBuf, sizeof(aBuf),
-		"%s finished in: %d minute(s) %f second(s)",
+		"%s finished in: %d minute(s) %.6f second(s)",
 		Server()->ClientName(ClientId), (int)Time / 60,
 		Time - ((int)Time / 60 * 60));
 	if(g_Config.m_SvHideScore)
@@ -931,10 +931,10 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		pData->m_RecordFinishTime = Time;
 
 		if(Diff >= 60)
-			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %f second(s) better.",
+			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %.6f second(s) better.",
 				(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
 		else
-			str_format(aBuf, sizeof(aBuf), "New record: %f second(s) better.",
+			str_format(aBuf, sizeof(aBuf), "New record: %.6f second(s) better.",
 				Diff);
 		if(g_Config.m_SvHideScore)
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
@@ -953,11 +953,11 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		else
 		{
 			if(Diff >= 60)
-				str_format(aBuf, sizeof(aBuf), "%d minute(s) %f second(s) worse, better luck next time.",
+				str_format(aBuf, sizeof(aBuf), "%d minute(s) %.6f second(s) worse, better luck next time.",
 					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
 			else
 				str_format(aBuf, sizeof(aBuf),
-					"%f second(s) worse, better luck next time.",
+					"%.6f second(s) worse, better luck next time.",
 					Diff);
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX); // this is private, sent only to the tee
 		}

@@ -78,7 +78,7 @@ public:
 	virtual bool ExecuteUpdate(int *pNumUpdated, char *pError, int ErrorSize) = 0;
 
 	virtual bool IsNull(int Col) = 0;
-	virtual float GetFloat(int Col) = 0;
+	virtual double GetFloat(int Col) = 0; //+KZ to double
 	virtual int GetInt(int Col) = 0;
 	virtual int64_t GetInt64(int Col) = 0;
 	// ensures that the string is null terminated
