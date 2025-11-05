@@ -36,7 +36,7 @@ public:
 
 	int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon) override;
 	bool OnEntityKZ(int Index, int x, int y, int Layer, int Flags, bool Initial, unsigned char Number = 0, int64_t Value1 = 0, int64_t Value2 = 0, int64_t Value3 = 0) override;
-	void OnNewRecordKZ(int ClientId, float Time, float PrevTime) override;
+	void OnNewRecordKZ(int ClientId, double Time, double PrevTime) override;
 	void HandleCharacterQuad(class CCharacter *pChr, SKZQuadData *pQuadData) override;
 	bool HandleCharacterSubTickStart(class CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) override;
 	bool HandleCharacterSubTickFinish(class CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) override;

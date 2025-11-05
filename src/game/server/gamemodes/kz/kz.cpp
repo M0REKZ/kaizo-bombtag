@@ -669,7 +669,7 @@ bool CGameControllerKZ::OnEntityKZ(int Index, int x, int y, int Layer, int Flags
 	return false;
 }
 
-void CGameControllerKZ::OnNewRecordKZ(int ClientId, float Time, float PrevTime)
+void CGameControllerKZ::OnNewRecordKZ(int ClientId, double Time, double PrevTime)
 {
 	if(GameServer()->Console()->Cheated())
 		return;
