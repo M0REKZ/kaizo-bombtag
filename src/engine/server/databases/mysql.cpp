@@ -531,7 +531,7 @@ double CMysqlConnection::GetFloat(int Col) //+KZ to double
 	double Value;
 	my_bool IsNull;
 	mem_zero(&Bind, sizeof(Bind));
-	Bind.buffer_type = MYSQL_TYPE_FLOAT;
+	Bind.buffer_type = MYSQL_TYPE_DOUBLE;
 	Bind.buffer = &Value;
 	Bind.buffer_length = sizeof(Value);
 	Bind.length = nullptr;
