@@ -490,6 +490,9 @@ void CGameContext::ConShowCrowns(IConsole::IResult *pResult, void *pUserData)
 
 void CGameContext::SendDiscordChatMessage(int ClientID, const char* msg)
 {
+	if(!g_Config.m_SvChatDiscordWebhook[0])
+		return;
+
 	char aPayload[4048];
 	char aStatsStr[4000];
 	char aStr[275];
@@ -535,6 +538,9 @@ void CGameContext::SendDiscordChatMessage(int ClientID, const char* msg)
 
 void CGameContext::SendDiscordRecordMessage(int ClientID, double Time, double PrevTime)
 {
+	if(!g_Config.m_SvRecordsDiscordWebhook[0])
+		return;
+
 	char aPayload[4048];
 	char aStatsStr[4000];
 	char aStr[500];
