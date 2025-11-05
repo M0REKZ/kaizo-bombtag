@@ -525,6 +525,11 @@ bool CMysqlConnection::IsNull(int Col)
 
 double CMysqlConnection::GetFloat(int Col) //+KZ to double
 {
+	char aBuf[512] = {0};
+	GetString(Col, aBuf, sizeof(aBuf)); //get it as string first
+	double Var = atof(aBuf); //then convert to double
+	return Var;
+
 	Col -= 1;
 
 	MYSQL_BIND Bind;
