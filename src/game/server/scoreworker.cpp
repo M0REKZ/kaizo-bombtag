@@ -615,20 +615,22 @@ bool CScoreWorker::SaveScore(IDbConnection *pSqlServer, const ISqlData *pGameDat
 	}
 
 	// save score. Can't fail, because no UNIQUE/PRIMARY KEY constrain is defined.
+	char kztime[512];
+	get_str_double_kz(kztime, sizeof(kztime), pData->m_Time);
 	str_format(aBuf, sizeof(aBuf),
 		"%s INTO %s_race%s("
 		"	Map, Name, Timestamp, Time, Server, "
 		"	cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10, cp11, cp12, cp13, "
 		"	cp14, cp15, cp16, cp17, cp18, cp19, cp20, cp21, cp22, cp23, cp24, cp25, "
 		"	GameId, DDNet7) "
-		"VALUES (?, ?, %s, %.6f, ?, " //+KZ modified for time
+		"VALUES (?, ?, %s, %s, ?, " //+KZ modified for time
 		"	%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, "
 		"	%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, "
 		"	%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, "
 		"	?, %s)",
 		pSqlServer->InsertIgnore(), pSqlServer->GetPrefix(),
 		w == Write::NORMAL ? "" : "_backup",
-		pSqlServer->InsertTimestampAsUtc(), pData->m_Time,
+		pSqlServer->InsertTimestampAsUtc(), kztime, //+KZ modified for time
 		pData->m_aCurrentTimeCp[0], pData->m_aCurrentTimeCp[1], pData->m_aCurrentTimeCp[2],
 		pData->m_aCurrentTimeCp[3], pData->m_aCurrentTimeCp[4], pData->m_aCurrentTimeCp[5],
 		pData->m_aCurrentTimeCp[6], pData->m_aCurrentTimeCp[7], pData->m_aCurrentTimeCp[8],
@@ -769,9 +771,11 @@ bool CScoreWorker::SaveTeamScore(IDbConnection *pSqlServer, const ISqlData *pGam
 			dbg_msg("sql", "found team rank from same team (old time: %.6f, new time: %.6f)", Time, pData->m_Time);
 			if(pData->m_Time < Time)
 			{
+				char kztime[512];
+				get_str_double_kz(kztime, sizeof(kztime), pData->m_Time);
 				str_format(aBuf, sizeof(aBuf),
-					"UPDATE %s_teamrace SET Time=%.6f, Timestamp=%s, DDNet7=%s, GameId=? WHERE Id = ?", //+KZ modified time
-					pSqlServer->GetPrefix(), pData->m_Time, pSqlServer->InsertTimestampAsUtc(), pSqlServer->False());
+					"UPDATE %s_teamrace SET Time=%s, Timestamp=%s, DDNet7=%s, GameId=? WHERE Id = ?", //+KZ modified time
+					pSqlServer->GetPrefix(), kztime, pSqlServer->InsertTimestampAsUtc(), pSqlServer->False()); //+KZ modified time
 				if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
 				{
 					return false;
@@ -794,13 +798,15 @@ bool CScoreWorker::SaveTeamScore(IDbConnection *pSqlServer, const ISqlData *pGam
 
 	for(unsigned int i = 0; i < pData->m_Size; i++)
 	{
+		char kztime[512];
+		get_str_double_kz(kztime, sizeof(kztime), pData->m_Time);
 		// if no entry found... create a new one
 		str_format(aBuf, sizeof(aBuf),
 			"%s INTO %s_teamrace%s(Map, Name, Timestamp, Time, Id, GameId, DDNet7) "
-			"VALUES (?, ?, %s, %.6f, ?, ?, %s)", //+KZ modified time
+			"VALUES (?, ?, %s, %s, ?, ?, %s)", //+KZ modified time
 			pSqlServer->InsertIgnore(), pSqlServer->GetPrefix(),
 			w == Write::NORMAL ? "" : "_backup",
-			pSqlServer->InsertTimestampAsUtc(), pData->m_Time, pSqlServer->False());
+			pSqlServer->InsertTimestampAsUtc(), kztime, pSqlServer->False());
 		if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
 		{
 			return false;

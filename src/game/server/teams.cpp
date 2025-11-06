@@ -16,6 +16,7 @@
 
 //+KZ
 #include <game/server/entities/kz/kz_pickup.h>
+#include <base/helper_kz.h>
 
 CGameTeams::CGameTeams(CGameContext *pGameContext) :
 	m_pGameContext(pGameContext)
@@ -913,10 +914,12 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	char aBuf[128];
 	SetLastTimeCp(Player, -1);
 	// Note that the "finished in" message is parsed by the client
+	char kztime[512];
+	get_str_double_kz(kztime, sizeof(kztime), Time - ((int)Time / 60 * 60));
 	str_format(aBuf, sizeof(aBuf),
-		"%s finished in: %d minute(s) %.6f second(s)",
+		"%s finished in: %d minute(s) %s second(s)",
 		Server()->ClientName(ClientId), (int)Time / 60,
-		Time - ((int)Time / 60 * 60));
+		kztime);
 	if(g_Config.m_SvHideScore)
 		GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
 	else
@@ -931,11 +934,17 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		pData->m_RecordFinishTime = Time;
 
 		if(Diff >= 60)
-			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %.6f second(s) better.",
-				(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
+		{
+			get_str_double_kz(kztime, sizeof(kztime), Diff - ((int)Diff / 60 * 60));
+			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %s second(s) better.",
+				(int)Diff / 60, kztime);
+		}
 		else
-			str_format(aBuf, sizeof(aBuf), "New record: %.6f second(s) better.",
-				Diff);
+		{
+			get_str_double_kz(kztime, sizeof(kztime), Diff);
+			str_format(aBuf, sizeof(aBuf), "New record: %s second(s) better.",
+				kztime);
+		}
 		if(g_Config.m_SvHideScore)
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
 		else
@@ -945,7 +954,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	{
 		Server()->StopRecord(ClientId);
 
-		if(Diff <= 0.005f)
+		if(Diff <= 0.000005) //+KZ modified
 		{
 			GameServer()->SendChatTarget(ClientId,
 				"You finished with your best time.");
@@ -953,12 +962,18 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		else
 		{
 			if(Diff >= 60)
-				str_format(aBuf, sizeof(aBuf), "%d minute(s) %.6f second(s) worse, better luck next time.",
-					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
+			{
+				get_str_double_kz(kztime, sizeof(kztime), Diff - ((int)Diff / 60 * 60));
+				str_format(aBuf, sizeof(aBuf), "%d minute(s) %s second(s) worse, better luck next time.",
+					(int)Diff / 60, kztime);
+			}
 			else
+			{
+				get_str_double_kz(kztime, sizeof(kztime), Diff);
 				str_format(aBuf, sizeof(aBuf),
-					"%.6f second(s) worse, better luck next time.",
-					Diff);
+					"%s second(s) worse, better luck next time.",
+					kztime);
+			}
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX); // this is private, sent only to the tee
 		}
 	}

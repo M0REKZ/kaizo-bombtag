@@ -40,6 +40,7 @@
 #include "gamemodes/kz/kz.h" // KZ
 #include "player.h"
 #include "score.h"
+#include <base/helper_kz.h>
 
 void CGameContext::RegisterKZCommands()
 {
@@ -546,7 +547,10 @@ void CGameContext::SendDiscordRecordMessage(int ClientID, double Time, double Pr
 	char aStr[500];
 	aStr[0] = '\0';
 
-	str_format(aStr, sizeof(aStr),"New record on map %s by %s: %d minute(s) %.6f second(s)!!!", Server()->GetMapName(), Server()->ClientName(ClientID), (int)Time / 60, Time - ((int)Time / 60 * 60));
+	char kztime[512];
+	get_str_double_kz(kztime, sizeof(kztime), Time - ((int)Time / 60 * 60));
+
+	str_format(aStr, sizeof(aStr),"New record on map %s by %s: %d minute(s) %s second(s)!!!", Server()->GetMapName(), Server()->ClientName(ClientID), (int)Time / 60, kztime);
 
 	str_format(
 		aPayload,
