@@ -2641,7 +2641,7 @@ void CCharacter::DDRacePostCoreTick()
 	}
 
 	//+KZ
-	HandleSubTickStartFinish();
+	//HandleSubTickStartFinish(); // HAS BUGS, DISABLED
 
 	int CurrentIndex = Collision()->GetMapIndex(m_Pos);
 	HandleSkippableTiles(CurrentIndex);

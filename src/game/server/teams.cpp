@@ -183,12 +183,12 @@ void CGameTeams::OnCharacterStart(int ClientId)
 					SetStartTime(pPlayer, Tick);
 
 					//+KZ
-					if(pPlayer->GetCharacter())
+					/*if(pPlayer->GetCharacter())
 					{
 						pPlayer->GetCharacter()->m_StartSubTick = pStartingChar->m_StartSubTick;
 						pPlayer->GetCharacter()->m_StartedTickKZ = pStartingChar->m_StartedTickKZ;
 						pPlayer->GetCharacter()->m_StartDivisor = pStartingChar->m_StartDivisor;
-					}
+					}*/
 
 					if(First)
 						First = false;
@@ -201,7 +201,7 @@ void CGameTeams::OnCharacterStart(int ClientId)
 		}
 
 		//+KZ
-		m_aKZSubTickKeep[m_Core.Team(ClientId)].Keep(pStartingChar);
+		//m_aKZSubTickKeep[m_Core.Team(ClientId)].Keep(pStartingChar);
 
 		if(g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO && g_Config.m_SvMaxTeamSize != 2 && g_Config.m_SvPauseable)
 		{
@@ -219,7 +219,7 @@ void CGameTeams::OnCharacterStart(int ClientId)
 
 void CGameTeams::OnCharacterFinish(int ClientId)
 {
-	if(GetPlayer(ClientId) && GetPlayer(ClientId)->GetCharacter())
+	/*if(GetPlayer(ClientId) && GetPlayer(ClientId)->GetCharacter())
 	{
 		if(GetPlayer(ClientId)->GetCharacter()->m_FinishSubTick >= 0 && GetPlayer(ClientId)->GetCharacter()->m_StartSubTick >= 0)
 		{
@@ -229,7 +229,7 @@ void CGameTeams::OnCharacterFinish(int ClientId)
 		{
 			return; //+KZ: kinda evil but otherwise we get duplicated finishes on team
 		}
-	}
+	}*/
 
 	if(((m_Core.Team(ClientId) == TEAM_FLOCK || m_aTeamFlock[m_Core.Team(ClientId)]) && g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO) || m_Core.Team(ClientId) == TEAM_SUPER)
 	{
@@ -724,7 +724,7 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 	//+KZ
 		double Time = (double)TimeTicks/Server()->TickSpeed();
 		//+KZ subtick time
-		if(m_aTeamTimeOverride[Team] >= 0)
+		/*if(m_aTeamTimeOverride[Team] >= 0)
 		{
 			Time = m_aTeamTimeOverride[Team];
 			m_aTeamTimeOverride[Team] = -1.f;
@@ -781,7 +781,7 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 			Players[i]->GetCharacter()->m_StartedTickKZ = -1;
 			Players[i]->GetCharacter()->m_FinishedTickKZ = -1;
 		}
-		m_aKZSubTickKeep[Team].Reset();
+		m_aKZSubTickKeep[Team].Reset();*/
 
 	int aPlayerCids[MAX_CLIENTS];
 
@@ -811,7 +811,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	double Time = TimeTicks / (float)Server()->TickSpeed();
 
 	//+KZ subtick time
-	if(m_Core.Team(Player->GetCid()))
+	/*if(m_Core.Team(Player->GetCid()))
 	{
 		int Team = m_Core.Team(Player->GetCid());
 		//Time = m_aTeamTimeOverride[m_Core.Team(Player->GetCid())];
@@ -905,7 +905,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		Player->GetCharacter()->m_FinishDivisor = 1;
 		Player->GetCharacter()->m_StartedTickKZ = -1;
 		Player->GetCharacter()->m_FinishedTickKZ = -1;
-	}
+	}*/
 
 	// TODO:DDRace:btd: this ugly
 	const int ClientId = Player->GetCid();

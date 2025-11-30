@@ -34,6 +34,8 @@
 
 void CCharacter::HandleSubTickStartFinish()
 {
+	return; //FIXME: causes bugs, remove when fixed
+
     //static int LastCheckedTick = -1;
 
     int Length = (int)length(m_PrevVelKZ);
