@@ -1,3 +1,5 @@
+# KAIZO NETWORK HAS BEEN DISCONTINUED, FEEL FREE TO FORK THIS, BUT KEEP YOUR FORK SOURCE CODE PUBLIC AS THE LICENSE SAYS
+
 ![](https://m0rekz.github.io/Kaizo-Network/img/g135.png)
 
 * [Website](https://m0rekz.github.io/Kaizo-Network/)
