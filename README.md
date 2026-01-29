@@ -4,7 +4,7 @@
 ![](https://m0rekz.github.io/Kaizo-Network/img/g135.png)
 
 * [Website](https://m0rekz.github.io/Kaizo-Network/)
-* [Discord Server](https://m0rekz.github.io/discord.html)
+* [Discord Server](https://discord.gg/nt8aStQxcR)
 
 This is the source code for Kaizo Network by +KZ, based on DDNet
 
