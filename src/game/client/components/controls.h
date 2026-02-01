@@ -6,9 +6,11 @@
 #include <base/vmath.h>
 
 #include <engine/client.h>
+#include <engine/console.h>
+
+#include <generated/protocol.h>
 
 #include <game/client/component.h>
-#include <game/generated/protocol.h>
 
 class CControls : public CComponent
 {
@@ -48,5 +50,10 @@ private:
 	static void ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputSet(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUserData);
+
+public:
+	//+KZ from Fast Input commit
+	bool CheckNewInput();
+	CNetObj_PlayerInput m_FastInput;
 };
 #endif

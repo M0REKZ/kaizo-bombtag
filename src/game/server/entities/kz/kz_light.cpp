@@ -1,11 +1,14 @@
 /* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
+
+// modified by +KZ
+
 #include "kz_light.h"
 #include <game/server/entities/character.h>
 
 #include <engine/server.h>
 #include <engine/shared/config.h>
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 #include <game/mapitems.h>
 #include <game/teamscore.h>
 
@@ -40,7 +43,7 @@ bool CKZLight::HitCharacter()
 		return false;
 	for(auto *pChar : vpHitCharacters)
 	{
-		if(m_Layer == LAYER_SWITCH && m_Number > 0 && !Switchers()[m_Number].m_aStatus[pChar->Team()])
+		if(m_Number > 0 && !Switchers()[m_Number].m_aStatus[pChar->Team()])
 			continue;
 		else if(!m_DamageTicks[pChar->Team()])
 		{
@@ -139,11 +142,11 @@ void CKZLight::Snap(int SnappingClient)
 	{
 		From = m_Pos;
 	}
-	else if(pChr && m_Layer == LAYER_SWITCH && Switchers()[m_Number].m_aStatus[pChr->Team()])
+	else if(pChr&& Switchers()[m_Number].m_aStatus[pChr->Team()])
 	{
 		From = m_To;
 	}
-	else if(m_Layer != LAYER_SWITCH)
+	else
 	{
 		From = m_To;
 	}
@@ -151,7 +154,7 @@ void CKZLight::Snap(int SnappingClient)
 	if(SnappingClientVersion < VERSION_DDNET_ENTITY_NETOBJS)
 	{
 		int Tick = (Server()->Tick() % Server()->TickSpeed()) % 6;
-		if(pChr && pChr->IsAlive() && m_Layer == LAYER_SWITCH && m_Number > 0 && !Switchers()[m_Number].m_aStatus[pChr->Team()] && Tick)
+		if(pChr && pChr->IsAlive() && m_Number > 0 && !Switchers()[m_Number].m_aStatus[pChr->Team()] && Tick)
 			return;
 
 		StartTick = m_EvalTick;

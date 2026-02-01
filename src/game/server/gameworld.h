@@ -3,9 +3,9 @@
 #ifndef GAME_SERVER_GAMEWORLD_H
 #define GAME_SERVER_GAMEWORLD_H
 
-#include <game/gamecore.h>
-
 #include "save.h"
+
+#include <game/gamecore.h>
 
 #include <vector>
 
@@ -208,7 +208,9 @@ public:
 	CTuningParams *Tuning();
 
 	CTuningParams *m_pTuningList;
-	CTuningParams *TuningList() { return m_pTuningList; }
+	const CTuningParams *TuningList() const { return m_pTuningList; }
+	CTuningParams *TuningList() { return m_pTuningList; } // NOLINT(readability-make-member-function-const)
+	const CTuningParams *GetTuning(int i) const { return &TuningList()[i]; }
 	CTuningParams *GetTuning(int i) { return &TuningList()[i]; }
 };
 

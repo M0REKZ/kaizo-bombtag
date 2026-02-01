@@ -2,8 +2,15 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #ifndef GAME_CLIENT_COMPONENTS_ITEMS_H
 #define GAME_CLIENT_COMPONENTS_ITEMS_H
+
+#include <base/color.h>
+
+#include <generated/protocol.h>
+
 #include <game/client/component.h>
-#include <game/generated/protocol.h>
+
+#include <engine/client.h>
+#include <game/mapitems.h>
 
 class CProjectileData;
 class CLaserData;
@@ -12,6 +19,7 @@ class CItems : public CComponent
 {
 	void RenderProjectile(const CProjectileData *pCurrent, int ItemId);
 	void RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags);
+	void RenderFlags();
 	void RenderFlag(const CNetObj_Flag *pPrev, const CNetObj_Flag *pCurrent, const CNetObj_GameData *pPrevGameData, const CNetObj_GameData *pCurGameData);
 	void RenderLaser(const CLaserData *pCurrent, bool IsPredicted = false);
 
@@ -38,6 +46,23 @@ private:
 	int m_DoorHeadOffset;
 	int m_PulleyHeadOffset;
 	int m_FreezeHeadOffset;
+
+	//+KZ Kaizo Network
+
+	void OnInitKZ();
+
+	void RenderCrown();
+	void HandleKaizoSnapItem(const IClient::CSnapItem &Item, bool Front);
+	void RenderTurret(CNetObj_KaizoNetworkTurret *pTurret);
+	void RenderMine(CNetObj_KaizoNetworkMine *pMine);
+	void RenderKaizoPickup(CNetObj_KaizoNetworkPickup *pPickup);
+
+	int m_CrownOffset;
+	int m_TurretOffset_1;
+	int m_TurretOffset_2;
+	int m_MineOffset;
+
+	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS];
 };
 
 #endif

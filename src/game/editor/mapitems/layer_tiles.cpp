@@ -2,17 +2,18 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "layer_tiles.h"
 
+#include "image.h"
+
 #include <engine/keys.h>
 #include <engine/shared/config.h>
 #include <engine/shared/map.h>
+
 #include <game/editor/editor.h>
 #include <game/editor/editor_actions.h>
 #include <game/editor/enums.h>
 
 #include <iterator>
 #include <numeric>
-
-#include "image.h"
 
 CLayerTiles::CLayerTiles(CEditor *pEditor, int w, int h) :
 	CLayer(pEditor)
@@ -183,37 +184,37 @@ void CLayerTiles::Render(bool Tileset)
 	Graphics()->TextureSet(Texture);
 
 	ColorRGBA ColorEnv = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
-	CEditor::EnvelopeEval(m_ColorEnvOffset, m_ColorEnv, ColorEnv, 4, m_pEditor);
+	m_pEditor->EnvelopeEval(m_ColorEnvOffset, m_ColorEnv, ColorEnv, 4);
 	const ColorRGBA Color = ColorRGBA(m_Color.r / 255.0f, m_Color.g / 255.0f, m_Color.b / 255.0f, m_Color.a / 255.0f).Multiply(ColorEnv);
 
 	Graphics()->BlendNone();
-	m_pEditor->RenderTools()->RenderTilemap(m_pTiles, m_Width, m_Height, 32.0f, Color, LAYERRENDERFLAG_OPAQUE);
+	m_pEditor->RenderMap()->RenderTilemap(m_pTiles, m_Width, m_Height, 32.0f, Color, LAYERRENDERFLAG_OPAQUE);
 	Graphics()->BlendNormal();
-	m_pEditor->RenderTools()->RenderTilemap(m_pTiles, m_Width, m_Height, 32.0f, Color, LAYERRENDERFLAG_TRANSPARENT);
+	m_pEditor->RenderMap()->RenderTilemap(m_pTiles, m_Width, m_Height, 32.0f, Color, LAYERRENDERFLAG_TRANSPARENT);
 
 	// Render DDRace Layers
 	if(!Tileset)
 	{
 		int OverlayRenderFlags = (g_Config.m_ClTextEntitiesEditor ? OVERLAYRENDERFLAG_TEXT : 0) | OVERLAYRENDERFLAG_EDITOR;
 		if(m_HasTele)
-			m_pEditor->RenderTools()->RenderTeleOverlay(static_cast<CLayerTele *>(this)->m_pTeleTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
+			m_pEditor->RenderMap()->RenderTeleOverlay(static_cast<CLayerTele *>(this)->m_pTeleTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
 		if(m_HasSpeedup)
-			m_pEditor->RenderTools()->RenderSpeedupOverlay(static_cast<CLayerSpeedup *>(this)->m_pSpeedupTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
+			m_pEditor->RenderMap()->RenderSpeedupOverlay(static_cast<CLayerSpeedup *>(this)->m_pSpeedupTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
 		if(m_HasSwitch)
-			m_pEditor->RenderTools()->RenderSwitchOverlay(static_cast<CLayerSwitch *>(this)->m_pSwitchTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
+			m_pEditor->RenderMap()->RenderSwitchOverlay(static_cast<CLayerSwitch *>(this)->m_pSwitchTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
 		if(m_HasTune)
-			m_pEditor->RenderTools()->RenderTuneOverlay(static_cast<CLayerTune *>(this)->m_pTuneTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
+			m_pEditor->RenderMap()->RenderTuneOverlay(static_cast<CLayerTune *>(this)->m_pTuneTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
 		if(m_HasKZGame)
-			m_pEditor->RenderTools()->RenderKZGameOverlay(static_cast<CLayerKZGame *>(this)->m_pKZTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
+			m_pEditor->RenderMap()->RenderKZGameOverlay(static_cast<CLayerKZGame *>(this)->m_pKZTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
 		if(m_HasKZFront)
-			m_pEditor->RenderTools()->RenderKZFrontOverlay(static_cast<CLayerKZFront *>(this)->m_pKZTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
+			m_pEditor->RenderMap()->RenderKZFrontOverlay(static_cast<CLayerKZFront *>(this)->m_pKZTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
 	}
 }
 
 int CLayerTiles::ConvertX(float x) const { return (int)(x / 32.0f); }
 int CLayerTiles::ConvertY(float y) const { return (int)(y / 32.0f); }
 
-void CLayerTiles::Convert(CUIRect Rect, RECTi *pOut) const
+void CLayerTiles::Convert(CUIRect Rect, CIntRect *pOut) const
 {
 	pOut->x = ConvertX(Rect.x);
 	pOut->y = ConvertY(Rect.y);
@@ -223,7 +224,7 @@ void CLayerTiles::Convert(CUIRect Rect, RECTi *pOut) const
 
 void CLayerTiles::Snap(CUIRect *pRect) const
 {
-	RECTi Out;
+	CIntRect Out;
 	Convert(*pRect, &Out);
 	pRect->x = Out.x * 32.0f;
 	pRect->y = Out.y * 32.0f;
@@ -231,7 +232,7 @@ void CLayerTiles::Snap(CUIRect *pRect) const
 	pRect->h = Out.h * 32.0f;
 }
 
-void CLayerTiles::Clamp(RECTi *pRect) const
+void CLayerTiles::Clamp(CIntRect *pRect) const
 {
 	if(pRect->x < 0)
 	{
@@ -311,9 +312,9 @@ static void InitGrabbedLayer(std::shared_ptr<T> &pLayer, CLayerTiles *pThisLayer
 	}
 };
 
-int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
+int CLayerTiles::BrushGrab(CLayerGroup *pBrush, CUIRect Rect)
 {
-	RECTi r;
+	CIntRect r;
 	Convert(Rect, &r);
 	Clamp(&r);
 
@@ -321,7 +322,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 		return 0;
 
 	// create new layers
-	if(this->m_HasTele)
+	if(m_HasTele)
 	{
 		std::shared_ptr<CLayerTele> pGrabbed = std::make_shared<CLayerTele>(m_pEditor, r.w, r.h);
 		InitGrabbedLayer(pGrabbed, this);
@@ -360,12 +361,12 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 			}
 		}
 
-		pGrabbed->m_TeleNum = m_pEditor->m_TeleNumber;
-		pGrabbed->m_TeleCheckpointNum = m_pEditor->m_TeleCheckpointNumber;
+		pGrabbed->m_TeleNumber = m_pEditor->m_TeleNumber;
+		pGrabbed->m_TeleCheckpointNumber = m_pEditor->m_TeleCheckpointNumber;
 
 		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
 	}
-	else if(this->m_HasSpeedup)
+	else if(m_HasSpeedup)
 	{
 		std::shared_ptr<CLayerSpeedup> pGrabbed = std::make_shared<CLayerSpeedup>(m_pEditor, r.w, r.h);
 		InitGrabbedLayer(pGrabbed, this);
@@ -409,7 +410,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 		pGrabbed->m_SpeedupAngle = m_pEditor->m_SpeedupAngle;
 		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
 	}
-	else if(this->m_HasSwitch)
+	else if(m_HasSwitch)
 	{
 		std::shared_ptr<CLayerSwitch> pGrabbed = std::make_shared<CLayerSwitch>(m_pEditor, r.w, r.h);
 		InitGrabbedLayer(pGrabbed, this);
@@ -429,7 +430,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 					pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x] = static_cast<CLayerSwitch *>(this)->m_pSwitchTile[(r.y + y) * m_Width + (r.x + x)];
 					if(IsValidSwitchTile(pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Type))
 					{
-						m_pEditor->m_SwitchNum = pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Number;
+						m_pEditor->m_SwitchNumber = pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Number;
 						m_pEditor->m_SwitchDelay = pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Delay;
 					}
 				}
@@ -439,7 +440,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 					if(IsValidSwitchTile(Tile.m_Index))
 					{
 						pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Type = Tile.m_Index;
-						pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Number = m_pEditor->m_SwitchNum;
+						pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Number = m_pEditor->m_SwitchNumber;
 						pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Delay = m_pEditor->m_SwitchDelay;
 						pGrabbed->m_pSwitchTile[y * pGrabbed->m_Width + x].m_Flags = Tile.m_Flags;
 					}
@@ -447,12 +448,12 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 			}
 		}
 
-		pGrabbed->m_SwitchNumber = m_pEditor->m_SwitchNum;
+		pGrabbed->m_SwitchNumber = m_pEditor->m_SwitchNumber;
 		pGrabbed->m_SwitchDelay = m_pEditor->m_SwitchDelay;
 		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
 	}
 
-	else if(this->m_HasTune)
+	else if(m_HasTune)
 	{
 		std::shared_ptr<CLayerTune> pGrabbed = std::make_shared<CLayerTune>(m_pEditor, r.w, r.h);
 		InitGrabbedLayer(pGrabbed, this);
@@ -471,7 +472,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 					pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x] = static_cast<CLayerTune *>(this)->m_pTuneTile[(r.y + y) * m_Width + (r.x + x)];
 					if(IsValidTuneTile(pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x].m_Type))
 					{
-						m_pEditor->m_TuningNum = pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x].m_Number;
+						m_pEditor->m_TuningNumber = pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x].m_Number;
 					}
 				}
 				else
@@ -480,29 +481,16 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 					if(IsValidTuneTile(Tile.m_Index))
 					{
 						pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x].m_Type = Tile.m_Index;
-						pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x].m_Number = m_pEditor->m_TuningNum;
+						pGrabbed->m_pTuneTile[y * pGrabbed->m_Width + x].m_Number = m_pEditor->m_TuningNumber;
 					}
 				}
 			}
 		}
 
-		pGrabbed->m_TuningNumber = m_pEditor->m_TuningNum;
+		pGrabbed->m_TuningNumber = m_pEditor->m_TuningNumber;
 		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
 	}
-	else if(this->m_HasFront)
-	{
-		std::shared_ptr<CLayerFront> pGrabbed = std::make_shared<CLayerFront>(m_pEditor, r.w, r.h);
-		InitGrabbedLayer(pGrabbed, this);
-
-		pBrush->AddLayer(pGrabbed);
-
-		// copy the tiles
-		for(int y = 0; y < r.h; y++)
-			for(int x = 0; x < r.w; x++)
-				pGrabbed->m_pTiles[y * pGrabbed->m_Width + x] = GetTile(r.x + x, r.y + y);
-		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
-	}
-	else if(this->m_HasKZGame)
+	else if(m_HasKZGame)
 	{
 		std::shared_ptr<CLayerKZGame> pGrabbed = std::make_shared<CLayerKZGame>(m_pEditor, r.w, r.h);
 		InitGrabbedLayer(pGrabbed, this);
@@ -545,7 +533,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 		pGrabbed->m_Value3 = m_pEditor->m_KZGameValue3;
 		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
 	}
-	else if(this->m_HasKZFront)
+	else if(m_HasKZFront)
 	{
 		std::shared_ptr<CLayerKZFront> pGrabbed = std::make_shared<CLayerKZFront>(m_pEditor, r.w, r.h);
 		InitGrabbedLayer(pGrabbed, this);
@@ -588,9 +576,21 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 		pGrabbed->m_Value3 = m_pEditor->m_KZFrontValue3;
 		str_copy(pGrabbed->m_aFileName, m_pEditor->m_aFileName);
 	}
-	else
+	else // game, front and tiles layers
 	{
-		std::shared_ptr<CLayerTiles> pGrabbed = std::make_shared<CLayerFront>(m_pEditor, r.w, r.h);
+		std::shared_ptr<CLayerTiles> pGrabbed;
+		if(m_HasGame)
+		{
+			pGrabbed = std::make_shared<CLayerGame>(m_pEditor, r.w, r.h);
+		}
+		else if(m_HasFront)
+		{
+			pGrabbed = std::make_shared<CLayerFront>(m_pEditor, r.w, r.h);
+		}
+		else
+		{
+			pGrabbed = std::make_shared<CLayerTiles>(m_pEditor, r.w, r.h);
+		}
 		InitGrabbedLayer(pGrabbed, this);
 
 		pBrush->AddLayer(pGrabbed);
@@ -605,7 +605,7 @@ int CLayerTiles::BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect)
 	return 1;
 }
 
-void CLayerTiles::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUIRect Rect)
+void CLayerTiles::FillSelection(bool Empty, CLayer *pBrush, CUIRect Rect)
 {
 	if(m_Readonly || (!Empty && pBrush->m_Type != LAYERTYPE_TILES))
 		return;
@@ -617,7 +617,7 @@ void CLayerTiles::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUIR
 	int w = ConvertX(Rect.w);
 	int h = ConvertY(Rect.h);
 
-	std::shared_ptr<CLayerTiles> pLt = std::static_pointer_cast<CLayerTiles>(pBrush);
+	CLayerTiles *pLt = static_cast<CLayerTiles *>(pBrush);
 
 	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || pLt->IsEmpty();
 
@@ -653,13 +653,12 @@ void CLayerTiles::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUIR
 	FlagModified(sx, sy, w, h);
 }
 
-void CLayerTiles::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
+void CLayerTiles::BrushDraw(CLayer *pBrush, vec2 WorldPos)
 {
 	if(m_Readonly)
 		return;
 
-	//
-	std::shared_ptr<CLayerTiles> pTileLayer = std::static_pointer_cast<CLayerTiles>(pBrush);
+	CLayerTiles *pTileLayer = static_cast<CLayerTiles *>(pBrush);
 	int sx = ConvertX(WorldPos.x);
 	int sy = ConvertY(WorldPos.y);
 
@@ -812,7 +811,7 @@ void CLayerTiles::Resize(int NewW, int NewH)
 		m_pEditor->m_Map.m_pTuneLayer->Resize(NewW, NewH);
 }
 
-void CLayerTiles::Shift(int Direction)
+void CLayerTiles::Shift(EShiftDirection Direction)
 {
 	ShiftImpl(m_pTiles, Direction, m_pEditor->m_ShiftBy);
 }
@@ -1190,7 +1189,7 @@ CUi::EPopupMenuFunctionResult CLayerTiles::RenderProperties(CUIRect *pToolBox)
 	}
 	else if(Prop == ETilesProp::PROP_SHIFT)
 	{
-		Shift(NewVal);
+		Shift((EShiftDirection)NewVal);
 	}
 	else if(Prop == ETilesProp::PROP_SHIFT_BY)
 	{
@@ -1424,7 +1423,7 @@ CUi::EPopupMenuFunctionResult CLayerTiles::RenderCommonProperties(SCommonPropSta
 	else if(Prop == ETilesCommonProp::PROP_SHIFT)
 	{
 		for(auto &pLayer : vpLayers)
-			pLayer->Shift(NewVal);
+			pLayer->Shift((EShiftDirection)NewVal);
 	}
 	else if(Prop == ETilesCommonProp::PROP_SHIFT_BY)
 	{

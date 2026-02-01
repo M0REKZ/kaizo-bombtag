@@ -1,7 +1,8 @@
 # pylint: skip-file
 # See https://github.com/ddnet/ddnet/issues/3507
 
-from datatypes import Enum, Flags, NetArray, NetBool, NetEvent, NetEventEx, NetIntAny, NetIntRange, NetMessage, NetMessageEx, NetObject, NetObjectEx, NetString, NetStringHalfStrict, NetStringStrict, NetTick
+from datatypes import Enum, Flags, NetArray, NetBool, NetEvent, NetEventEx, NetIntAny, NetTwIntString, NetIntRange
+from datatypes import NetMessage, NetMessageEx, NetObject, NetObjectEx, NetString, NetStringHalfStrict, NetStringStrict, NetTick
 
 Emotes = ["NORMAL", "PAIN", "HAPPY", "SURPRISE", "ANGRY", "BLINK"]
 PlayerFlags = ["PLAYING", "IN_MENU", "CHATTING", "SCOREBOARD", "AIM", "SPEC_CAM"]
@@ -47,6 +48,7 @@ PickupFlags = [
 LaserTypes = ["RIFLE", "SHOTGUN", "DOOR", "FREEZE", "DRAGGER", "GUN", "PLASMA"]
 DraggerTypes = ["WEAK", "WEAK_NW", "NORMAL", "NORMAL_NW", "STRONG", "STRONG_NW"]
 GunTypes = ["UNFREEZE", "EXPLOSIVE", "FREEZE", "EXPFREEZE"]
+SaveStates = ["PENDING", "DONE", "FALLBACKFILE", "WARNING", "ERROR"]
 
 Emoticons = ["OOP", "EXCLAMATION", "HEARTS", "DROP", "DOTDOT", "MUSIC", "SORRY", "GHOST", "SUSHI", "SPLATTEE", "DEVILTEE", "ZOMG", "ZZZ", "WTF", "EYES", "QUESTION"]
 
@@ -68,7 +70,10 @@ enum
 	FLAG_MISSING=-3,
 	FLAG_ATSTAND,
 	FLAG_TAKEN,
+};
 
+enum
+{
 	SPEC_FREEVIEW=-1,
 	SPEC_FOLLOW=-2,
 };
@@ -89,6 +94,7 @@ Enums = [
 	Enum("LASERDRAGGERTYPE", DraggerTypes),
 	Enum("LASERGUNTYPE", GunTypes),
 	Enum("TEAM", Teams, -2),
+	Enum("SAVESTATE", SaveStates),
 ]
 
 Flags = [
@@ -220,21 +226,11 @@ Objects = [
 	]),
 
 	NetObject("ClientInfo", [
-		# 4*4 = 16 characters
-		NetIntAny("m_Name0"), NetIntAny("m_Name1"), NetIntAny("m_Name2"),
-		NetIntAny("m_Name3"),
-
-		# 4*3 = 12 characters
-		NetIntAny("m_Clan0"), NetIntAny("m_Clan1"), NetIntAny("m_Clan2"),
-
+		NetTwIntString("m_aName", 16),
+		NetTwIntString("m_aClan", 12),
 		NetIntAny("m_Country"),
-
-		# 4*6 = 24 characters
-		NetIntAny("m_Skin0"), NetIntAny("m_Skin1"), NetIntAny("m_Skin2"),
-		NetIntAny("m_Skin3"), NetIntAny("m_Skin4"), NetIntAny("m_Skin5"),
-
+		NetTwIntString("m_aSkin", 24),
 		NetIntRange("m_UseCustomColor", 0, 1),
-
 		NetIntAny("m_ColorBody"),
 		NetIntAny("m_ColorFeet"),
 	]),
@@ -574,7 +570,7 @@ Messages = [
 		NetIntAny("m_ServerTimeBest"),
 		NetIntAny("m_PlayerTimeBest"),
 	]),
-    
+
 	NetMessageEx("Sv_KillMsgTeam", "killmsgteam@netmsg.ddnet.tw", [
 		NetIntRange("m_Team", 0, 'MAX_CLIENTS-1'),
 		NetIntRange("m_First", -1, 'MAX_CLIENTS-1'),
@@ -632,4 +628,18 @@ Messages = [
 		NetIntRange("m_Owner", 0, 'MAX_CLIENTS-1'),
 		NetTick("m_IntendedTick"),
 	]),
+
+	NetMessageEx("Sv_SaveCode", "save-code@netmsg.ddnet.org", [
+		NetIntRange("m_State", 'SAVESTATE_PENDING', 'SAVESTATE_ERROR'),
+		NetStringStrict("m_pError"),
+		NetStringStrict("m_pSaveRequester"),
+		NetStringStrict("m_pServerName"),
+		NetStringStrict("m_pGeneratedCode"),
+		NetStringStrict("m_pCode"),
+		NetStringStrict("m_pTeamMembers"),
+	]),
 ]
+
+
+# +KZ Kaizo Network
+exec(open("datasrc/network_kz.py").read())

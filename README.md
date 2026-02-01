@@ -38,3 +38,35 @@ Bombtag has a simple antibot which can be enabled using `-DANTIBOT=ON` in CMake.
 
 ## Building
 This mod is based on DDRaceNetwork. You can use their instructions to learn how to build the project, [ddnet/ddnet](https://github.com/ddnet/ddnet).
+
+# KAIZO NETWORK HAS BEEN DISCONTINUED, FEEL FREE TO FORK THIS, BUT KEEP YOUR FORK SOURCE CODE PUBLIC AS THE LICENSE SAYS
+# PULL REQUESTS ARE WELCOME
+
+![](https://m0rekz.github.io/Kaizo-Network/img/g135.png)
+
+* [Website](https://m0rekz.github.io/Kaizo-Network/)
+* [Discord Server](https://discord.gg/nt8aStQxcR)
+
+This is the source code for Kaizo Network by +KZ, based on DDNet
+
+Make sure to follow the terms of the new license if you use Kaizo Network specific code.
+
+I tried to separate Kaizo Network code from DDNet code but that is not possible in some cases.
+
+This repo also uses code from the following mods that are NOT made by +KZ:
+
+* [DDNet-Insta](https://github.com/ddnet-insta/ddnet-insta)
+* [F-DDrace](https://github.com/fokkonaut/F-DDrace/)
+* [Pointer's TW+](https://github.com/Pointer31/tw_plus)
+* [Nheir's Bot Mod for Teeworlds](https://github.com/nheir/teeworlds)
+* [Kaffeine's Infclass](https://github.com/infclass/teeworlds-infclassR)
+* [T-Client](https://github.com/sjrc6/TaterClient-ddnet)
+* [Teeworlds Gamer](https://github.com/Dune-jr/teeworlds/tree/gamer)
+* [ICTFX](https://github.com/teeworlds-instagib-elo/iCTFX)
+* [FoxNet](https://github.com/FoxNet-DDNet/FoxNet)
+* ...and other mods and rejected DDNet Pull requests.
+
+Other credits:
+
+* Portal gun and Attractor beam textures by Pointer
+* InstaShield shield texture by Dune

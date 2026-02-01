@@ -3,9 +3,8 @@
 #ifndef GAME_SERVER_ENTITIES_CHARACTER_H
 #define GAME_SERVER_ENTITIES_CHARACTER_H
 
-#include <game/server/entity.h>
-
 #include <game/race_state.h>
+#include <game/server/entity.h>
 #include <game/server/save.h>
 #include <game/mapitems.h>
 
@@ -82,6 +81,8 @@ public:
 
 	void Die(int Killer, int Weapon, bool SendKillMsg = true);
 	bool TakeDamage(vec2 Force, int Dmg, int From, int Weapon);
+	void SendDeathMessageIfNotInLockedTeam(int Killer, int Weapon, int ModeSpecial);
+	void CancelSwapRequests();
 
 	bool Spawn(class CPlayer *pPlayer, vec2 Pos);
 	bool Remove();
@@ -95,6 +96,7 @@ public:
 	void SetEndlessHook(bool Enable);
 
 	void SetEmote(int Emote, int Tick);
+	int DetermineEyeEmote();
 
 	void Rescue();
 
@@ -250,7 +252,7 @@ public:
 	int GetArmor() const { return m_Armor; }
 	void SetArmor(int Armor) { m_Armor = Armor; }
 	CCharacterCore GetCore() { return m_Core; }
-	void SetCore(CCharacterCore Core) { m_Core = Core; }
+	void SetCore(const CCharacterCore &Core) { m_Core = Core; }
 	const CCharacterCore *Core() const { return &m_Core; }
 	bool GetWeaponGot(int Type) { return (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Got : m_Core.m_aWeapons[Type].m_Got); } //modified for custom weapons +KZ
 	void SetWeaponGot(int Type, bool Value) { (Type >= NUM_WEAPONS ? m_aCustomWeapons[Type-KZ_CUSTOM_WEAPONS_START].m_Got = Value : m_Core.m_aWeapons[Type].m_Got = Value); } //modified for custom weapons +KZ
@@ -277,7 +279,11 @@ public:
 	CTuningParams *GetTuning(int Zone) { return Zone ? &TuningList()[Zone] : Tuning(); }
 
 	//+KZ
+	CCharacterCore &GetCoreKZ() { return m_Core; }
+
 	void HandleKZTiles();
+	void HandleQuads();
+	void ResetPortals();
 	bool TakeDamageVanilla(vec2 Force, int Dmg, int From, int Weapon);
 	int GetOverriddenTuneZoneKZ() const { return ((m_TuneZoneOverrideKZ >= 0 && !m_TuneZone) || m_ForcedTuneKZ) ? m_TuneZoneOverrideKZ : m_TuneZone; }
 	int m_TuneZoneOverrideKZ = -1;
@@ -285,7 +291,6 @@ public:
 	int m_aCrown[7];
 	bool m_EnableCrown = false;
 	bool m_SnapCustomWeapon = false;
-	int m_CustomWeapon = 0;
 	bool m_BluePortal = true;
 	int m_PortalKindId = -1;
 	bool m_AimPressed = false;
@@ -297,14 +302,35 @@ public:
 	bool m_StillPressingFire = false;
 	bool m_SpecTile = false;
 	vec2 m_SpecTilePos = vec2(0,0);
+	bool m_DidHookedQuadSound = false;
+	bool m_HasRecoverJumpLaser = false;
 
 	struct
 	{
 		bool m_Got = false;
 		int m_Snap = 0;
 		int m_Ammo = -1;
-	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
-	CCharacterCore &GetCoreKZ() { return m_Core; }
+	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS];
+
+	CNetObj_KaizoNetworkCharacter m_KaizoNetworkChar;
+
+	int m_StartSubTick = -1;
+	int m_StartDivisor = 1;
+	int m_StartedTickKZ = -1;
+	int m_FinishSubTick = -1;
+	int m_FinishDivisor = 1;
+	int m_FinishedTickKZ = -1;
+	vec2 m_PrevVelKZ;
+	void HandleSubTickStartFinish();
+
+	enum CKZFastCapState
+	{
+		KZ_FASTCAP_STATE_NOTSTARTED = 0,
+		KZ_FASTCAP_STATE_TEAMRED = 1,
+		KZ_FASTCAP_STATE_TEAMBLUE = 2,
+		KZ_FASTCAP_STATE_FINISHED = 3,
+	} m_KZFastCapState;
+
 	int &GetHealthKZ() { return m_Health; }
 	int &GetDamageTakenKZ() { return m_DamageTaken; }
 	int &GetDamageTakenTickKZ() { return m_DamageTakenTick; }

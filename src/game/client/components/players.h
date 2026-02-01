@@ -2,10 +2,11 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #ifndef GAME_CLIENT_COMPONENTS_PLAYERS_H
 #define GAME_CLIENT_COMPONENTS_PLAYERS_H
-#include <game/client/component.h>
+#include <generated/protocol.h>
 
+#include <game/client/component.h>
 #include <game/client/render.h>
-#include <game/generated/protocol.h>
+#include <game/mapitems.h>
 
 class CPlayers : public CComponent
 {
@@ -30,8 +31,7 @@ class CPlayers : public CComponent
 	void RenderHookCollLine(
 		const CNetObj_Character *pPrevChar,
 		const CNetObj_Character *pPlayerChar,
-		int ClientId,
-		float Intra = 0.f);
+		int ClientId);
 	bool IsPlayerInfoAvailable(int ClientId) const;
 
 	int m_WeaponEmoteQuadContainerIndex;
@@ -56,6 +56,13 @@ public:
 
 	const std::shared_ptr<CManagedTeeRenderInfo> &NinjaTeeRenderInfo() const { return m_pNinjaTeeRenderInfo; }
 	const std::shared_ptr<CManagedTeeRenderInfo> &SpectatorTeeRenderInfo() const { return m_pSpectatorTeeRenderInfo; }
+
+	//+KZ
+	int m_KaizoWeaponsOffsets[KZ_NUM_CUSTOM_WEAPONS] = {0};
+	int m_KaizoWeaponsOrangePortalGunOffset = 0;
+
+	void OnKaizoInit();
+	void RenderKaizoWeapon(const CNetObj_Character *pPrevChar, const CNetObj_Character *pPlayerChar, const CTeeRenderInfo *pRenderInfo, int ClientId, float Intra, CAnimState &AnimState);
 };
 
 #endif

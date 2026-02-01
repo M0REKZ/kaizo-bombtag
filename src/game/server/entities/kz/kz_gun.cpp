@@ -1,4 +1,7 @@
 /* copyright (c) 2007 magnus auvinen, see licence.txt for more info */
+
+// modified by +KZ
+
 #include "kz_gun.h"
 #include <game/server/entities/character.h>
 #include <game/server/entities/kz/kz_plasma.h>
@@ -6,8 +9,9 @@
 #include <engine/server.h>
 #include <engine/shared/config.h>
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 #include <game/mapitems.h>
+#include <game/version.h>
 
 #include <game/server/gamecontext.h>
 #include <game/server/player.h>
@@ -73,7 +77,7 @@ void CKZGun::Fire()
 			continue;
 		}
 		// If the turret is disabled for the target's team, the turret will not fire
-		if(m_Layer == LAYER_SWITCH && m_Number > 0 &&
+		if(m_Number > 0 &&
 			!Switchers()[m_Number].m_aStatus[TargetTeam])
 		{
 			continue;
@@ -144,34 +148,50 @@ void CKZGun::Snap(int SnappingClient)
 	if(NetworkClipped(SnappingClient))
 		return;
 
-	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
-
-	int Subtype = (m_Explosive ? 1 : 0) | (m_Damage ? 2 : 0);
-
-	int StartTick;
-	if(SnappingClientVersion >= VERSION_DDNET_ENTITY_NETOBJS)
+	if(Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_TURRETS)
 	{
-		StartTick = -1;
+		int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
+
+		int Subtype = (m_Explosive ? 1 : 0) | (m_Damage ? 2 : 0);
+
+		int StartTick;
+
+	
+		if(SnappingClientVersion >= VERSION_DDNET_ENTITY_NETOBJS)
+		{
+			StartTick = -1;
+		}
+		else
+		{
+			// Emulate turned off blinking turret for old clients
+			CCharacter *pChar = GameServer()->GetPlayerChar(SnappingClient);
+
+			if(SnappingClient != SERVER_DEMO_CLIENT &&
+				(GameServer()->m_apPlayers[SnappingClient]->GetTeam() == TEAM_SPECTATORS ||
+					GameServer()->m_apPlayers[SnappingClient]->IsPaused()) &&
+				GameServer()->m_apPlayers[SnappingClient]->SpectatorId() != SPEC_FREEVIEW)
+				pChar = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->SpectatorId());
+
+			int Tick = (Server()->Tick() % Server()->TickSpeed()) % 11;
+			if(pChar && m_Number > 0 &&
+				!Switchers()[m_Number].m_aStatus[pChar->Team()] && (!Tick))
+				return;
+
+			StartTick = m_EvalTick;
+		}
+
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Server()->IsSixup(SnappingClient), SnappingClient), GetId(),
+			m_Pos, m_Pos, StartTick, -1, Server()->Tick() % 2, Subtype, m_Number);
 	}
 	else
 	{
-		// Emulate turned off blinking turret for old clients
-		CCharacter *pChar = GameServer()->GetPlayerChar(SnappingClient);
-
-		if(SnappingClient != SERVER_DEMO_CLIENT &&
-			(GameServer()->m_apPlayers[SnappingClient]->GetTeam() == TEAM_SPECTATORS ||
-				GameServer()->m_apPlayers[SnappingClient]->IsPaused()) &&
-			GameServer()->m_apPlayers[SnappingClient]->SpectatorId() != SPEC_FREEVIEW)
-			pChar = GameServer()->GetPlayerChar(GameServer()->m_apPlayers[SnappingClient]->SpectatorId());
-
-		int Tick = (Server()->Tick() % Server()->TickSpeed()) % 11;
-		if(pChar && m_Layer == LAYER_SWITCH && m_Number > 0 &&
-			!Switchers()[m_Number].m_aStatus[pChar->Team()] && (!Tick))
+		CNetObj_KaizoNetworkTurret *pTurret = static_cast<CNetObj_KaizoNetworkTurret *>(
+			Server()->SnapNewItem(NETOBJTYPE_KAIZONETWORKTURRET, GetId(), sizeof(CNetObj_KaizoNetworkTurret)));
+		if(!pTurret)
 			return;
 
-		StartTick = m_EvalTick;
+		pTurret->m_X = (int)m_Pos.x;
+		pTurret->m_Y = (int)m_Pos.y;
+		pTurret->m_Type = (m_Explosive ? 1 : 0);
 	}
-
-	GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Server()->IsSixup(SnappingClient), SnappingClient), GetId(),
-		m_Pos, m_Pos, StartTick, -1, Server()->Tick() % 2, Subtype, m_Number);
 }

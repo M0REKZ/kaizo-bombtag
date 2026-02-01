@@ -1,27 +1,23 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include "items.h"
+
 #include <engine/demo.h>
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 
-#include <game/generated/client_data.h>
-#include <game/generated/protocol.h>
+#include <generated/client_data.h>
+#include <generated/protocol.h>
 
-#include <game/mapitems.h>
-
+#include <game/client/components/effects.h>
 #include <game/client/gameclient.h>
 #include <game/client/laser_data.h>
 #include <game/client/pickup_data.h>
-#include <game/client/projectile_data.h>
-#include <game/client/render.h>
-
 #include <game/client/prediction/entities/laser.h>
 #include <game/client/prediction/entities/pickup.h>
 #include <game/client/prediction/entities/projectile.h>
-
-#include <game/client/components/effects.h>
-
-#include "items.h"
+#include <game/client/projectile_data.h>
+#include <game/mapitems.h>
 
 void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId)
 {
@@ -142,6 +138,10 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId)
 
 void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags)
 {
+	//+KZ from Dune Gamer client
+	if(pCurrent->m_Type == POWERUP_ARMOR && (g_Config.m_KaizoInstaShieldShield ? GameClient()->m_InstaShield : false))
+		return;
+
 	int CurWeapon = std::clamp(pCurrent->m_Subtype, 0, NUM_WEAPONS - 1);
 	int QuadOffset = 2;
 	float IntraTick = IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy);
@@ -231,31 +231,18 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	Graphics()->QuadsSetRotation(0);
 }
 
+void CItems::RenderFlags()
+{
+	for(int Flag = 0; Flag < GameClient()->m_Snap.m_NumFlags; ++Flag)
+	{
+		RenderFlag(GameClient()->m_Snap.m_apPrevFlags[Flag], GameClient()->m_Snap.m_apFlags[Flag],
+			GameClient()->m_Snap.m_pPrevGameDataObj, GameClient()->m_Snap.m_pGameDataObj);
+	}
+}
+
 void CItems::RenderFlag(const CNetObj_Flag *pPrev, const CNetObj_Flag *pCurrent, const CNetObj_GameData *pPrevGameData, const CNetObj_GameData *pCurGameData)
 {
-	float Angle = 0.0f;
-	float Size = 42.0f;
-
-	if(pCurrent->m_Team == TEAM_RED)
-		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteFlagRed);
-	else
-		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteFlagBlue);
-	Graphics()->QuadsSetRotation(0);
-	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
-	int QuadOffset;
-	if(pCurrent->m_Team == TEAM_RED)
-	{
-		QuadOffset = m_RedFlagOffset;
-	}
-	else
-	{
-		QuadOffset = m_BlueFlagOffset;
-	}
-
-	Graphics()->QuadsSetRotation(Angle);
-
 	vec2 Pos = mix(vec2(pPrev->m_X, pPrev->m_Y), vec2(pCurrent->m_X, pCurrent->m_Y), Client()->IntraGameTick(g_Config.m_ClDummy));
-
 	if(pCurGameData)
 	{
 		int FlagCarrier = (pCurrent->m_Team == TEAM_RED) ? pCurGameData->m_FlagCarrierRed : pCurGameData->m_FlagCarrierBlue;
@@ -270,6 +257,20 @@ void CItems::RenderFlag(const CNetObj_Flag *pPrev, const CNetObj_Flag *pCurrent,
 			Pos = vec2(pCurrent->m_X, pCurrent->m_Y);
 	}
 
+	float Size = 42.0f;
+	int QuadOffset;
+	if(pCurrent->m_Team == TEAM_RED)
+	{
+		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteFlagRed);
+		QuadOffset = m_RedFlagOffset;
+	}
+	else
+	{
+		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteFlagBlue);
+		QuadOffset = m_BlueFlagOffset;
+	}
+	Graphics()->QuadsSetRotation(0.0f);
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, QuadOffset, Pos.x, Pos.y - Size * 0.75f);
 }
 
@@ -352,7 +353,6 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 
 void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA InnerColor, float TicksBody, float TicksHead, int Type) const
 {
-	int TuneZone = (Client()->State() == IClient::STATE_ONLINE && GameClient()->m_GameWorld.m_WorldConfig.m_UseTuneZones) ? Collision()->IsTune(Collision()->GetMapIndex(From)) : 0;
 	float Len = distance(Pos, From);
 
 	if(Len > 0)
@@ -366,7 +366,16 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 		vec2 Dir = normalize_pre_length(Pos - From, Len);
 
 		float Ms = TicksBody * 1000.0f / Client()->GameTickSpeed();
-		float a = Ms / (Type == LASERTYPE_RIFLE || Type == LASERTYPE_SHOTGUN ? GameClient()->GetTuning(TuneZone)->m_LaserBounceDelay : CTuningParams::DEFAULT.m_LaserBounceDelay);
+		float a;
+		if(Type == LASERTYPE_RIFLE || Type == LASERTYPE_SHOTGUN)
+		{
+			int TuneZone = (Client()->State() == IClient::STATE_ONLINE && GameClient()->m_GameWorld.m_WorldConfig.m_UseTuneZones) ? Collision()->IsTune(Collision()->GetMapIndex(From)) : 0;
+			a = Ms / GameClient()->GetTuning(TuneZone)->m_LaserBounceDelay;
+		}
+		else
+		{
+			a = Ms / CTuningParams::DEFAULT.m_LaserBounceDelay;
+		}
 		a = std::clamp(a, 0.0f, 1.0f);
 		float Ia = 1 - a;
 
@@ -378,10 +387,8 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 		vec2 Out = vec2(Dir.y, -Dir.x) * (7.0f * Ia);
 
 		IGraphics::CFreeformItem Freeform(
-			From.x - Out.x, From.y - Out.y,
-			From.x + Out.x, From.y + Out.y,
-			Pos.x - Out.x, Pos.y - Out.y,
-			Pos.x + Out.x, Pos.y + Out.y);
+			From - Out, From + Out,
+			Pos - Out, Pos + Out);
 		Graphics()->QuadsDrawFreeform(&Freeform, 1);
 
 		// do inner
@@ -391,10 +398,8 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 		Graphics()->SetColor(InnerColor); // center
 
 		Freeform = IGraphics::CFreeformItem(
-			From.x - Out.x + ExtraOutlineFrom.x, From.y - Out.y + ExtraOutlineFrom.y,
-			From.x + Out.x + ExtraOutlineFrom.x, From.y + Out.y + ExtraOutlineFrom.y,
-			Pos.x - Out.x - ExtraOutlinePos.x, Pos.y - Out.y - ExtraOutlinePos.y,
-			Pos.x + Out.x - ExtraOutlinePos.x, Pos.y + Out.y - ExtraOutlinePos.y);
+			From - Out + ExtraOutlineFrom, From + Out + ExtraOutlineFrom,
+			Pos - Out - ExtraOutlinePos, Pos + Out - ExtraOutlinePos);
 		Graphics()->QuadsDrawFreeform(&Freeform, 1);
 
 		Graphics()->QuadsEnd();
@@ -481,6 +486,17 @@ void CItems::OnRender()
 
 	bool UsePredicted = GameClient()->Predict() && GameClient()->AntiPingGunfire();
 	auto &aSwitchers = GameClient()->Switchers();
+
+	int Num = Client()->SnapNumItems(IClient::SNAP_CURRENT); //+KZ moved this here
+
+	// +KZ things that must render in background
+	for(int i = 0; i < Num; i++)
+	{
+		const IClient::CSnapItem Item = Client()->SnapGetItem(IClient::SNAP_CURRENT, i);
+
+		HandleKaizoSnapItem(Item, false);
+	}
+
 	if(UsePredicted)
 	{
 		for(auto *pProj = (CProjectile *)GameClient()->m_PrevPredictedWorld.FindFirst(CGameWorld::ENTTYPE_PROJECTILE); pProj; pProj = (CProjectile *)pProj->NextEntity())
@@ -624,24 +640,18 @@ void CItems::OnRender()
 		}
 	}
 
-	int Num = Client()->SnapNumItems(IClient::SNAP_CURRENT);
-
-	// render flag
+	// render Kaizo Network Snap items
 	for(int i = 0; i < Num; i++)
 	{
 		const IClient::CSnapItem Item = Client()->SnapGetItem(IClient::SNAP_CURRENT, i);
 
-		if(Item.m_Type == NETOBJTYPE_FLAG)
-		{
-			const void *pPrev = Client()->SnapFindItem(IClient::SNAP_PREV, Item.m_Type, Item.m_Id);
-			if(pPrev)
-			{
-				const void *pPrevGameData = Client()->SnapFindItem(IClient::SNAP_PREV, NETOBJTYPE_GAMEDATA, GameClient()->m_Snap.m_GameDataSnapId);
-				RenderFlag(static_cast<const CNetObj_Flag *>(pPrev), static_cast<const CNetObj_Flag *>(Item.m_pData),
-					static_cast<const CNetObj_GameData *>(pPrevGameData), GameClient()->m_Snap.m_pGameDataObj);
-			}
-		}
+		HandleKaizoSnapItem(Item, true);
 	}
+	
+	RenderFlags();
+
+	//+KZ Kaizo Network
+	RenderCrown();
 
 	Graphics()->QuadsSetRotation(0);
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
@@ -655,57 +665,60 @@ void CItems::OnInit()
 	m_ItemsQuadContainerIndex = Graphics()->CreateQuadContainer(false);
 
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_RedFlagOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
+	m_RedFlagOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_BlueFlagOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
+	m_BlueFlagOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
 
 	float ScaleX, ScaleY;
-	RenderTools()->GetSpriteScale(SPRITE_PICKUP_HEALTH, ScaleX, ScaleY);
+	Graphics()->GetSpriteScale(SPRITE_PICKUP_HEALTH, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PickupHealthOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
-	RenderTools()->GetSpriteScale(SPRITE_PICKUP_ARMOR, ScaleX, ScaleY);
+	m_PickupHealthOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
+	Graphics()->GetSpriteScale(SPRITE_PICKUP_ARMOR, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PickupArmorOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
+	m_PickupArmorOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
 
 	for(int i = 0; i < NUM_WEAPONS; ++i)
 	{
-		RenderTools()->GetSpriteScale(g_pData->m_Weapons.m_aId[i].m_pSpriteBody, ScaleX, ScaleY);
+		Graphics()->GetSpriteScale(g_pData->m_Weapons.m_aId[i].m_pSpriteBody, ScaleX, ScaleY);
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		m_aPickupWeaponOffset[i] = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleX, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleY);
+		m_aPickupWeaponOffset[i] = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleX, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleY);
 	}
-	RenderTools()->GetSpriteScale(SPRITE_PICKUP_NINJA, ScaleX, ScaleY);
+	Graphics()->GetSpriteScale(SPRITE_PICKUP_NINJA, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PickupNinjaOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 128.f * ScaleX, 128.f * ScaleY);
+	m_PickupNinjaOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 128.f * ScaleX, 128.f * ScaleY);
 
 	for(int i = 0; i < 4; i++)
 	{
-		RenderTools()->GetSpriteScale(SPRITE_PICKUP_ARMOR_SHOTGUN + i, ScaleX, ScaleY);
+		Graphics()->GetSpriteScale(SPRITE_PICKUP_ARMOR_SHOTGUN + i, ScaleX, ScaleY);
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		m_aPickupWeaponArmorOffset[i] = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
+		m_aPickupWeaponArmorOffset[i] = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
 	}
 
 	for(int &ProjectileOffset : m_aProjectileOffset)
 	{
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		ProjectileOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 32.f);
+		ProjectileOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 32.f);
 	}
 
 	for(int &ParticleSplatOffset : m_aParticleSplatOffset)
 	{
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		ParticleSplatOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 24.f);
+		ParticleSplatOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 24.f);
 	}
 
-	RenderTools()->GetSpriteScale(SPRITE_PART_PULLEY, ScaleX, ScaleY);
+	Graphics()->GetSpriteScale(SPRITE_PART_PULLEY, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PulleyHeadOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
+	m_PulleyHeadOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
 
-	RenderTools()->GetSpriteScale(SPRITE_PART_HECTAGON, ScaleX, ScaleY);
+	Graphics()->GetSpriteScale(SPRITE_PART_HECTAGON, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_FreezeHeadOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
+	m_FreezeHeadOffset = Graphics()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
 
 	IGraphics::CQuadItem Brick(0, 0, 16.0f, 16.0f);
 	m_DoorHeadOffset = Graphics()->QuadContainerAddQuads(m_ItemsQuadContainerIndex, &Brick, 1);
+
+	// +KZ Kaizo Network
+	OnInitKZ();
 
 	Graphics()->QuadContainerUpload(m_ItemsQuadContainerIndex);
 }

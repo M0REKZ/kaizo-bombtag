@@ -1,7 +1,9 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 
-#include <game/generated/protocol.h>
+//modified by +KZ
+
+#include <generated/protocol.h>
 #include <game/mapitems.h>
 #include <game/teamscore.h>
 
@@ -12,6 +14,7 @@
 
 #include "kz_pickup.h"
 #include <game/mapitems_kz.h>
+#include <game/version.h>
 
 static constexpr int gs_PickupPhysSize = 14;
 
@@ -25,7 +28,7 @@ CEntity(pGameWorld,CGameWorld::CUSTOM_ENTTYPE_KZPICKUP,vec2(0,0),gs_PickupPhysSi
 	m_Number = Number;
 	m_Flags = Flags;
 
-	int SpawnDelay = m_Type == POWERUP_NINJA ? 90 : 0;
+	int SpawnDelay = 0;
 
 	m_Id2 = Server()->SnapNewId();
 
@@ -133,7 +136,7 @@ void CKZPickup::Tick()
 
 			case POWERUP_WEAPON:
 
-				if(m_Subtype >= 0 && m_Subtype < KZ_NUM_CUSTOM_WEAPONS && (!pChr->GetWeaponGot(m_Subtype) || pChr->GetWeaponAmmo(m_Subtype) != -1))
+				if(m_Subtype >= 0 && m_Subtype < KZ_CUSTOM_WEAPONS_END && (!pChr->GetWeaponGot(m_Subtype) || (pChr->GetWeaponAmmo(m_Subtype) != -1 && pChr->GetWeaponAmmo(m_Subtype) != 10)))
 				{
 
 						if((m_Subtype == WEAPON_GUN || m_Subtype == WEAPON_HAMMER) && !pChr->GetWeaponGot(m_Subtype))
@@ -141,13 +144,21 @@ void CKZPickup::Tick()
 							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
 							pChr->GiveWeapon(m_Subtype, false);
 						}
+						else if(m_Subtype == WEAPON_GRENADE && (!pChr->GetWeaponGot(m_Subtype) || (pChr->GetWeaponAmmo(m_Subtype) != -1 && pChr->GetWeaponAmmo(m_Subtype) != 10)))
+						{
+							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, pChr->TeamMask());
+							pChr->GiveWeapon(m_Subtype, false);
+							pChr->SetWeaponAmmo(m_Subtype, 10); //+KZ like vanilla
+						}
 						else if(m_Subtype == KZ_CUSTOM_WEAPON_PORTAL_GUN && !pChr->GetWeaponGot(m_Subtype))
 						{
 							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, pChr->TeamMask());
-							if(m_Ammo == -2)
-								pChr->GiveWeapon(m_Subtype, false);
-							else
-								pChr->GiveWeapon(m_Subtype, false);
+							pChr->GiveWeapon(m_Subtype, false);
+						}
+						else if(m_Subtype == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM && !pChr->GetWeaponGot(m_Subtype))
+						{
+							GameServer()->CreateSound(m_Pos, SOUND_PICKUP_SHOTGUN, pChr->TeamMask());
+							pChr->GiveWeapon(m_Subtype, false);
 						}
 
 						if(pChr->GetPlayer())
@@ -178,7 +189,7 @@ void CKZPickup::Tick()
 				break;
 			};
 
-			if(!m_Dropped && Picked && (m_Type != POWERUP_WEAPON))
+			if(!m_Dropped && Picked && (m_Type == POWERUP_WEAPON ? m_Subtype < KZ_CUSTOM_WEAPONS_START : true))
 			{
 				char aBuf[256];
 				str_format(aBuf, sizeof(aBuf), "pickup player='%d:%s' item=%d",
@@ -291,15 +302,40 @@ void CKZPickup::Snap(int SnappingClient)
 	}
 	else
 	{
-		if(m_Subtype == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+		if(Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_PORTAL_ATTRACTOR)
 		{
-			vec2 postemp;
-					
-			postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
-			postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
+			if(m_Subtype == KZ_CUSTOM_WEAPON_PORTAL_GUN)
+			{
+				vec2 postemp;
+						
+				postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
+				postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
 
-			GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1,Server()->Tick() % 3);
-			GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags);
+				GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1,Server()->Tick() % 3);
+				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags | PICKUPFLAG_NO_PREDICT);
+			}
+			else if(m_Subtype == KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM)
+			{
+				vec2 postemp;
+						
+				postemp.x = m_Pos.x + 32*sin((float)Server()->Tick() / 25.0);
+				postemp.y = m_Pos.y + 32*cos((float)Server()->Tick() / 25.0);
+
+				GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Sixup, SnappingClient),m_Id2,postemp,postemp,Server()->Tick(),-1, LASERTYPE_DRAGGER, -1, -1, LASERFLAG_NO_PREDICT);
+				GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, Sixup, SnappingClient), GetId(), m_Pos, m_Type, WEAPON_LASER, m_Number, m_Flags | PICKUPFLAG_NO_PREDICT);
+			}
+		}
+		else
+		{
+			CNetObj_KaizoNetworkPickup *pPickup = Server()->SnapNewItem<CNetObj_KaizoNetworkPickup>(GetId());
+
+			if(!pPickup)
+				return;
+			
+			pPickup->m_X = (int)m_Pos.x;
+			pPickup->m_Y = (int)m_Pos.y;
+			pPickup->m_Type = m_Subtype;
+			pPickup->m_Switch = m_Number;
 		}
 	}
 }

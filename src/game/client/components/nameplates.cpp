@@ -1,10 +1,11 @@
+#include "nameplates.h"
+
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
+#include <engine/shared/protocol7.h>
 #include <engine/textrender.h>
 
-#include <engine/shared/protocol7.h>
-
-#include <game/generated/client_data.h>
+#include <generated/client_data.h>
 
 #include <game/client/animstate.h>
 #include <game/client/gameclient.h>
@@ -12,8 +13,6 @@
 
 #include <memory>
 #include <vector>
-
-#include "nameplates.h"
 
 static constexpr float DEFAULT_PADDING = 5.0f;
 
@@ -76,7 +75,7 @@ public:
 			// Create text at standard zoom
 			float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 			This.Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
-			This.RenderTools()->MapScreenToInterface(This.m_Camera.m_Center.x, This.m_Camera.m_Center.y);
+			This.Graphics()->MapScreenToInterface(This.m_Camera.m_Center.x, This.m_Camera.m_Center.y);
 			This.TextRender()->DeleteTextContainer(m_TextContainerIndex);
 			UpdateText(This, Data);
 			This.Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
@@ -156,14 +155,17 @@ public:
 		This.Graphics()->QuadsSetRotation(m_Rotation);
 		This.Graphics()->QuadsBegin();
 		This.Graphics()->SetColor(m_Color);
-		This.RenderTools()->SelectSprite(m_Sprite, m_SpriteFlags);
-		This.RenderTools()->DrawSprite(Pos.x, Pos.y, Size().x, Size().y);
+		This.Graphics()->SelectSprite(m_Sprite, m_SpriteFlags);
+		This.Graphics()->DrawSprite(Pos.x, Pos.y, Size().x, Size().y);
 		This.Graphics()->QuadsEnd();
 		This.Graphics()->QuadsSetRotation(0.0f);
 	}
 };
 
 // Part Definitions
+
+//+KZ
+#include "nameplates_classes_kz.h"
 
 class CNamePlatePartNewLine : public CNamePlatePart
 {
@@ -260,7 +262,7 @@ protected:
 		else
 			str_format(m_aText, sizeof(m_aText), "%d:", m_ClientId);
 		CTextCursor Cursor;
-		This.TextRender()->SetCursor(&Cursor, 0.0f, 0.0f, m_FontSize, TEXTFLAG_RENDER);
+		Cursor.m_FontSize = m_FontSize;
 		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, m_aText);
 	}
 
@@ -291,7 +293,7 @@ protected:
 		m_FontSize = Data.m_FontSize;
 		CTextCursor Cursor;
 		This.TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		This.TextRender()->SetCursor(&Cursor, 0.0f, 0.0f, m_FontSize, TEXTFLAG_RENDER);
+		Cursor.m_FontSize = m_FontSize;
 		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, FontIcons::FONT_ICON_HEART);
 		This.TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 	}
@@ -324,7 +326,7 @@ protected:
 		m_FontSize = Data.m_FontSize;
 		str_copy(m_aText, Data.m_pName, sizeof(m_aText));
 		CTextCursor Cursor;
-		This.TextRender()->SetCursor(&Cursor, 0.0f, 0.0f, m_FontSize, TEXTFLAG_RENDER);
+		Cursor.m_FontSize = m_FontSize;
 		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, m_aText);
 	}
 
@@ -353,7 +355,7 @@ protected:
 		m_FontSize = Data.m_FontSizeClan;
 		str_copy(m_aText, Data.m_pClan, sizeof(m_aText));
 		CTextCursor Cursor;
-		This.TextRender()->SetCursor(&Cursor, 0.0f, 0.0f, m_FontSize, TEXTFLAG_RENDER);
+		Cursor.m_FontSize = m_FontSize;
 		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, m_aText);
 	}
 
@@ -433,7 +435,7 @@ protected:
 		m_StrongWeakId = Data.m_HookStrongWeakId;
 		str_format(m_aText, sizeof(m_aText), "%d", m_StrongWeakId);
 		CTextCursor Cursor;
-		This.TextRender()->SetCursor(&Cursor, 0.0f, 0.0f, m_FontSize, TEXTFLAG_RENDER);
+		Cursor.m_FontSize = m_FontSize;
 		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, m_aText);
 	}
 
@@ -497,6 +499,10 @@ private:
 
 		AddPart<CNamePlatePartHookStrongWeak>(This);
 		AddPart<CNamePlatePartHookStrongWeakId>(This);
+
+		//+KZ
+		AddPart<CNamePlatePartKaizoPlayerPing>(This);
+		AddPart<CNamePlatePartKaizoCustomClient>(This);
 	}
 
 public:
@@ -799,12 +805,13 @@ void CNamePlates::RenderNamePlatePreview(vec2 Position, int Dummy)
 	CNamePlate NamePlate(*GameClient(), Data);
 	Position.y += NamePlate.Size().y / 2.0f;
 	Position.y += (float)g_Config.m_ClNamePlatesOffset / 2.0f;
-	vec2 Dir = Ui()->MousePos() - Position;
-	Dir /= TeeRenderInfo.m_Size;
-	const float Length = length(Dir);
-	if(Length > 1.0f)
-		Dir /= Length;
-	RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeRenderInfo, 0, Dir, Position);
+	// tee looking towards cursor, and it is happy when you touch it
+	const vec2 DeltaPosition = Ui()->MousePos() - Position;
+	const float Distance = length(DeltaPosition);
+	const float InteractionDistance = 20.0f;
+	const vec2 TeeDirection = Distance < InteractionDistance ? normalize(vec2(DeltaPosition.x, maximum(DeltaPosition.y, 0.5f))) : normalize(DeltaPosition);
+	const int TeeEmote = Distance < InteractionDistance ? EMOTE_HAPPY : (Dummy ? g_Config.m_ClDummyDefaultEyes : g_Config.m_ClPlayerDefaultEyes);
+	RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeRenderInfo, TeeEmote, TeeDirection, Position);
 	Position.y -= (float)g_Config.m_ClNamePlatesOffset;
 	NamePlate.Render(*GameClient(), Position - vec2(0.0f, (float)g_Config.m_ClNamePlatesOffset));
 	NamePlate.Reset(*GameClient());

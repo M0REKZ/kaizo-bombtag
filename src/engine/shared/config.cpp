@@ -365,6 +365,14 @@ void CConfigManager::SetReadOnly(const char *pScriptName, bool ReadOnly)
 	dbg_assert(false, "Invalid command for SetReadOnly: '%s'", pScriptName);
 }
 
+void CConfigManager::SetGameSettingsReadOnly(bool ReadOnly)
+{
+	for(SConfigVariable *pVariable : m_vpGameVariables)
+	{
+		pVariable->m_ReadOnly = ReadOnly;
+	}
+}
+
 bool CConfigManager::Save()
 {
 	if(!m_pStorage || !g_Config.m_ClSaveSettings)
@@ -384,6 +392,9 @@ bool CConfigManager::Save()
 	char aLineBuf[2048];
 	for(const SConfigVariable *pVariable : m_vpAllVariables)
 	{
+		if(pVariable->m_pScriptName && str_find(pVariable->m_pScriptName, "kaizo")) // +KZ dont save kaizo configs
+			continue;
+
 		if((pVariable->m_Flags & CFGFLAG_SAVE) != 0 && !pVariable->IsDefault())
 		{
 			pVariable->Serialize(aLineBuf, sizeof(aLineBuf));
@@ -398,6 +409,9 @@ bool CConfigManager::Save()
 
 	for(const char *pCommand : m_vpUnknownCommands)
 	{
+		if(pCommand && str_find(pCommand, "kaizo")) //+KZ dont save kaizo configs
+			continue;
+		
 		WriteLine(pCommand);
 	}
 

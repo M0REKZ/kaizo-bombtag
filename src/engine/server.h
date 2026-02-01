@@ -3,21 +3,23 @@
 #ifndef ENGINE_SERVER_H
 #define ENGINE_SERVER_H
 
-#include <array>
-#include <optional>
-#include <type_traits>
+#include "kernel.h"
+#include "message.h"
 
 #include <base/hash.h>
 #include <base/math.h>
 #include <base/system.h>
 
-#include "kernel.h"
-#include "message.h"
 #include <engine/shared/jsonwriter.h>
 #include <engine/shared/protocol.h>
-#include <game/generated/protocol.h>
-#include <game/generated/protocol7.h>
-#include <game/generated/protocolglue.h>
+
+#include <generated/protocol.h>
+#include <generated/protocol7.h>
+#include <generated/protocolglue.h>
+
+#include <array>
+#include <optional>
+#include <type_traits>
 
 struct CAntibotRoundData;
 
@@ -63,7 +65,7 @@ public:
 	virtual void SetClientDDNetVersion(int ClientId, int DDNetVersion) = 0;
 	virtual const NETADDR *ClientAddr(int ClientId) const = 0;
 	virtual const std::array<char, NETADDR_MAXSTRSIZE> &ClientAddrStringImpl(int ClientId, bool IncludePort) const = 0;
-	inline const char *ClientAddrString(int ClientId, bool IncludePort) const { return ClientAddrStringImpl(ClientId, IncludePort).data(); }
+	const char *ClientAddrString(int ClientId, bool IncludePort) const { return ClientAddrStringImpl(ClientId, IncludePort).data(); }
 
 	/**
 	 * Returns the version of the client with the given client ID.
@@ -79,7 +81,7 @@ public:
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientId) = 0;
 
 	template<class T, typename std::enable_if<!protocol7::is_sixup<T>::value, int>::type = 0>
-	inline int SendPackMsg(const T *pMsg, int Flags, int ClientId)
+	int SendPackMsg(const T *pMsg, int Flags, int ClientId)
 	{
 		int Result = 0;
 		if(ClientId == -1)
@@ -96,7 +98,7 @@ public:
 	}
 
 	template<class T, typename std::enable_if<protocol7::is_sixup<T>::value, int>::type = 1>
-	inline int SendPackMsg(const T *pMsg, int Flags, int ClientId)
+	int SendPackMsg(const T *pMsg, int Flags, int ClientId)
 	{
 		int Result = 0;
 		if(ClientId == -1)
@@ -251,6 +253,8 @@ public:
 	};
 	virtual void SetRconCid(int ClientId) = 0;
 	virtual int GetAuthedState(int ClientId) const = 0;
+	virtual bool IsRconAuthed(int ClientId) const = 0;
+	virtual bool IsRconAuthedAdmin(int ClientId) const = 0;
 	virtual const char *GetAuthName(int ClientId) const = 0;
 	virtual bool HasAuthHidden(int ClientId) const = 0;
 	virtual void Kick(int ClientId, const char *pReason) = 0;
@@ -297,6 +301,8 @@ public:
 	virtual bool IsSixup(int ClientId) const = 0;
 
 	//+KZ
+	virtual int GetKaizoNetworkVersion(int ClientId) { return 0; } //+KZ: identify kaizo network clients
+
 	virtual int GetClientInfclassVersion(int ClientId) { return 0; } //identify infclass clients
 	virtual bool IsTaterClient(int ClientId) { return false; } // identify tater clients
 	virtual bool IsQxdClient(int ClientId) { return false; } // identify qxd clients
@@ -304,6 +310,11 @@ public:
 	virtual bool IsStAClient(int ClientId) { return false; } // identify StA clients
 	virtual bool IsAllTheHaxxClient(int ClientId) { return false; } // identify allthehaxx clients
 	virtual bool IsPulseClient(int ClientId) { return false; } // identify pulse clients
+	virtual bool IsCactusClient(int ClientId) { return false; } // identify Cactus clients
+	virtual bool IsAiodobClient(int ClientId) { return false; } // identify Aiodob clients
+	virtual bool IsFexClient(int ClientId) { return false; } // identify FeX clients
+	virtual bool IsRushieClient(int ClientId) { return false; } // identify Rushie clients
+	virtual bool IsSClientClient(int ClientId) { return false; } // identify SClient clients
 
 };
 
@@ -375,6 +386,9 @@ public:
 	virtual const char *Version() const = 0;
 	virtual const char *NetVersion() const = 0;
 
+	virtual CNetObjHandler *GetNetObjHandler() = 0;
+	virtual protocol7::CNetObjHandler *GetNetObjHandler7() = 0;
+
 	// DDRace
 
 	virtual void OnPreTickTeehistorian() = 0;
@@ -393,16 +407,16 @@ public:
 	virtual void FillAntibot(CAntibotRoundData *pData) = 0;
 
 	/**
-	 * Used to report custom player info to master servers.
+	 * Used to report custom player info to the master server.
 	 *
-	 * @param pJsonWriter A pointer to a CJsonStringWriter which the custom data will be added to.
-	 * @param i The client id.
+	 * @param pJsonWriter A pointer to a @link CJsonWriter @endlink to which the custom data will written.
+	 * @param ClientId The client ID.
 	 */
 	virtual void OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int Id) = 0;
 
 	//+KZ
+	virtual void SetPlayerLastAckedTick(int ClientId, int Tick) = 0;
 	virtual void HandleKZBot(int CID, CNetObj_PlayerInput &Input) {}; //+KZ
-	virtual void SetPlayerLastAckedSnapshot(int ClientId, int Tick){}; //+KZ rollback
 };
 
 extern IGameServer *CreateGameServer();

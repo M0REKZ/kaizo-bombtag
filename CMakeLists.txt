@@ -321,7 +321,7 @@ if(NOT MSVC AND NOT HAIKU)
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-psabi) # parameter passing for argument of type ‘__gnu_cxx::__normal_iterator<CCommandProcessorFragment_Vulkan::SMemoryBlock<1>*, std::vector<CCommandProcessorFragment_Vulkan::SMemoryBlock<1>, std::allocator<CCommandProcessorFragment_Vulkan::SMemoryBlock<1> > > >’ changed in GCC 7.1
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-unused-parameter)
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-missing-field-initializers)
-  if(CMAKE_BUILD_TYPE STREQUAL DEBUG)
+  if(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wformat=2) # Warn about format strings.
   else()
     add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-format) # Don't warn about format strings in release mode since our `str_format` optimization is incompatible with it.
@@ -865,6 +865,7 @@ set_src(RUST_BRIDGE_SHARED GLOB_RECURSE src/rust-bridge
 
 set_glob(RUST_MASTERSRV GLOB "rs;toml" src/mastersrv/src
   addr.rs
+  community_token.rs
   config.rs
   locations.rs
   main.rs
@@ -1452,6 +1453,17 @@ set(EXPECTED_DATA
   gui_icons.png
   gui_logo.png
   hud.png
+  kz/crown.png
+  kz/gui_logo.png
+  kz/kaizoicon.png
+  kz/Turret_1.png
+  kz/Turret_2.png
+  kz/license.txt
+  kz/mine.png
+  kz/attractor.png
+  kz/portal.png
+  kz/portal_orange.png
+  kz/shield.png
   languages/arabic.txt
   languages/azerbaijani.txt
   languages/belarusian.txt
@@ -1889,7 +1901,9 @@ function(generate_source output_file script_parameter)
       datasrc/compile.py
       datasrc/content.py
       datasrc/datatypes.py
+      datasrc/images_kz.py
       datasrc/network.py
+      datasrc/network_kz.py
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 endfunction()
@@ -1916,7 +1930,9 @@ function(generate_maps output_file script_parameter)
       datasrc/compile.py
       datasrc/content.py
       datasrc/datatypes.py
+      datasrc/images_kz.py
       datasrc/network.py
+      datasrc/network_kz.py
       datasrc/seven/compile.py
       datasrc/seven/content.py
       datasrc/seven/datatypes.py
@@ -1925,7 +1941,7 @@ function(generate_maps output_file script_parameter)
   )
 endfunction()
 
-file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/game/generated/")
+file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/generated/")
 execute_process(COMMAND git rev-parse --git-dir
   ERROR_QUIET
   WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
@@ -1939,33 +1955,33 @@ if(NOT PROJECT_GIT_DIR_ERROR)
     ${PROJECT_GIT_DIR}/logs/HEAD
   )
 endif()
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/game/generated/git_revision.cpp
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/generated/git_revision.cpp
   COMMAND ${Python3_EXECUTABLE}
     scripts/git_revision.py
-    > ${PROJECT_BINARY_DIR}/src/game/generated/git_revision.cpp
+    > ${PROJECT_BINARY_DIR}/src/generated/git_revision.cpp
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   DEPENDS
     ${GIT_REVISION_EXTRA_DEPS}
     scripts/git_revision.py
 )
-generate_source("src/game/generated/client_data.cpp" "client_content_source")
-generate_source("src/game/generated/client_data.h" "client_content_header")
-generate_source("src/game/generated/data_types.h" "content_types_header")
-generate_source("src/game/generated/protocol.cpp" "network_source")
-generate_source("src/game/generated/protocol.h" "network_header")
-generate_source("src/game/generated/server_data.cpp" "server_content_source")
-generate_source("src/game/generated/server_data.h" "server_content_header")
+generate_source("src/generated/client_data.cpp" "client_content_source")
+generate_source("src/generated/client_data.h" "client_content_header")
+generate_source("src/generated/data_types.h" "content_types_header")
+generate_source("src/generated/protocol.cpp" "network_source")
+generate_source("src/generated/protocol.h" "network_header")
+generate_source("src/generated/server_data.cpp" "server_content_source")
+generate_source("src/generated/server_data.h" "server_content_header")
 
-generate_source7("src/game/generated/protocol7.cpp" "network_source")
-generate_source7("src/game/generated/protocol7.h" "network_header")
-generate_source7("src/game/generated/client_data7.cpp" "client_content_source")
-generate_source7("src/game/generated/client_data7.h" "client_content_header")
+generate_source7("src/generated/protocol7.cpp" "network_source")
+generate_source7("src/generated/protocol7.h" "network_header")
+generate_source7("src/generated/client_data7.cpp" "client_content_source")
+generate_source7("src/generated/client_data7.h" "client_content_header")
 
-generate_maps("src/game/generated/protocolglue.h" "map_header")
-generate_maps("src/game/generated/protocolglue.cpp" "map_source")
+generate_maps("src/generated/protocolglue.h" "map_header")
+generate_maps("src/generated/protocolglue.cpp" "map_source")
 
-add_custom_command(OUTPUT "src/game/generated/wordlist.h"
-  COMMAND ${Python3_EXECUTABLE} scripts/wordlist.py > ${PROJECT_BINARY_DIR}/src/game/generated/wordlist.h
+add_custom_command(OUTPUT "src/generated/wordlist.h"
+  COMMAND ${Python3_EXECUTABLE} scripts/wordlist.py > ${PROJECT_BINARY_DIR}/src/generated/wordlist.h
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   DEPENDS
     scripts/wordlist.py
@@ -1984,18 +2000,24 @@ set_src(BASE GLOB_RECURSE src/base
   crashdump.cpp
   detect.h
   dynamic.h
+  fs.cpp
+  fs.h
   hash.cpp
   hash.h
   hash_bundled.cpp
   hash_ctxt.h
   hash_libtomcrypt.cpp
   hash_openssl.cpp
+  helper_kz.cpp
+  helper_kz.h
   lock.h
   log.cpp
   log.h
   logger.h
   math.h
   rust.h
+  str.cpp
+  str.h
   system.cpp
   system.h
   tl/threading.h
@@ -2020,6 +2042,7 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   favorites.h
   friends.h
   ghost.h
+  graphics.cpp
   graphics.h
   http.h
   image.h
@@ -2047,6 +2070,7 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   bomb_config_variables.h
   compression.cpp
   compression.h
+  config_kz.cpp
   config.cpp
   config.h
   config_variables.h
@@ -2136,6 +2160,12 @@ set_src(ENGINE_GFX GLOB src/engine/gfx
   image_manipulation.cpp
   image_manipulation.h
 )
+
+set_src(GAME_KZ GLOB_RECURSE src/game/kz
+  envelopeaccess.cpp
+  envelopeaccess.h
+)
+
 set_src(GAME_SHARED GLOB src/game
   alloc.h
   collision.cpp
@@ -2168,17 +2198,20 @@ set_src(GAME_SHARED GLOB src/game
   version.h
   voting.h
 )
+
+list(APPEND GAME_SHARED ${GAME_KZ})
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "src/game/version.h")
 
 # A bit hacky, but these are needed to register all the UUIDs, even for stuff
 # that doesn't link game.
 set(ENGINE_UUID_SHARED
-  src/game/generated/protocolglue.cpp
-  src/game/generated/protocolglue.h
-  src/game/generated/protocol7.cpp
-  src/game/generated/protocol7.h
-  src/game/generated/protocol.cpp
-  src/game/generated/protocol.h
+  src/generated/protocolglue.cpp
+  src/generated/protocolglue.h
+  src/generated/protocol7.cpp
+  src/generated/protocol7.h
+  src/generated/protocol.cpp
+  src/generated/protocol.h
   src/game/mapitems_ex.cpp
   src/game/mapitems_ex.h
   src/game/mapitems_ex_types.h
@@ -2190,11 +2223,11 @@ foreach(s ${GAME_SHARED})
 endforeach()
 list(REMOVE_ITEM GAME_SHARED ${ENGINE_UUID_SHARED})
 set(GAME_GENERATED_SHARED
-  src/game/generated/data_types.h
-  src/game/generated/git_revision.cpp
-  src/game/generated/protocol.h
-  src/game/generated/protocol7.h
-  src/game/generated/protocolglue.h
+  src/generated/data_types.h
+  src/generated/git_revision.cpp
+  src/generated/protocol.h
+  src/generated/protocol7.h
+  src/generated/protocolglue.h
 )
 set(DEPS ${DEP_JSON} ${DEP_MD5} ${ZLIB_DEP})
 
@@ -2274,6 +2307,7 @@ if(CLIENT)
     blocklist_driver.cpp
     blocklist_driver.h
     checksum.h
+    client_kz.cpp
     client.cpp
     client.h
     demoedit.cpp
@@ -2290,6 +2324,7 @@ if(CLIENT)
     graphics_defines.h
     graphics_threaded.cpp
     graphics_threaded.h
+    graphics_threaded_sprites.cpp
     input.cpp
     input.h
     keynames.cpp
@@ -2329,12 +2364,15 @@ if(CLIENT)
     components/broadcast.h
     components/camera.cpp
     components/camera.h
+    components/censor.cpp
+    components/censor.h
     components/chat.cpp
     components/chat.h
     components/community_icons.cpp
     components/community_icons.h
     components/console.cpp
     components/console.h
+    components/controls_kz.cpp
     components/controls.cpp
     components/controls.h
     components/countryflags.cpp
@@ -2343,6 +2381,7 @@ if(CLIENT)
     components/damageind.h
     components/debughud.cpp
     components/debughud.h
+    components/effects_kz.cpp
     components/effects.cpp
     components/effects.h
     components/emoticon.cpp
@@ -2357,8 +2396,15 @@ if(CLIENT)
     components/hud.h
     components/infomessages.cpp
     components/infomessages.h
+    components/items_kz.cpp
     components/items.cpp
     components/items.h
+    components/kz/custom_communities.cpp
+    components/kz/custom_communities.h
+    components/kz/rechargebars.cpp
+    components/kz/rechargebars.h
+    components/key_binder.cpp
+    components/key_binder.h
     components/local_server.cpp
     components/local_server.h
     components/mapimages.cpp
@@ -2369,28 +2415,34 @@ if(CLIENT)
     components/mapsounds.h
     components/menu_background.cpp
     components/menu_background.h
+    components/menus_kz.cpp
     components/menus.cpp
     components/menus.h
     components/menus_browser.cpp
     components/menus_demo.cpp
     components/menus_ingame.cpp
+    components/menus_ingame_touch_controls.cpp
+    components/menus_ingame_touch_controls.h
     components/menus_settings.cpp
     components/menus_settings7.cpp
     components/menus_settings_assets.cpp
+    components/menus_settings_controls.cpp
+    components/menus_settings_controls.h
+    components/menus_start_kz.cpp
     components/menus_start.cpp
     components/menus_start.h
     components/motd.cpp
     components/motd.h
+    components/nameplates_classes_kz.h
     components/nameplates.cpp
     components/nameplates.h
     components/particles.cpp
     components/particles.h
+    components/players_kz.cpp
     components/players.cpp
     components/players.h
     components/race_demo.cpp
     components/race_demo.h
-    components/render_layer.cpp
-    components/render_layer.h
     components/scoreboard.cpp
     components/scoreboard.h
     components/skins.cpp
@@ -2409,6 +2461,7 @@ if(CLIENT)
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
+    gameclient_kz.cpp
     gameclient.cpp
     gameclient.h
     laser_data.cpp
@@ -2417,6 +2470,7 @@ if(CLIENT)
     lineinput.h
     pickup_data.cpp
     pickup_data.h
+    prediction/entities/character_kz.cpp
     prediction/entities/character.cpp
     prediction/entities/character.h
     prediction/entities/door.cpp
@@ -2431,8 +2485,10 @@ if(CLIENT)
     prediction/entities/plasma.h
     prediction/entities/projectile.cpp
     prediction/entities/projectile.h
+    prediction/entity_kz.cpp
     prediction/entity.cpp
     prediction/entity.h
+    prediction/gameworld_kz.cpp
     prediction/gameworld.cpp
     prediction/gameworld.h
     projectile_data.cpp
@@ -2441,7 +2497,6 @@ if(CLIENT)
     race.h
     render.cpp
     render.h
-    render_map.cpp
     sixup_translate_connless.cpp
     sixup_translate_game.cpp
     sixup_translate_snapshot.cpp
@@ -2475,6 +2530,8 @@ if(CLIENT)
     editor_server_settings.h
     editor_trackers.cpp
     editor_trackers.h
+    editor_kz.cpp
+    editor_ui.cpp
     editor_ui.h
     enums.h
     explanations.cpp
@@ -2518,6 +2575,7 @@ if(CLIENT)
     mapitems/layer_tiles.h
     mapitems/layer_tune.cpp
     mapitems/layer_tune.h
+    mapitems/map_kz.cpp
     mapitems/map.cpp
     mapitems/map.h
     mapitems/map_io.cpp
@@ -2533,18 +2591,36 @@ if(CLIENT)
     quick_action.h
     quick_actions.cpp
     quick_actions.h
+    references.cpp
+    references.h
     smooth_value.cpp
     smooth_value.h
     tileart.cpp
   )
-  set(GAME_GENERATED_CLIENT
-    src/game/generated/checksum.cpp
-    src/game/generated/client_data.cpp
-    src/game/generated/client_data.h
-    src/game/generated/client_data7.cpp
-    src/game/generated/client_data7.h
+  set_src(GAME_MAP GLOB_RECURSE src/game/map
+    envelope_extrema.cpp
+    envelope_extrema.h
+    envelope_manager.h
+    map_renderer_kz.cpp
+    map_renderer.cpp
+    map_renderer.h
+    render_component.cpp
+    render_component.h
+    render_interfaces.h
+    render_layer_kz.cpp
+    render_layer.cpp
+    render_layer.h
+    render_map.cpp
+    render_map.h
   )
-  set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_GENERATED_CLIENT})
+  set(GAME_GENERATED_CLIENT
+    src/generated/checksum.cpp
+    src/generated/client_data.cpp
+    src/generated/client_data.h
+    src/generated/client_data7.cpp
+    src/generated/client_data7.h
+  )
+  set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_MAP} ${GAME_GENERATED_CLIENT})
 
   set(DEPS_CLIENT ${DEPS} ${GLEW_DEP} ${WAVPACK_DEP})
 
@@ -2706,6 +2782,7 @@ if(SERVER)
     antibot.h
     authmanager.cpp
     authmanager.h
+    databases/connection_kz.cpp
     databases/connection.cpp
     databases/connection.h
     databases/connection_pool.cpp
@@ -2717,6 +2794,7 @@ if(SERVER)
     name_ban.h
     register.cpp
     register.h
+    server_kz.cpp
     server.cpp
     server.h
     server_logger.cpp
@@ -2732,8 +2810,11 @@ if(SERVER)
   list(REMOVE_ITEM ENGINE_SERVER_WITHOUT_MAIN "${PROJECT_SOURCE_DIR}/src/engine/server/main.cpp")
 
   set_src(GAME_SERVER GLOB_RECURSE src/game/server
+    classes_kz.cpp
+    classes_kz.h
     ddracechat.cpp
     ddracecommands.cpp
+    entities/character_kz.cpp
     entities/character.cpp
     entities/character.h
     entities/door.cpp
@@ -2803,13 +2884,16 @@ if(SERVER)
     kz/rollback.cpp
     kz/rollback.h
     mutes.cpp
+    player_kz.cpp
     player.cpp
     player.h
     save.cpp
     save.h
     save_kz.cpp
+    score_kz.cpp
     score.cpp
     score.h
+    scoreworker_kz.cpp
     scoreworker.cpp
     scoreworker.h
     teams.cpp
@@ -2820,9 +2904,9 @@ if(SERVER)
     teeinfo.h
   )
   set(GAME_GENERATED_SERVER
-    "src/game/generated/server_data.cpp"
-    "src/game/generated/server_data.h"
-    "src/game/generated/wordlist.h"
+    "src/generated/server_data.cpp"
+    "src/generated/server_data.h"
+    "src/generated/wordlist.h"
   )
   set(SERVER_SRC ${ENGINE_SERVER_WITHOUT_MAIN} ${GAME_SERVER} ${GAME_GENERATED_SERVER})
   if(TARGET_OS STREQUAL "windows")
@@ -3007,12 +3091,12 @@ configure_file(cmake/checksummed_extra.txt checksummed_extra.txt)
 string(REPLACE ";" "\n" CHECKSUM_SRC_FILE "${CHECKSUM_SRC}")
 file(WRITE ${PROJECT_BINARY_DIR}/checksummed_files.txt ${CHECKSUM_SRC_FILE})
 
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/game/generated/checksum.cpp
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/generated/checksum.cpp
   COMMAND ${Python3_EXECUTABLE}
     scripts/checksum.py
     ${PROJECT_BINARY_DIR}/checksummed_files.txt
     ${PROJECT_BINARY_DIR}/checksummed_extra.txt
-    > ${PROJECT_BINARY_DIR}/src/game/generated/checksum.cpp
+    > ${PROJECT_BINARY_DIR}/src/generated/checksum.cpp
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   DEPENDS
     ${CHECKSUM_SRC}
@@ -3048,6 +3132,7 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     jsonwriter.cpp
     linereader.cpp
     mapbugs.cpp
+    mapitems.cpp
     math.cpp
     memory.cpp
     name_ban.cpp
@@ -3575,7 +3660,7 @@ foreach(target ${TARGETS})
     target_compile_options(${target} PRIVATE /utf-8) # Use UTF-8 for source files.
     # Enable Edit & Continue (Hot Reload) support
     if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.25)
-      set_property(TARGET ${target} PROPERTY MSVC_DEBUG_INFORMATION_FORMAT $<$<CONFIG:Debug>:EditAndContinue>)
+      set_property(TARGET ${target} PROPERTY MSVC_DEBUG_INFORMATION_FORMAT $<IF:$<CONFIG:Debug>,EditAndContinue,Embedded>)
       target_link_options(${target} PRIVATE $<$<CONFIG:Debug>:/INCREMENTAL>)
     endif()
   endif()

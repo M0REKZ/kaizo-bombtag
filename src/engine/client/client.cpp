@@ -1,6 +1,12 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 
+#include "client.h"
+
+#include "demoedit.h"
+#include "friends.h"
+#include "serverbrowser.h"
+
 #include <base/hash.h>
 #include <base/hash_ctxt.h>
 #include <base/log.h>
@@ -8,13 +14,12 @@
 #include <base/math.h>
 #include <base/system.h>
 
-#include <engine/external/json-parser/json.h>
-
 #include <engine/config.h>
 #include <engine/console.h>
 #include <engine/discord.h>
 #include <engine/editor.h>
 #include <engine/engine.h>
+#include <engine/external/json-parser/json.h>
 #include <engine/favorites.h>
 #include <engine/graphics.h>
 #include <engine/input.h>
@@ -22,11 +27,6 @@
 #include <engine/map.h>
 #include <engine/notifications.h>
 #include <engine/serverbrowser.h>
-#include <engine/sound.h>
-#include <engine/steam.h>
-#include <engine/storage.h>
-#include <engine/textrender.h>
-
 #include <engine/shared/assertion_logger.h>
 #include <engine/shared/compression.h>
 #include <engine/shared/config.h>
@@ -40,23 +40,21 @@
 #include <engine/shared/protocol.h>
 #include <engine/shared/protocol7.h>
 #include <engine/shared/protocol_ex.h>
+#include <engine/shared/protocolglue.h>
 #include <engine/shared/rust_version.h>
 #include <engine/shared/snapshot.h>
 #include <engine/shared/uuid_manager.h>
+#include <engine/sound.h>
+#include <engine/steam.h>
+#include <engine/storage.h>
+#include <engine/textrender.h>
 
-#include <game/generated/protocol.h>
-#include <game/generated/protocol7.h>
-#include <game/generated/protocolglue.h>
-
-#include <engine/shared/protocolglue.h>
+#include <generated/protocol.h>
+#include <generated/protocol7.h>
+#include <generated/protocolglue.h>
 
 #include <game/localization.h>
 #include <game/version.h>
-
-#include "client.h"
-#include "demoedit.h"
-#include "friends.h"
-#include "serverbrowser.h"
 
 #if defined(CONF_VIDEORECORDER)
 #include "video.h"
@@ -208,6 +206,7 @@ int CClient::SendMsgActive(CMsgPacker *pMsg, int Flags)
 
 void CClient::SendInfo(int Conn)
 {
+	SendKaizoNetworkVersion(Conn);
 	CMsgPacker MsgVer(NETMSG_CLIENTVER, true);
 	MsgVer.AddRaw(&m_ConnectionId, sizeof(m_ConnectionId));
 	MsgVer.AddInt(GameClient()->DDNetVersion());
@@ -488,7 +487,7 @@ void CClient::EnterGame(int Conn)
 	if(State() == IClient::STATE_DEMOPLAYBACK)
 		return;
 
-	m_aCodeRunAfterJoin[Conn] = false;
+	m_aDidPostConnect[Conn] = false;
 
 	// now we will wait for two snapshots
 	// to finish the connection
@@ -497,6 +496,73 @@ void CClient::EnterGame(int Conn)
 
 	ServerInfoRequest(); // fresh one for timeout protection
 	m_CurrentServerNextPingTime = time_get() + time_freq() / 2;
+}
+
+void CClient::OnPostConnect(int Conn, bool Dummy)
+{
+	if(!m_ServerCapabilities.m_ChatTimeoutCode)
+		return;
+
+	char aBuf[128];
+	char aBufMsg[256];
+	if(!g_Config.m_ClRunOnJoin[0] && !g_Config.m_ClDummyDefaultEyes && !g_Config.m_ClPlayerDefaultEyes)
+		str_format(aBufMsg, sizeof(aBufMsg), "/timeout %s", m_aTimeoutCodes[Conn]);
+	else
+		str_format(aBufMsg, sizeof(aBufMsg), "/mc;timeout %s", m_aTimeoutCodes[Conn]);
+
+	if(g_Config.m_ClDummyDefaultEyes || g_Config.m_ClPlayerDefaultEyes)
+	{
+		int Emote = ((g_Config.m_ClDummy) ? !Dummy : Dummy) ? g_Config.m_ClDummyDefaultEyes : g_Config.m_ClPlayerDefaultEyes;
+		char aBufEmote[128];
+		aBufEmote[0] = '\0';
+		switch(Emote)
+		{
+		case EMOTE_NORMAL:
+			break;
+		case EMOTE_PAIN:
+			str_format(aBufEmote, sizeof(aBufEmote), "emote pain %d", g_Config.m_ClEyeDuration);
+			break;
+		case EMOTE_HAPPY:
+			str_format(aBufEmote, sizeof(aBufEmote), "emote happy %d", g_Config.m_ClEyeDuration);
+			break;
+		case EMOTE_SURPRISE:
+			str_format(aBufEmote, sizeof(aBufEmote), "emote surprise %d", g_Config.m_ClEyeDuration);
+			break;
+		case EMOTE_ANGRY:
+			str_format(aBufEmote, sizeof(aBufEmote), "emote angry %d", g_Config.m_ClEyeDuration);
+			break;
+		case EMOTE_BLINK:
+			str_format(aBufEmote, sizeof(aBufEmote), "emote blink %d", g_Config.m_ClEyeDuration);
+			break;
+		}
+		if(aBufEmote[0])
+		{
+			str_format(aBuf, sizeof(aBuf), ";%s", aBufEmote);
+			str_append(aBufMsg, aBuf);
+		}
+	}
+	if(g_Config.m_ClRunOnJoin[0])
+	{
+		str_format(aBuf, sizeof(aBuf), ";%s", g_Config.m_ClRunOnJoin);
+		str_append(aBufMsg, aBuf);
+	}
+	if(IsSixup())
+	{
+		protocol7::CNetMsg_Cl_Say Msg7;
+		Msg7.m_Mode = protocol7::CHAT_ALL;
+		Msg7.m_Target = -1;
+		Msg7.m_pMessage = aBufMsg;
+		SendPackMsg(Conn, &Msg7, MSGFLAG_VITAL, true);
+	}
+	else
+	{
+		CNetMsg_Cl_Say MsgP;
+		MsgP.m_Team = 0;
+		MsgP.m_pMessage = aBufMsg;
+		CMsgPacker PackerTimeout(&MsgP);
+		MsgP.Pack(&PackerTimeout);
+		SendMsg(Conn, &PackerTimeout, MSGFLAG_VITAL);
+	}
 }
 
 static void GenerateTimeoutCode(char *pBuffer, unsigned Size, char *pSeed, const NETADDR *pAddrs, int NumAddrs, bool Dummy)
@@ -669,6 +735,7 @@ void CClient::DisconnectWithReason(const char *pReason)
 	}
 
 	m_aRconAuthed[0] = 0;
+	// Make sure to clear credentials completely from memory
 	mem_zero(m_aRconUsername, sizeof(m_aRconUsername));
 	mem_zero(m_aRconPassword, sizeof(m_aRconPassword));
 	m_MapDetailsPresent = false;
@@ -2149,72 +2216,10 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 						m_aGameTime[Conn].Update(&m_aGametimeMarginGraphs[Conn], (GameTick - 1) * time_freq() / GameTickSpeed(), TimeLeft, CSmoothTime::ADJUSTDIRECTION_DOWN);
 					}
 
-					if(m_aReceivedSnapshots[Conn] > GameTickSpeed() && !m_aCodeRunAfterJoin[Conn])
+					if(m_aReceivedSnapshots[Conn] > GameTickSpeed() && !m_aDidPostConnect[Conn])
 					{
-						if(m_ServerCapabilities.m_ChatTimeoutCode)
-						{
-							char aBuf[128];
-							char aBufMsg[256];
-							if(!g_Config.m_ClRunOnJoin[0] && !g_Config.m_ClDummyDefaultEyes && !g_Config.m_ClPlayerDefaultEyes)
-								str_format(aBufMsg, sizeof(aBufMsg), "/timeout %s", m_aTimeoutCodes[Conn]);
-							else
-								str_format(aBufMsg, sizeof(aBufMsg), "/mc;timeout %s", m_aTimeoutCodes[Conn]);
-
-							if(g_Config.m_ClDummyDefaultEyes || g_Config.m_ClPlayerDefaultEyes)
-							{
-								int Emote = ((g_Config.m_ClDummy) ? !Dummy : Dummy) ? g_Config.m_ClDummyDefaultEyes : g_Config.m_ClPlayerDefaultEyes;
-								char aBufEmote[128];
-								aBufEmote[0] = '\0';
-								switch(Emote)
-								{
-								case EMOTE_NORMAL:
-									break;
-								case EMOTE_PAIN:
-									str_format(aBufEmote, sizeof(aBufEmote), "emote pain %d", g_Config.m_ClEyeDuration);
-									break;
-								case EMOTE_HAPPY:
-									str_format(aBufEmote, sizeof(aBufEmote), "emote happy %d", g_Config.m_ClEyeDuration);
-									break;
-								case EMOTE_SURPRISE:
-									str_format(aBufEmote, sizeof(aBufEmote), "emote surprise %d", g_Config.m_ClEyeDuration);
-									break;
-								case EMOTE_ANGRY:
-									str_format(aBufEmote, sizeof(aBufEmote), "emote angry %d", g_Config.m_ClEyeDuration);
-									break;
-								case EMOTE_BLINK:
-									str_format(aBufEmote, sizeof(aBufEmote), "emote blink %d", g_Config.m_ClEyeDuration);
-									break;
-								}
-								if(aBufEmote[0])
-								{
-									str_format(aBuf, sizeof(aBuf), ";%s", aBufEmote);
-									str_append(aBufMsg, aBuf);
-								}
-							}
-							if(g_Config.m_ClRunOnJoin[0])
-							{
-								str_format(aBuf, sizeof(aBuf), ";%s", g_Config.m_ClRunOnJoin);
-								str_append(aBufMsg, aBuf);
-							}
-							if(IsSixup())
-							{
-								protocol7::CNetMsg_Cl_Say Msg7;
-								Msg7.m_Mode = protocol7::CHAT_ALL;
-								Msg7.m_Target = -1;
-								Msg7.m_pMessage = aBufMsg;
-								SendPackMsg(Conn, &Msg7, MSGFLAG_VITAL, true);
-							}
-							else
-							{
-								CNetMsg_Cl_Say MsgP;
-								MsgP.m_Team = 0;
-								MsgP.m_pMessage = aBufMsg;
-								CMsgPacker PackerTimeout(&MsgP);
-								MsgP.Pack(&PackerTimeout);
-								SendMsg(Conn, &PackerTimeout, MSGFLAG_VITAL);
-							}
-						}
-						m_aCodeRunAfterJoin[Conn] = true;
+						OnPostConnect(Conn, Dummy);
+						m_aDidPostConnect[Conn] = true;
 					}
 
 					// ack snapshot
@@ -2795,6 +2800,12 @@ void CClient::Update()
 					// send input
 					SendInput();
 				}
+
+				//+KZ from Fast Input commit
+				if(g_Config.m_KaizoFastInput && GameClient()->CheckNewInput())
+				{
+					Repredict = true;
+				}
 			}
 
 			// only do sane predictions
@@ -3063,11 +3074,21 @@ void CClient::Run()
 	m_pGraphics = CreateEngineGraphicsThreaded();
 	Kernel()->RegisterInterface(m_pGraphics); // IEngineGraphics
 	Kernel()->RegisterInterface(static_cast<IGraphics *>(m_pGraphics), false);
-	if(m_pGraphics->Init() != 0)
 	{
-		log_error("client", "couldn't init graphics");
-		ShowMessageBox({.m_pTitle = "Graphics Error", .m_pMessage = "The graphics could not be initialized."});
-		return;
+		CMemoryLogger MemoryLogger;
+		MemoryLogger.SetParent(log_get_scope_logger());
+		bool Success;
+		{
+			CLogScope LogScope(&MemoryLogger);
+			Success = m_pGraphics->Init() == 0;
+		}
+		if(!Success)
+		{
+			log_error("client", "Failed to initialize the graphics (see details above)");
+			std::string Message = std::string("Failed to initialize the graphics. See details below.\n\n") + MemoryLogger.ConcatenatedLines();
+			ShowMessageBox({.m_pTitle = "Graphics Error", .m_pMessage = Message.c_str()});
+			return;
+		}
 	}
 
 	// make sure the first frame just clears everything to prevent undesired colors when waiting for io
@@ -3374,6 +3395,14 @@ void CClient::Run()
 	{
 		char aError[128];
 		str_format(aError, sizeof(aError), Localize("Saving settings to '%s' failed"), CONFIG_FILE);
+		m_vQuittingWarnings.emplace_back(Localize("Error saving settings"), aError);
+	}
+
+	//+KZ
+	if(!m_pConfigManager->SaveKaizo())
+	{
+		char aError[128];
+		str_format(aError, sizeof(aError), Localize("Saving settings to '%s' failed"), KAIZO_CONFIG_FILE);
 		m_vQuittingWarnings.emplace_back(Localize("Error saving settings"), aError);
 	}
 
@@ -4482,10 +4511,11 @@ void CClient::HandleConnectLink(const char *pLink)
 {
 	// Chrome works fine with ddnet:// but not with ddnet:
 	// Check ddnet:// before ddnet: because we don't want the // as part of connect command
-	if(str_startswith(pLink, CONNECTLINK_DOUBLE_SLASH))
-		str_copy(m_aCmdConnect, pLink + sizeof(CONNECTLINK_DOUBLE_SLASH) - 1);
-	else if(str_startswith(pLink, CONNECTLINK_NO_SLASH))
-		str_copy(m_aCmdConnect, pLink + sizeof(CONNECTLINK_NO_SLASH) - 1);
+	const char *pConnectLink = nullptr;
+	if((pConnectLink = str_startswith(pLink, CONNECTLINK_DOUBLE_SLASH)))
+		str_copy(m_aCmdConnect, pConnectLink);
+	else if((pConnectLink = str_startswith(pLink, CONNECTLINK_NO_SLASH)))
+		str_copy(m_aCmdConnect, pConnectLink);
 	else
 		str_copy(m_aCmdConnect, pLink);
 	// Edge appends / to the URL
@@ -4647,10 +4677,6 @@ int main(int argc, const char **argv)
 		PerformFinalCleanup();
 	};
 
-	const bool RandInitFailed = secure_random_init() != 0;
-	if(!RandInitFailed)
-		CleanerFunctions.emplace([]() { secure_random_uninit(); });
-
 	// Register SDL for cleanup before creating the kernel and client,
 	// so SDL is shutdown after kernel and client. Otherwise the client
 	// may crash when shutting down after SDL is already shutdown.
@@ -4763,7 +4789,7 @@ int main(int argc, const char **argv)
 		if(!pStorage)
 		{
 			log_error("client", "Failed to initialize the storage location (see details above)");
-			std::string Message = "Failed to initialize the storage location. See details below.\n\n" + MemoryLogger.ConcatenatedLines();
+			std::string Message = std::string("Failed to initialize the storage location. See details below.\n\n") + MemoryLogger.ConcatenatedLines();
 			pClient->ShowMessageBox({.m_pTitle = "Storage Error", .m_pMessage = Message.c_str()});
 			PerformAllCleanup();
 			return -1;
@@ -4781,15 +4807,6 @@ int main(int argc, const char **argv)
 		str_format(aBufName, sizeof(aBufName), "dumps/" GAME_NAME "_%s_crash_log_%s_%d_%s.RTP", CONF_PLATFORM_STRING, aDate, pid(), GIT_SHORTREV_HASH != nullptr ? GIT_SHORTREV_HASH : "");
 		pStorage->GetCompletePath(IStorage::TYPE_SAVE, aBufName, aBufPath, sizeof(aBufPath));
 		crashdump_init_if_available(aBufPath);
-	}
-
-	if(RandInitFailed)
-	{
-		const char *pError = "Failed to initialize the secure RNG.";
-		log_error("secure", "%s", pError);
-		pClient->ShowMessageBox({.m_pTitle = "Secure RNG Error", .m_pMessage = pError});
-		PerformAllCleanup();
-		return -1;
 	}
 
 	IConsole *pConsole = CreateConsole(CFGFLAG_CLIENT).release();
@@ -4847,6 +4864,22 @@ int main(int argc, const char **argv)
 		if(!pConsole->ExecuteFile(CONFIG_FILE))
 		{
 			const char *pError = "Failed to load config from '" CONFIG_FILE "'.";
+			log_error("client", "%s", pError);
+			pClient->ShowMessageBox({.m_pTitle = "Config File Error", .m_pMessage = pError});
+			PerformAllCleanup();
+			return -1;
+		}
+		pConsole->SetUnknownCommandCallback(IConsole::EmptyUnknownCommandCallback, nullptr);
+	}
+
+
+	//+KZ config
+	if(pStorage->FileExists(KAIZO_CONFIG_FILE, IStorage::TYPE_ALL))
+	{
+		pConsole->SetUnknownCommandCallback(SaveUnknownCommandCallback, pClient);
+		if(!pConsole->ExecuteFile(KAIZO_CONFIG_FILE))
+		{
+			const char *pError = "Failed to load config from '" KAIZO_CONFIG_FILE "'.";
 			log_error("client", "%s", pError);
 			pClient->ShowMessageBox({.m_pTitle = "Config File Error", .m_pMessage = pError});
 			PerformAllCleanup();
@@ -5109,7 +5142,7 @@ void CClient::GetSmoothTick(int *pSmoothTick, float *pSmoothIntraTick, float Mix
 	int64_t PredTime = m_PredictedTime.Get(time_get());
 	int64_t SmoothTime = std::clamp(GameTime + (int64_t)(MixAmount * (PredTime - GameTime)), GameTime, PredTime);
 
-	*pSmoothTick = (int)(SmoothTime * GameTickSpeed() / time_freq()) + 1;
+	*pSmoothTick = (int)(SmoothTime * GameTickSpeed() / time_freq()) + 1 + g_Config.m_KaizoFastInput; //+KZ modified for Fast Input
 	*pSmoothIntraTick = (SmoothTime - (*pSmoothTick - 1) * time_freq() / GameTickSpeed()) / (float)(time_freq() / GameTickSpeed());
 }
 
@@ -5188,7 +5221,7 @@ int CClient::UdpConnectivity(int NetType)
 	return Connectivity;
 }
 
-bool CClient::ViewLink(const char *pLink)
+static bool ViewLinkImpl(const char *pLink)
 {
 #if defined(CONF_PLATFORM_ANDROID)
 	if(SDL_OpenURL(pLink) == 0)
@@ -5207,10 +5240,20 @@ bool CClient::ViewLink(const char *pLink)
 #endif
 }
 
+bool CClient::ViewLink(const char *pLink)
+{
+	if(!str_startswith(pLink, "https://"))
+	{
+		log_error("client", "Failed to open link '%s': only https-links are allowed", pLink);
+		return false;
+	}
+	return ViewLinkImpl(pLink);
+}
+
 bool CClient::ViewFile(const char *pFilename)
 {
 #if defined(CONF_PLATFORM_MACOS)
-	return ViewLink(pFilename);
+	return ViewLinkImpl(pFilename);
 #else
 	// Create a file link so the path can contain forward and
 	// backward slashes. But the file link must be absolute.
@@ -5229,7 +5272,7 @@ bool CClient::ViewFile(const char *pFilename)
 
 	char aFileLink[IO_MAX_PATH_LENGTH];
 	str_format(aFileLink, sizeof(aFileLink), "file://%s%s", aWorkingDir, pFilename);
-	return ViewLink(aFileLink);
+	return ViewLinkImpl(aFileLink);
 #endif
 }
 

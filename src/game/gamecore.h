@@ -3,19 +3,21 @@
 #ifndef GAME_GAMECORE_H
 #define GAME_GAMECORE_H
 
+#include "prng.h"
+
 #include <base/vmath.h>
 
-#include <set>
-#include <vector>
-
 #include <engine/shared/protocol.h>
-#include <game/generated/protocol.h>
+
+#include <generated/protocol.h>
+
 #include <game/teamscore.h>
 #include <game/mapitems.h>
 
 #include "params_kz.h"
 
-#include "prng.h"
+#include <set>
+#include <vector>
 
 class CCollision;
 class CTeamsCore;
@@ -166,7 +168,7 @@ public:
 		}
 	}
 
-	int RandomOr0(int BelowThis)
+	int RandomOr0(int BelowThis) // NOLINT(readability-make-member-function-const)
 	{
 		if(BelowThis <= 1 || !m_pPrng)
 		{
@@ -298,10 +300,19 @@ public: // KZ
 
 	// +KZ
 	bool m_SendCoreThisTick = false;
+	bool m_DontCheckPlayerCollisionOnThisMove = false;
+	bool m_ServerResetPrevPos = false;
+	bool m_QuadGrounded = false;
+	SKZQuadData * m_pHookedQuad = nullptr;
+	vec2 m_HookedQuadPos;
+	float m_HookedQuadAngle;
 	bool HandleKZTileOnMoveBox(vec2 *pMoveBoxPos, vec2 *pMoveBoxVel, vec2 MoveBoxSize, vec2 MoveBoxElasticity);
 	CKZTile *pTouchingKZTiles[4] = {nullptr, nullptr, nullptr, nullptr};
 	SKZColCharCoreParams m_CharCoreParams;
 	SKZColGenericParams m_GenericParams;
+	void PreTickKZ();
+	int m_AttractorBeamPlayer = -1;
+	CNetObj_KaizoNetworkCharacter *m_pKaizoNetworkChar = nullptr; //for client prediction
 };
 
 // input count

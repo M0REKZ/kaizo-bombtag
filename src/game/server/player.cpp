@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "player.h"
+
 #include "entities/character.h"
 #include "gamecontext.h"
 #include "gamecontroller.h"
@@ -14,6 +15,7 @@
 
 #include <game/gamecore.h>
 #include <game/teamscore.h>
+#include <game/version.h>
 
 #include <engine/server/server.h>
 
@@ -40,33 +42,33 @@ CPlayer::CPlayer(CGameContext *pGameServer, uint32_t UniqueClientId, int ClientI
 
 			if(p==0)
 			{
-				str_copy(m_TeeInfos.m_apSkinPartNames[p], "fox", sizeof(m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(m_TeeInfos.m_aaSkinPartNames[p], "fox", sizeof(m_TeeInfos.m_aaSkinPartNames[p]));
 				m_TeeInfos.m_aSkinPartColors[p] = 1769560;
 				continue;
 			}
 
 			if(p==1)
 			{
-				str_copy(m_TeeInfos.m_apSkinPartNames[p], "warpaint", sizeof(m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(m_TeeInfos.m_aaSkinPartNames[p], "warpaint", sizeof(m_TeeInfos.m_aaSkinPartNames[p]));
 				m_TeeInfos.m_aSkinPartColors[p] = 4278190080;
 				continue;
 			}
 			
 			if(p==2)
 			{
-				str_copy(m_TeeInfos.m_apSkinPartNames[p], "hair", sizeof(m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(m_TeeInfos.m_aaSkinPartNames[p], "hair", sizeof(m_TeeInfos.m_aaSkinPartNames[p]));
 				continue;
 			}
 
 			if(p==5)
 			{
-				str_copy(m_TeeInfos.m_apSkinPartNames[p], "negative", sizeof(m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(m_TeeInfos.m_aaSkinPartNames[p], "negative", sizeof(m_TeeInfos.m_aaSkinPartNames[p]));
 				m_TeeInfos.m_aSkinPartColors[p] = 65408;
 				continue;
 			}
 			
 
-			str_copy(m_TeeInfos.m_apSkinPartNames[p], "standard", sizeof(m_TeeInfos.m_apSkinPartNames[p]));
+			str_copy(m_TeeInfos.m_aaSkinPartNames[p], "standard", sizeof(m_TeeInfos.m_aaSkinPartNames[p]));
         }
 
 	}
@@ -149,7 +151,7 @@ void CPlayer::Reset()
 
 	GameServer()->Score()->PlayerData(m_ClientId)->Reset();
 
-	m_Last_KickVote = 0;
+	m_LastKickVote = 0;
 	m_LastDDRaceTeamChange = 0;
 	m_ShowOthers = g_Config.m_SvShowOthersDefault;
 	m_ShowAll = g_Config.m_SvShowAllDefault;
@@ -189,6 +191,9 @@ void CPlayer::Reset()
 	m_RescueMode = RESCUEMODE_AUTO;
 
 	m_CameraInfo.Reset();
+
+	//+KZ
+	m_MsgBotCount = 0;
 }
 
 static int PlayerFlags_SixToSeven(int Flags)
@@ -204,6 +209,8 @@ static int PlayerFlags_SixToSeven(int Flags)
 
 void CPlayer::Tick()
 {
+	OnKaizoTick();
+
 	if(m_ScoreQueryResult != nullptr && m_ScoreQueryResult->m_Completed && m_SentSnaps >= 3)
 	{
 		ProcessScoreResult(*m_ScoreQueryResult);
@@ -369,10 +376,10 @@ void CPlayer::Snap(int SnappingClient)
 	if(!pClientInfo)
 		return;
 
-	StrToInts(&pClientInfo->m_Name0, 4, Server()->ClientName(m_ClientId));
-	StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(m_ClientId));
+	StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), Server()->ClientName(m_ClientId));
+	StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), Server()->ClientClan(m_ClientId));
 	pClientInfo->m_Country = Server()->ClientCountry(m_ClientId);
-	StrToInts(&pClientInfo->m_Skin0, 6, m_TeeInfos.m_aSkinName);
+	StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), m_TeeInfos.m_aSkinName);
 	pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
 	pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
 	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
@@ -408,7 +415,7 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_PlayerFlags = PlayerFlags_SixToSeven(m_PlayerFlags);
 		if(SnappingClientVersion >= VERSION_DDRACE && (m_PlayerFlags & PLAYERFLAG_AIM))
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_AIM;
-		if(Server()->GetAuthedState(m_ClientId) && ((SnappingClient >= 0 && Server()->GetAuthedState(SnappingClient)) || !Server()->HasAuthHidden(m_ClientId)))
+		if(Server()->IsRconAuthed(m_ClientId) && ((SnappingClient >= 0 && Server()->IsRconAuthed(SnappingClient)) || !Server()->HasAuthHidden(m_ClientId)))
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_ADMIN;
 		if(((CServer*)Server())->m_aClients[m_ClientId].m_KZBot) //+KZ
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_BOT;
@@ -480,7 +487,7 @@ void CPlayer::Snap(int SnappingClient)
 				for(auto &pPlayer : GameServer()->m_apPlayers)
 				{
 					if(!pPlayer || pPlayer->m_ClientId == id || pPlayer->m_Afk ||
-						(Server()->GetAuthedState(pPlayer->m_ClientId) && Server()->HasAuthHidden(pPlayer->m_ClientId)) ||
+						(Server()->IsRconAuthed(pPlayer->m_ClientId) && Server()->HasAuthHidden(pPlayer->m_ClientId)) ||
 						!(pPlayer->m_Paused || pPlayer->m_Team == TEAM_SPECTATORS))
 					{
 						continue;
@@ -508,13 +515,13 @@ void CPlayer::Snap(int SnappingClient)
 	if(!pDDNetPlayer)
 		return;
 
-	if((SnappingClient >= 0 && Server()->GetAuthedState(SnappingClient)) || !Server()->HasAuthHidden(m_ClientId))
+	if((SnappingClient >= 0 && Server()->IsRconAuthed(SnappingClient)) || !Server()->HasAuthHidden(m_ClientId))
 		pDDNetPlayer->m_AuthLevel = Server()->GetAuthedState(m_ClientId);
 	else
 		pDDNetPlayer->m_AuthLevel = AUTHED_NO;
 
 	pDDNetPlayer->m_Flags = 0;
-	if(((CServer*)Server())->m_aClients[m_ClientId].m_KZBot ? false : (m_Afk || m_PlayerFlags & PLAYERFLAG_IN_MENU)) //+KZ modified
+	if(((CServer*)Server())->m_aClients[m_ClientId].m_KZBot ? false : (m_Afk || ((m_PlayerFlags & PLAYERFLAG_IN_MENU) && Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_PLAYER_PING))) // +KZ added in menu
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_AFK;
 	if(m_Paused == PAUSE_SPEC)
 		pDDNetPlayer->m_Flags |= EXPLAYERFLAG_SPEC;
@@ -547,6 +554,9 @@ void CPlayer::Snap(int SnappingClient)
 		pSpecChar->m_X = m_pCharacter->Core()->m_Pos.x;
 		pSpecChar->m_Y = m_pCharacter->Core()->m_Pos.y;
 	}
+
+	//+KZ
+	OnKaizoSnap(SnappingClient, id);
 }
 
 void CPlayer::FakeSnap()
@@ -565,9 +575,9 @@ void CPlayer::FakeSnap()
 	if(!pClientInfo)
 		return;
 
-	StrToInts(&pClientInfo->m_Name0, 4, " ");
-	StrToInts(&pClientInfo->m_Clan0, 3, "");
-	StrToInts(&pClientInfo->m_Skin0, 6, "default");
+	StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), " ");
+	StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
+	StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "default");
 
 	if(m_Paused != PAUSE_PAUSED)
 		return;

@@ -9,6 +9,7 @@
 
 #include <base/color.h>
 #include <base/system.h>
+#include <base/vmath.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -50,16 +51,18 @@ struct SQuadRenderInfo
 	float m_Padding;
 };
 
-struct SGraphicTile
+class CGraphicTile
 {
+public:
 	vec2 m_TopLeft;
 	vec2 m_TopRight;
 	vec2 m_BottomRight;
 	vec2 m_BottomLeft;
 };
 
-struct SGraphicTileTexureCoords
+class CGraphicTileTextureCoords
 {
+public:
 	ubvec4 m_TexCoordTopLeft;
 	ubvec4 m_TexCoordTopRight;
 	ubvec4 m_TexCoordBottomRight;
@@ -180,6 +183,8 @@ typedef std::function<void()> WINDOW_PROPS_CHANGED_FUNC;
 
 typedef std::function<bool(uint32_t &Width, uint32_t &Height, CImageInfo::EImageFormat &Format, std::vector<uint8_t> &vDstData)> TGLBackendReadPresentedImageData;
 
+struct CDataSprite;
+
 class IGraphics : public IInterface
 {
 	MACRO_INTERFACE("graphics")
@@ -255,7 +260,14 @@ public:
 	virtual void ClipDisable() = 0;
 
 	virtual void MapScreen(float TopLeftX, float TopLeftY, float BottomRightX, float BottomRightY) = 0;
-	virtual void GetScreen(float *pTopLeftX, float *pTopLeftY, float *pBottomRightX, float *pBottomRightY) = 0;
+
+	// helper functions
+	void CalcScreenParams(float Aspect, float Zoom, float *pWidth, float *pHeight) const;
+	void MapScreenToWorld(float CenterX, float CenterY, float ParallaxX, float ParallaxY,
+		float ParallaxZoom, float OffsetX, float OffsetY, float Aspect, float Zoom, float *pPoints) const;
+	void MapScreenToInterface(float CenterX, float CenterY, float Zoom = 1.0f);
+
+	virtual void GetScreen(float *pTopLeftX, float *pTopLeftY, float *pBottomRightX, float *pBottomRightY) const = 0;
 
 	// TODO: These should perhaps not be virtuals
 	virtual void BlendNone() = 0;
@@ -342,6 +354,13 @@ public:
 		CLineItem() = default;
 		CLineItem(float x0, float y0, float x1, float y1) :
 			m_X0(x0), m_Y0(y0), m_X1(x1), m_Y1(y1) {}
+		CLineItem(vec2 From, vec2 To)
+		{
+			m_X0 = From.x;
+			m_Y0 = From.y;
+			m_X1 = To.x;
+			m_Y1 = To.y;
+		}
 	};
 	virtual void LinesBegin() = 0;
 	virtual void LinesEnd() = 0;
@@ -375,6 +394,8 @@ public:
 		CFreeformItem() = default;
 		CFreeformItem(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3) :
 			m_X0(x0), m_Y0(y0), m_X1(x1), m_Y1(y1), m_X2(x2), m_Y2(y2), m_X3(x3), m_Y3(y3) {}
+		CFreeformItem(vec2 Point1, vec2 Point2, vec2 Point3, vec2 Point4) :
+			m_X0(Point1.x), m_Y0(Point1.y), m_X1(Point2.x), m_Y1(Point2.y), m_X2(Point3.x), m_Y2(Point3.y), m_X3(Point4.x), m_Y3(Point4.y) {}
 	};
 
 	struct CQuadItem
@@ -383,6 +404,8 @@ public:
 		CQuadItem() = default;
 		CQuadItem(float x, float y, float w, float h) :
 			m_X(x), m_Y(y), m_Width(w), m_Height(h) {}
+		CQuadItem(vec2 Position, vec2 Size) :
+			m_X(Position.x), m_Y(Position.y), m_Width(Size.x), m_Height(Size.y) {}
 	};
 	virtual void QuadsDraw(CQuadItem *pArray, int Num) = 0;
 	virtual void QuadsDrawTL(const CQuadItem *pArray, int Num) = 0;
@@ -412,6 +435,27 @@ public:
 
 	virtual void QuadsDrawFreeform(const CFreeformItem *pArray, int Num) = 0;
 	virtual void QuadsText(float x, float y, float Size, const char *pText) = 0;
+
+	// sprites
+	enum
+	{
+		SPRITE_FLAG_FLIP_Y = 1,
+		SPRITE_FLAG_FLIP_X = 2,
+	};
+	virtual void SelectSprite(int Id, int Flags = 0) = 0;
+	virtual void SelectSprite7(int Id, int Flags = 0) = 0;
+
+	virtual void GetSpriteScale(const CDataSprite *pSprite, float &ScaleX, float &ScaleY) const = 0;
+	virtual void GetSpriteScale(int Id, float &ScaleX, float &ScaleY) const = 0;
+	virtual void GetSpriteScaleImpl(int Width, int Height, float &ScaleX, float &ScaleY) const = 0;
+
+	virtual void DrawSprite(float x, float y, float Size) = 0;
+	virtual void DrawSprite(float x, float y, float ScaledWidth, float ScaledHeight) = 0;
+
+	virtual int QuadContainerAddSprite(int QuadContainerIndex, float x, float y, float Size) = 0;
+	virtual int QuadContainerAddSprite(int QuadContainerIndex, float Size) = 0;
+	virtual int QuadContainerAddSprite(int QuadContainerIndex, float Width, float Height) = 0;
+	virtual int QuadContainerAddSprite(int QuadContainerIndex, float X, float Y, float Width, float Height) = 0;
 
 	enum
 	{
@@ -561,7 +605,7 @@ public:
 	virtual bool IsBackendInitialized() = 0;
 
 protected:
-	inline CTextureHandle CreateTextureHandle(int Index)
+	CTextureHandle CreateTextureHandle(int Index)
 	{
 		CTextureHandle Tex;
 		Tex.m_Id = Index;

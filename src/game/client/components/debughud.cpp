@@ -1,16 +1,16 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include "debughud.h"
+
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 
 #include <game/client/gameclient.h>
 #include <game/client/prediction/entities/character.h>
 #include <game/localization.h>
-
-#include "debughud.h"
 
 static constexpr int64_t GRAPH_MAX_VALUES = 128;
 

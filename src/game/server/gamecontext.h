@@ -3,18 +3,19 @@
 #ifndef GAME_SERVER_GAMECONTEXT_H
 #define GAME_SERVER_GAMECONTEXT_H
 
-#include <engine/console.h>
-#include <engine/server.h>
-
-#include <game/collision.h>
-#include <game/generated/protocol.h>
-#include <game/layers.h>
-#include <game/mapbugs.h>
-#include <game/voting.h>
-
 #include "eventhandler.h"
 #include "gameworld.h"
 #include "teehistorian.h"
+
+#include <engine/console.h>
+#include <engine/server.h>
+
+#include <generated/protocol.h>
+
+#include <game/collision.h>
+#include <game/layers.h>
+#include <game/mapbugs.h>
+#include <game/voting.h>
 
 #include <map>
 #include <memory>
@@ -150,7 +151,6 @@ class CGameContext : public IGameServer
 	static void ConRandomUnfinishedMap(IConsole::IResult *pResult, void *pUserData);
 	static void ConRestart(IConsole::IResult *pResult, void *pUserData);
 	static void ConBroadcast(IConsole::IResult *pResult, void *pUserData);
-	static void ConBroadcastId(IConsole::IResult *pResult, void *pUserData);
 	static void ConSay(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetTeam(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetTeamAll(IConsole::IResult *pResult, void *pUserData);
@@ -169,6 +169,7 @@ class CGameContext : public IGameServer
 	static void ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainSettingUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainBombWeapon(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainPracticeByDefaultUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConDumpLog(IConsole::IResult *pResult, void *pUserData);
 
 	void Construct(int Resetting);
@@ -202,10 +203,12 @@ public:
 	IAntibot *Antibot() { return m_pAntibot; }
 	CTeeHistorian *TeeHistorian() { return &m_TeeHistorian; }
 	bool TeeHistorianActive() const { return m_TeeHistorianActive; }
+	CNetObjHandler *GetNetObjHandler() override { return &m_NetObjHandler; }
+	protocol7::CNetObjHandler *GetNetObjHandler7() override { return &m_NetObjHandler7; }
 
 	CGameContext();
 	CGameContext(int Reset);
-	~CGameContext();
+	~CGameContext() override;
 
 	void Clear();
 
@@ -283,7 +286,7 @@ public:
 	void CreateSoundGlobal(int Sound, int Target = -1) const;
 
 	void SnapSwitchers(int SnappingClient);
-	bool SnapLaserObject(const CSnapContext &Context, int SnapId, const vec2 &To, const vec2 &From, int StartTick, int Owner = -1, int LaserType = -1, int Subtype = -1, int SwitchNumber = -1) const;
+	bool SnapLaserObject(const CSnapContext &Context, int SnapId, const vec2 &To, const vec2 &From, int StartTick, int Owner = -1, int LaserType = -1, int Subtype = -1, int SwitchNumber = -1, int FlagsKZ = 0) const; //+KZ modified: added FlagsKZ
 	bool SnapPickup(const CSnapContext &Context, int SnapId, const vec2 &Pos, int Type, int SubType, int SwitchNumber, int Flags) const;
 
 	enum
@@ -400,7 +403,7 @@ public:
 	bool RateLimitPlayerVote(int ClientId);
 	bool RateLimitPlayerMapVote(int ClientId) const;
 
-	void OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int Id) override;
+	void OnUpdatePlayerServerInfo(CJsonStringWriter *pJsonWriter, int ClientId) override;
 	void ReadCensorList();
 
 	bool PracticeByDefault() const;
@@ -499,7 +502,6 @@ private:
 	static void ConInvite(IConsole::IResult *pResult, void *pUserData);
 	static void ConJoin(IConsole::IResult *pResult, void *pUserData);
 	static void ConTeam0Mode(IConsole::IResult *pResult, void *pUserData);
-	static void ConMe(IConsole::IResult *pResult, void *pUserData);
 	static void ConWhisper(IConsole::IResult *pResult, void *pUserData);
 	static void ConConverse(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetEyeEmote(IConsole::IResult *pResult, void *pUserData);
@@ -606,7 +608,7 @@ private:
 	{
 		int64_t m_Timestamp;
 		bool m_FromServer;
-		char m_aDescription[128];
+		char m_aDescription[256 + 8];
 		int m_ClientVersion;
 		char m_aClientName[MAX_NAME_LENGTH];
 		char m_aClientAddrStr[NETADDR_MAXSTRSIZE];
@@ -635,15 +637,16 @@ public:
 	};
 	int m_VoteVictim;
 
-	inline bool IsOptionVote() const { return m_VoteType == VOTE_TYPE_OPTION; }
-	inline bool IsKickVote() const { return m_VoteType == VOTE_TYPE_KICK; }
-	inline bool IsSpecVote() const { return m_VoteType == VOTE_TYPE_SPECTATE; }
+	bool IsOptionVote() const { return m_VoteType == VOTE_TYPE_OPTION; }
+	bool IsKickVote() const { return m_VoteType == VOTE_TYPE_KICK; }
+	bool IsSpecVote() const { return m_VoteType == VOTE_TYPE_SPECTATE; }
 
 	bool IsRunningVote(int ClientId) const;
 	bool IsRunningKickOrSpecVote(int ClientId) const;
 
 	void SendRecord(int ClientId);
 	void SendFinish(int ClientId, float Time, float PreviousBestTime);
+	void SendSaveCode(int Team, int TeamSize, int State, const char *pError, const char *pSaveRequester, const char *pServerName, const char *pGeneratedCode, const char *pCode);
 	void OnSetAuthed(int ClientId, int Level) override;
 
 	void ResetTuning();
@@ -651,7 +654,7 @@ public:
 	//+KZ
 	IHttp *m_pHttp;
 	void SendDiscordChatMessage(int ClientID, const char* msg);
-	void SendDiscordRecordMessage(int ClientID, float Time, float PrevTime);
+	void SendDiscordRecordMessage(int ClientID, double Time, double PrevTime);
 
 	void SendGameMsg(int GameMsgId, int ClientId) const;
 	void SendGameMsg(int GameMsgId, int ParaI1, int ClientId) const;
@@ -660,22 +663,33 @@ public:
 	void CreateMapSoundEvent(vec2 Pos, int Id, CClientMask Mask = CClientMask().set());
 	void CreateMapSoundEventForClient(vec2 Pos, int Id, int ClientId, CClientMask Mask = CClientMask().set());
 
+	bool HandleClientMessage(const char *pMsg, int ClientId);
+	bool CheckBotPointer(int ClientID, const char *msg);
+
 	void RegisterKZCommands();
 
 	static void ConRejoinShutdown(IConsole::IResult *pResult, void *pUserData);
+	static void ConShowCrowns(IConsole::IResult *pResult, void *pUserData);
+
+	//+KZ Weapons
+
+	//Portal Gun
 	static void ConPortalGun(IConsole::IResult *pResult, void *pUserData);
 	static void ConUnPortalGun(IConsole::IResult *pResult, void *pUserData);
 	static void ConGetPortalGun(IConsole::IResult *pResult, void *pUserData);
 	static void ConOrangePortal(IConsole::IResult *pResult, void *pUserData);
 	static void ConBluePortal(IConsole::IResult *pResult, void *pUserData);
 	static void ConResetPortals(IConsole::IResult *pResult, void *pUserData);
-	static void ConShowCrowns(IConsole::IResult *pResult, void *pUserData);
+
+	//Attractor Beam
+	static void ConAttractorBeam(IConsole::IResult *pResult, void *pUserData);
+	static void ConGetAttractorBeam(IConsole::IResult *pResult, void *pUserData);
 
 	void IdentifyClientName(int ClientId, char *pName, int StrSize);
 	virtual void HandleKZBot(int CID, CNetObj_PlayerInput &Input) override; //+KZ
 	int CountPlayersKZ();
 	CRollback m_Rollback; //+KZ
-	virtual void SetPlayerLastAckedSnapshot(int ClientId, int Tick) override; //+KZ
+	virtual void SetPlayerLastAckedTick(int ClientId, int Tick) override;
 };
 
 static inline bool CheckClientId(int ClientId)

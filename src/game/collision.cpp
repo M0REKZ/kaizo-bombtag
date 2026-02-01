@@ -1,20 +1,20 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include <antibot/antibot_data.h>
+
 #include <base/math.h>
 #include <base/system.h>
 #include <base/vmath.h>
 
-#include <antibot/antibot_data.h>
-
-#include <cmath>
 #include <engine/map.h>
+#include <engine/shared/config.h>
 
 #include <game/collision.h>
 #include <game/layers.h>
 #include <game/mapitems.h>
 
-#include <engine/shared/config.h>
 #include "collision.h"
+#include <cmath>
 
 vec2 ClampVel(int MoveRestriction, vec2 Vel)
 {
@@ -57,6 +57,7 @@ void CCollision::Init(class CLayers *pLayers)
 	m_Height = m_pLayers->GameLayer()->m_Height;
 	m_pTiles = static_cast<CTile *>(m_pLayers->Map()->GetData(m_pLayers->GameLayer()->m_Data));
 
+	//+KZ Start
 	if(m_pLayers->KZGameLayer())
 	{
 		unsigned int Size = m_pLayers->Map()->GetDataSize(m_pLayers->KZGameLayer()->m_KZGame);
@@ -74,6 +75,64 @@ void CCollision::Init(class CLayers *pLayers)
 		if(Size >= (size_t)m_KZFrontWidth * m_KZFrontHeight * sizeof(CKZTile))
 			m_pKZFront = static_cast<CKZTile *>(m_pLayers->Map()->GetData(m_pLayers->KZFrontLayer()->m_KZFront));
 	}
+
+	if(m_pLayers->m_apKZQuadLayers.size())
+	{
+		for(std::vector<CMapItemLayerQuads *>::size_type i = 0; i < m_pLayers->m_apKZQuadLayers.size(); i++)
+		{
+
+			CQuad *pQuads = (CQuad*) m_pLayers->Map()->GetDataSwapped(m_pLayers->m_apKZQuadLayers[i]->m_Data);
+			SKZQuadData p;
+
+			for(int j = 0; j < m_pLayers->m_apKZQuadLayers[i]->m_NumQuads; j++)
+			{
+				p.m_pLayer = m_pLayers->m_apKZQuadLayers[i];
+				p.m_pQuad = pQuads + j;
+
+				char aBuf[30] = {0}; //for now
+
+				IntsToStr(p.m_pLayer->m_aName, std::size(p.m_pLayer->m_aName), aBuf, std::size(aBuf));
+
+				//get type by name, compat with Gores gamemode
+
+				if(!str_comp_nocase("QFr", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_FREEZE;
+				}
+				else if(!str_comp_nocase("QUnFr", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_UNFREEZE;
+				}
+				else if(!str_comp_nocase("QHook", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_HOOK;
+				}
+				else if(!str_comp_nocase("QUnHook", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_UNHOOK;
+				}
+				else if(!str_comp_nocase("QStopa", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_STOPA;
+				}
+				else if(!str_comp_nocase("QDeath", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_DEATH;
+				}
+				else if(!str_comp_nocase("QCfrm", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_CFRM;
+				}
+				else if(!str_comp_nocase("KaizoQuads", aBuf))
+				{
+					p.m_Type = KZQuadType::KZQUADTYPE_KAIZOINSTA;
+				}
+
+				m_aKZQuads.push_back(p);
+			}
+		}
+	}
+	//+KZ End
 
 	if(m_pLayers->TeleLayer())
 	{
@@ -219,6 +278,8 @@ void CCollision::Unload()
 
 	m_pWorldCore = nullptr;
 	m_pTeamsCore = nullptr;
+
+	m_aKZQuads.clear();
 }
 
 void CCollision::FillAntibot(CAntibotMapData *pMapData) const
@@ -259,10 +320,10 @@ static int GetMoveRestrictionsRaw(int Direction, int Tile, int Flags)
 		case ROTATION_180: return CANTMOVE_UP;
 		case ROTATION_270: return CANTMOVE_RIGHT;
 
-		case TILEFLAG_YFLIP ^ ROTATION_0: return CANTMOVE_UP;
-		case TILEFLAG_YFLIP ^ ROTATION_90: return CANTMOVE_RIGHT;
-		case TILEFLAG_YFLIP ^ ROTATION_180: return CANTMOVE_DOWN;
-		case TILEFLAG_YFLIP ^ ROTATION_270: return CANTMOVE_LEFT;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_0): return CANTMOVE_UP;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_90): return CANTMOVE_RIGHT;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_180): return CANTMOVE_DOWN;
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_270): return CANTMOVE_LEFT;
 		}
 		break;
 	case TILE_STOPS:
@@ -270,13 +331,13 @@ static int GetMoveRestrictionsRaw(int Direction, int Tile, int Flags)
 		{
 		case ROTATION_0:
 		case ROTATION_180:
-		case TILEFLAG_YFLIP ^ ROTATION_0:
-		case TILEFLAG_YFLIP ^ ROTATION_180:
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_0):
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_180):
 			return CANTMOVE_DOWN | CANTMOVE_UP;
 		case ROTATION_90:
 		case ROTATION_270:
-		case TILEFLAG_YFLIP ^ ROTATION_90:
-		case TILEFLAG_YFLIP ^ ROTATION_270:
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_90):
+		case static_cast<int>(TILEFLAG_YFLIP) ^ static_cast<int>(ROTATION_270):
 			return CANTMOVE_LEFT | CANTMOVE_RIGHT;
 		}
 		break;
@@ -390,6 +451,8 @@ int CCollision::IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *p
 		ProjectileParams.pOutCollision = pOutCollision;
 		ProjectileParams.pOutBeforeCollision = pOutBeforeCollision;
 		ProjectileParams.Weapon = pIntersectLineParams->Weapon;
+		ProjectileParams.m_IsDDraceProjectile = pIntersectLineParams->m_IsDDraceProjectile;
+		ProjectileParams.m_pDoResetTick = &pIntersectLineParams->m_DoResetTick;
 	}
 
 	float Distance = distance(Pos0, Pos1);

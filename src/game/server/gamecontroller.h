@@ -4,8 +4,10 @@
 #define GAME_SERVER_GAMECONTROLLER_H
 
 #include <base/vmath.h>
+
 #include <engine/map.h>
 #include <engine/shared/protocol.h>
+
 #include <game/server/teams.h>
 
 struct CScoreLoadBestTimeResult;
@@ -19,7 +21,18 @@ class IGameController
 {
 	friend class CSaveTeam; // need access to GameServer() and Server()
 
-	std::vector<vec2> m_avSpawnPoints[3];
+protected:
+	enum ESpawnType
+	{
+		SPAWNTYPE_DEFAULT = 0,
+		SPAWNTYPE_RED,
+		SPAWNTYPE_BLUE,
+
+		NUM_SPAWNTYPES
+	};
+
+private:
+	std::vector<vec2> m_avSpawnPoints[NUM_SPAWNTYPES];
 
 	class CGameContext *m_pGameServer;
 	class CConfig *m_pConfig;
@@ -50,7 +63,7 @@ protected:
 	};
 
 	float EvaluateSpawnPos(CSpawnEval *pEval, vec2 Pos, int DDTeam);
-	void EvaluateSpawnType(CSpawnEval *pEval, int Type, int DDTeam);
+	void EvaluateSpawnType(CSpawnEval *pEval, ESpawnType SpawnType, int DDTeam);
 
 	void ResetGame();
 
@@ -148,7 +161,7 @@ public:
 	bool IsTeamPlay() const { return m_GameFlags & GAMEFLAG_TEAMS; }
 	// DDRace
 
-	float m_CurrentRecord;
+	double m_CurrentRecord; //+KZ to double
 	CGameTeams &Teams() { return m_Teams; }
 	std::shared_ptr<CScoreLoadBestTimeResult> m_pLoadBestTimeResult;
 
@@ -158,8 +171,13 @@ public:
 	char m_aEnqueuedMap[MAX_MAP_LENGTH];
 	// KZ
 	virtual bool OnEntityKZ(int Index, int x, int y, int Layer, int Flags, bool Initial, unsigned char Number = 0, int64_t Value1 = 0, int64_t Value2 = 0, int64_t Value3 = 0) { return false; };
-	virtual void OnNewRecordKZ(int ClientId, float Time, float PrevTime) {};
+	virtual void OnNewRecordKZ(int ClientId, double Time, double PrevTime) {};
+	virtual void HandleCharacterQuad(CCharacter *pChr, SKZQuadData *pQuadData) {};
+	virtual bool HandleCharacterSubTickStart(CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) { return false; };
+	virtual bool HandleCharacterSubTickFinish(CCharacter *pChr, vec2 Pos, int SubTick, int Divisor) { return false; };
 	bool m_ShowHealth = false;
+	//Time for Moving tiles:
+	double GetTime() { return static_cast<double>(Server()->Tick() - m_RoundStartTick)/Server()->TickSpeed(); }
 };
 
 #endif

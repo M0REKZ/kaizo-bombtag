@@ -6,10 +6,12 @@
 #include <engine/engine.h>
 #include <engine/shared/config.h>
 #include <engine/sound.h>
+
+#include <generated/client_data.h>
+
 #include <game/client/components/camera.h>
 #include <game/client/components/menus.h>
 #include <game/client/gameclient.h>
-#include <game/generated/client_data.h>
 #include <game/localization.h>
 
 CSoundLoading::CSoundLoading(CGameClient *pGameClient, bool Render) :
@@ -155,7 +157,7 @@ void CSounds::OnRender()
 			Play(m_aQueue[0].m_Channel, m_aQueue[0].m_SetId, 1.0f);
 			m_QueueWaitTime = Now + time_freq() * 3 / 10; // wait 300ms before playing the next one
 			if(--m_QueuePos > 0)
-				mem_move(m_aQueue, m_aQueue + 1, m_QueuePos * sizeof(QueueEntry));
+				mem_move(m_aQueue, m_aQueue + 1, m_QueuePos * sizeof(CQueueEntry));
 		}
 	}
 }

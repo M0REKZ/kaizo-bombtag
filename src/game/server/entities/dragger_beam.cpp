@@ -1,14 +1,15 @@
 /* See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
 #include "dragger_beam.h"
+
 #include "character.h"
 #include "dragger.h"
 
 #include <engine/server.h>
 #include <engine/shared/config.h>
 
-#include <game/generated/protocol.h>
-#include <game/mapitems.h>
+#include <generated/protocol.h>
 
+#include <game/mapitems.h>
 #include <game/server/gamecontext.h>
 #include <game/server/save.h>
 

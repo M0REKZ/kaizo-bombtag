@@ -3,11 +3,15 @@
 #ifndef ENGINE_SERVER_SERVER_H
 #define ENGINE_SERVER_SERVER_H
 
+#include "antibot.h"
+#include "authmanager.h"
+#include "name_ban.h"
+#include "snap_id_pool.h"
+
 #include <base/hash.h>
 
 #include <engine/console.h>
 #include <engine/server.h>
-
 #include <engine/shared/demo.h>
 #include <engine/shared/econ.h>
 #include <engine/shared/fifo.h>
@@ -21,11 +25,6 @@
 #include <memory>
 #include <optional>
 #include <vector>
-
-#include "antibot.h"
-#include "authmanager.h"
-#include "name_ban.h"
-#include "snap_id_pool.h"
 
 #if defined(CONF_UPNP)
 #include "upnp.h"
@@ -89,6 +88,9 @@ class CServer : public IServer
 	void UpdateDebugDummies(bool ForceDisconnect);
 #endif
 
+	virtual int GetKaizoNetworkVersion(int ClientId) override; // +KZ Kaizo Network client version
+
+	//Other Clients
 	virtual int GetClientInfclassVersion(int ClientId) override;
 	virtual bool IsTaterClient(int ClientId) override { return m_aClients[ClientId].m_IsTaterClient; }
 	virtual bool IsQxdClient(int ClientId) override { return m_aClients[ClientId].m_IsQxdClient; }
@@ -96,6 +98,11 @@ class CServer : public IServer
 	virtual bool IsStAClient(int ClientId) override { return m_aClients[ClientId].m_IsStAClient; }
 	virtual bool IsAllTheHaxxClient(int ClientId) override { return m_aClients[ClientId].m_IsAllTheHaxxClient; }
 	virtual bool IsPulseClient(int ClientId) override { return m_aClients[ClientId].m_IsPulseClient; }
+	virtual bool IsCactusClient(int ClientId) override { return m_aClients[ClientId].m_IsCactusClient; }
+	virtual bool IsAiodobClient(int ClientId) override { return m_aClients[ClientId].m_IsAiodobClient; }
+	virtual bool IsFexClient(int ClientId) override { return m_aClients[ClientId].m_IsFexClient; }
+	virtual bool IsRushieClient(int ClientId) override { return m_aClients[ClientId].m_IsRushieClient; }
+	virtual bool IsSClientClient(int ClientId) override { return m_aClients[ClientId].m_IsSClientClient; }
 
 	int m_PreviousKZBots = 0;
 	void UpdateKZBots(bool ForceDisconnect); //+KZ
@@ -114,6 +121,16 @@ public:
 		MAX_RCONCMD_SEND = 16,
 	};
 
+	enum class EDnsblState
+	{
+		NONE,
+		PENDING,
+		BLACKLISTED,
+		WHITELISTED,
+	};
+
+	static const char *DnsblStateStr(EDnsblState State);
+
 	class CClient
 	{
 	public:
@@ -126,15 +143,13 @@ public:
 			STATE_CONNECTING,
 			STATE_READY,
 			STATE_INGAME,
+		};
 
+		enum
+		{
 			SNAPRATE_INIT = 0,
 			SNAPRATE_FULL,
 			SNAPRATE_RECOVER,
-
-			DNSBL_STATE_NONE = 0,
-			DNSBL_STATE_PENDING,
-			DNSBL_STATE_BLACKLISTED,
-			DNSBL_STATE_WHITELISTED,
 		};
 
 		class CInput
@@ -142,7 +157,7 @@ public:
 		public:
 			int m_aData[MAX_INPUT_SIZE];
 			int m_GameTick; // the tick that was chosen for the input
-			int m_AckedTick; // +KZ rollback: the tick that client last received
+			int m_AckedTick; // +KZ: the tick that client last received
 		};
 
 		// connection state info
@@ -166,7 +181,6 @@ public:
 		char m_aClan[MAX_CLAN_LENGTH];
 		int m_Country;
 		std::optional<int> m_Score;
-		int m_Authed;
 		int m_AuthKey;
 		int m_AuthTries;
 		bool m_AuthHidden;
@@ -180,6 +194,8 @@ public:
 		std::array<char, NETADDR_MAXSTRSIZE> m_aDebugDummyAddrStringNoPort;
 
 		//+KZ
+		int m_KaizoNetworkVersion; // +KZ: Kaizo Network client version
+
 		int m_InfClassVersion; // to identify infclass clients
 		bool m_IsTaterClient; // to identify tater clients
 		bool m_IsQxdClient; // to identify qxd clients
@@ -187,12 +203,17 @@ public:
 		bool m_IsStAClient; // to identify StA clients
 		bool m_IsAllTheHaxxClient; // to identify allthehaxx clients
 		bool m_IsPulseClient; // to identify pulse clients
+		bool m_IsCactusClient; // to identify Cactus clients
+		bool m_IsAiodobClient; // to identify Aiodob clients
+		bool m_IsFexClient; // to identify FeX clients
+		bool m_IsRushieClient; // to identify Rushie clients
+		bool m_IsSClientClient; // to identify SClient clients
 		bool m_KZBot; //+KZ
 		NETADDR m_KZBotAddr;
 		std::array<char, NETADDR_MAXSTRSIZE> m_aKZBotAddrString;
 		std::array<char, NETADDR_MAXSTRSIZE> m_aKZBotAddrStringNoPort;
 
-		const IConsole::CCommandInfo *m_pRconCmdToSend;
+		const IConsole::ICommandInfo *m_pRconCmdToSend;
 		enum
 		{
 			MAPLIST_UNINITIALIZED = -1,
@@ -216,7 +237,7 @@ public:
 		int64_t m_RedirectDropTime;
 
 		// DNSBL
-		int m_DnsblState;
+		EDnsblState m_DnsblState;
 		std::shared_ptr<CHostLookup> m_pDnsblLookup;
 
 		bool m_Sixup;
@@ -225,12 +246,9 @@ public:
 		{
 			return m_State != STATE_EMPTY && !m_DebugDummy;
 		}
-
-		int ConsoleAccessLevel() const
-		{
-			return m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : m_Authed == AUTHED_MOD ? IConsole::ACCESS_LEVEL_MOD : IConsole::ACCESS_LEVEL_HELPER;
-		}
 	};
+
+	IConsole::EAccessLevel ConsoleAccessLevel(int ClientId) const;
 
 	CClient m_aClients[MAX_CLIENTS];
 	int m_aIdMap[MAX_CLIENTS * VANILLA_MAX_CLIENTS];
@@ -309,7 +327,7 @@ public:
 	std::shared_ptr<ILogger> m_pStdoutLogger = nullptr;
 
 	CServer();
-	~CServer();
+	~CServer() override;
 
 	bool IsClientNameAvailable(int ClientId, const char *pNameRequest);
 	bool SetClientNameImpl(int ClientId, const char *pNameRequest, bool Set);
@@ -339,6 +357,8 @@ public:
 	void SendLogLine(const CLogMessage *pMessage);
 	void SetRconCid(int ClientId) override;
 	int GetAuthedState(int ClientId) const override;
+	bool IsRconAuthed(int ClientId) const override;
+	bool IsRconAuthedAdmin(int ClientId) const override;
 	const char *GetAuthName(int ClientId) const override;
 	bool HasAuthHidden(int ClientId) const override;
 	void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, SHA256_DIGEST *pMapSha256, int *pMapCrc) override;
@@ -377,8 +397,8 @@ public:
 	// Accepts -1 as ClientId to mean "all clients with at least auth level admin"
 	void SendRconLogLine(int ClientId, const CLogMessage *pMessage);
 
-	void SendRconCmdAdd(const IConsole::CCommandInfo *pCommandInfo, int ClientId);
-	void SendRconCmdRem(const IConsole::CCommandInfo *pCommandInfo, int ClientId);
+	void SendRconCmdAdd(const IConsole::ICommandInfo *pCommandInfo, int ClientId);
+	void SendRconCmdRem(const IConsole::ICommandInfo *pCommandInfo, int ClientId);
 	void SendRconCmdGroupStart(int ClientId);
 	void SendRconCmdGroupEnd(int ClientId);
 	int NumRconCommands(int ClientId);
@@ -491,6 +511,7 @@ public:
 	static void ConchainRconHelperPasswordChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMapUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainSixupUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	static void ConchainRegisterCommunityTokenRedact(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainLoglevel(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainStdoutOutputLevel(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainAnnouncementFileName(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
@@ -526,16 +547,16 @@ public:
 	void InitDnsbl(int ClientId);
 	bool DnsblWhite(int ClientId) override
 	{
-		return m_aClients[ClientId].m_DnsblState == CClient::DNSBL_STATE_NONE ||
-		       m_aClients[ClientId].m_DnsblState == CClient::DNSBL_STATE_WHITELISTED;
+		return m_aClients[ClientId].m_DnsblState == EDnsblState::NONE ||
+		       m_aClients[ClientId].m_DnsblState == EDnsblState::WHITELISTED;
 	}
 	bool DnsblPending(int ClientId) override
 	{
-		return m_aClients[ClientId].m_DnsblState == CClient::DNSBL_STATE_PENDING;
+		return m_aClients[ClientId].m_DnsblState == EDnsblState::PENDING;
 	}
 	bool DnsblBlack(int ClientId) override
 	{
-		return m_aClients[ClientId].m_DnsblState == CClient::DNSBL_STATE_BLACKLISTED;
+		return m_aClients[ClientId].m_DnsblState == EDnsblState::BLACKLISTED;
 	}
 
 	void AuthRemoveKey(int KeySlot);

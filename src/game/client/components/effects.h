@@ -6,6 +6,7 @@
 #include <base/vmath.h>
 
 #include <game/client/component.h>
+#include <base/color.h>
 
 class CEffects : public CComponent
 {
@@ -42,5 +43,8 @@ public:
 	void Confetti(vec2 Pos, float Alpha);
 
 	void Update();
+
+	//+KZ
+	void ColouredSparkleTrailKaizo(vec2 Pos, ColorRGBA Color);
 };
 #endif

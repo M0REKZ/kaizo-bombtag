@@ -47,10 +47,20 @@ UUID(NETMSG_MAPLIST_GROUP_START, "sv-maplist-start@ddnet.org")
 UUID(NETMSG_MAPLIST_GROUP_END, "sv-maplist-end@ddnet.org")
 
 //+KZ
-UUID(NETMSG_CLIENTVER_INFCLASS, "clientver@infclass")
-UUID(NETMSG_IAMTATER, "iamtater@sjrc6.github.io")
-UUID(NETMSG_IAMQXD, "i-am-qxd@qxdFox.github.io")
-UUID(NETMSG_IAMCHILLERBOT, "i-am-chillerbot@chillerbot.github.io")
-UUID(NETMSG_IAMSTA, "i-am-StA@stormaxs.github.io/sta.github.io")
-UUID(NETMSG_IAMALLTHEHAXX, "i-am-allthehaxx@allthehaxx.github.io")
-UUID(NETMSG_IAMPULSE, "i-am-pulse@pulse-client.xyz")
+
+//Kaizo Network
+UUID(NETMSG_KZ_KAIZO_NETWORK_VERSION, "kaizoversion@m0rekz.github.io")
+
+//Other Clients
+UUID(NETMSG_CLIENTVER_INFCLASS, "clientver@infclass") // InfClass
+UUID(NETMSG_IAMTATER, "iamtater@sjrc6.github.io") // T-Client
+UUID(NETMSG_IAMQXD, "i-am-qxd@qxdFox.github.io") // E-Client
+UUID(NETMSG_IAMCHILLERBOT, "i-am-chillerbot@chillerbot.github.io") // Chillerbot-UX
+UUID(NETMSG_IAMSTA, "i-am-StA@stormaxs.github.io/sta.github.io") // StA Client
+UUID(NETMSG_IAMALLTHEHAXX, "i-am-allthehaxx@allthehaxx.github.io") // AllTheHaxx
+UUID(NETMSG_IAMPULSE, "i-am-pulse@pulse-client.xyz") // Pulse Client
+UUID(NETMSG_IAM_CACTUS, "iamcactus@denchik.top") // Cactus Client
+UUID(NETMSG_IAM_AIODOB, "i-am-aiodob@qxdFox.github.io") // Aiodob Client
+UUID(NETMSG_IAM_FEX, "i-am-fex@faffa81.github.io") // FeX Client
+UUID(NETMSG_IAMRUSHIE, "i-am-rushie@1voix1.github.io") // RClient
+UUID(NETMSG_IAM_SCLIENT, "i-am-sclient@sclient.site") // S-Client

@@ -1,14 +1,15 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "pickup.h"
+
 #include "character.h"
 
-#include <game/generated/protocol.h>
-#include <game/mapitems.h>
-#include <game/teamscore.h>
+#include <generated/protocol.h>
 
+#include <game/mapitems.h>
 #include <game/server/gamecontext.h>
 #include <game/server/player.h>
+#include <game/teamscore.h>
 
 static constexpr int gs_PickupPhysSize = 14;
 
@@ -58,7 +59,7 @@ void CPickup::Tick()
 			case POWERUP_ARMOR:
 				if(pChr->Team() == TEAM_SUPER)
 					continue;
-				for(int j = WEAPON_SHOTGUN; j < KZ_NUM_CUSTOM_WEAPONS; j++) // +KZ
+				for(int j = WEAPON_SHOTGUN; j < KZ_CUSTOM_WEAPONS_END; j++) // +KZ
 				{
 					if(pChr->GetWeaponGot(j))
 					{

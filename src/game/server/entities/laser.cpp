@@ -1,19 +1,18 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "laser.h"
+
 #include "character.h"
 
 #include <engine/shared/config.h>
 
-#include <game/generated/protocol.h>
-#include <game/mapitems.h>
+#include <generated/protocol.h>
 
+#include <game/mapitems.h>
 #include <game/server/gamecontext.h>
 #include <game/server/gamemodes/DDRace.h>
 
-#include <game/server/kz/rollback.h>
-
-CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type) :
+CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type, SKZLaserParams *pParams) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_LASER)
 {
 	m_Pos = Pos;
@@ -44,6 +43,11 @@ CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEner
 
 	if(GameServer()->m_apPlayers[m_Owner] && GameServer()->m_apPlayers[m_Owner]->m_RollbackEnabled) //+KZ rollback
 		m_Rollback = true;
+
+	if(pParams)
+	{
+		m_IsRecoverJump = pParams->m_IsRecoverJump;
+	}
 
 	GameWorld()->InsertEntity(this);
 	DoBounce();
@@ -109,6 +113,15 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 		pHit->UnFreeze();
 	}
 	pHit->TakeDamage(vec2(0, 0), 0, m_Owner, m_Type);
+
+	//+KZ Recover jump
+
+	if(m_IsRecoverJump)
+	{
+		pHit->GetCoreKZ().m_Jumped = 0;
+		pHit->GetCoreKZ().m_JumpedTotal = 0;
+	}
+
 	return true;
 }
 
@@ -118,7 +131,7 @@ void CLaser::DoBounce()
 	{
 		if(GameServer()->m_apPlayers[m_Owner] && m_FireAckedTick == -1)
 		{
-			m_FireAckedTick = GameServer()->m_apPlayers[m_Owner]->m_LastAckedSnapshot;
+			m_FireAckedTick = GameServer()->m_apPlayers[m_Owner]->m_LastAckedTick;
 		}
 		else
 		{
@@ -169,7 +182,79 @@ void CLaser::DoBounce()
 	ParamsKZ.pCharCoreParams = &ParamsKZ2;
 	ParamsKZ2.pCore = pOwnerCore;
 
+	SKZQuadData *pQuadData = nullptr;
+	vec2 QuadColPos;
+	vec2 LineStart;
+
+	if(g_Config.m_SvGoresQuadsEnable)
+		pQuadData = Collision()->IntersectQuadTeleWeapon(m_Pos,To, &QuadColPos, &LineStart);
 	Res = GameServer()->Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To, &z, &ParamsKZ); // KZ added ParamsKZ
+
+	bool quadbounce = false;
+
+	if(pQuadData && Res)
+	{
+		if(distance(m_Pos, QuadColPos) < distance(m_Pos, To))
+		{
+			quadbounce = true;
+		}
+	}
+	else if(pQuadData)
+	{
+		quadbounce = true;
+	}
+
+	if(quadbounce)
+	{
+		int Index = GameServer()->Collision()->QuadTypeToTileId(pQuadData);
+
+		if(Index == -1) //Kaizo-Insta Quad
+		{
+			Index = pQuadData->m_pQuad->m_ColorEnvOffset;
+		}
+
+		if(pQuadData->m_pQuad && (g_Config.m_SvOldTeleportWeapons ? (Index == TILE_TELEIN) : (Index == TILE_TELEINWEAPON)) && !GameServer()->Collision()->TeleOuts(pQuadData->m_pQuad->m_aColors[0].r - 1).empty())
+		{
+			int TeleOut = GameServer()->m_World.m_Core.RandomOr0(GameServer()->Collision()->TeleOuts(pQuadData->m_pQuad->m_aColors[0].r - 1).size());
+			m_TelePos = GameServer()->Collision()->TeleOuts(pQuadData->m_pQuad->m_aColors[0].r - 1)[TeleOut];
+			m_WasTele = true;
+		}
+
+		Res = 0;
+		vec2 OldDir = m_Dir;
+		m_Dir = normalize(Collision()->ReflexLineOnLine(m_Pos, QuadColPos, LineStart));
+		if(m_WasTele)
+			m_Dir = OldDir;
+		m_From = m_Pos;
+		m_Pos = QuadColPos + normalize(m_Pos - QuadColPos);
+
+		const float Distance = distance(m_From, m_Pos);
+		// Prevent infinite bounces
+		if(Distance == 0.0f && m_ZeroEnergyBounceInLastTick)
+		{
+			m_Energy = -1;
+		}
+		else if(!m_TuneZone)
+		{
+			m_Energy -= Distance + Tuning()->m_LaserBounceCost;
+		}
+		else
+		{
+			m_Energy -= distance(m_From, m_Pos) + GameServer()->TuningList()[m_TuneZone].m_LaserBounceCost;
+		}
+
+		int BounceNum = Tuning()->m_LaserBounceNum;
+		if(m_TuneZone)
+			BounceNum = TuningList()[m_TuneZone].m_LaserBounceNum;
+		
+		if(m_Bounces > BounceNum)
+			m_Energy = -1;
+
+		m_ZeroEnergyBounceInLastTick = Distance == 0.0f;
+
+		GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, m_TeamMask);
+		return;
+	}
 
 	if(m_Bounces != ParamsKZ.BounceNum)
 	{

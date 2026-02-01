@@ -1,3 +1,4 @@
+// Modified by +KZ
 
 #include "layer_kz.h"
 
@@ -25,12 +26,12 @@ CLayerKZFront::CLayerKZFront(const CLayerKZFront &Other) :
 	mem_copy(m_pKZTile, Other.m_pKZTile, (size_t)m_Width * m_Height * sizeof(CKZTile));
 }
 
-void CLayerKZFront::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
+void CLayerKZFront::BrushDraw(CLayer *pBrush, vec2 WorldPos)
 {
 	if(m_Readonly)
 		return;
 
-	std::shared_ptr<CLayerKZGame> pSwitchLayer = std::static_pointer_cast<CLayerKZGame>(pBrush);
+	CLayerKZGame *pSwitchLayer = static_cast<CLayerKZGame *>(pBrush);
 	int sx = ConvertX(WorldPos.x);
 	int sy = ConvertY(WorldPos.y);
 	if(str_comp(pSwitchLayer->m_aFileName, m_pEditor->m_aFileName))
@@ -41,7 +42,7 @@ void CLayerKZFront::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
 		m_pEditor->m_KZFrontValue3 = pSwitchLayer->m_Value3;
 	}
 
-	bool Destructive = m_pEditor->m_BrushDrawDestructive || IsEmpty(pSwitchLayer);
+	bool Destructive = m_pEditor->m_BrushDrawDestructive || pSwitchLayer->IsEmpty();
 
 	for(int y = 0; y < pSwitchLayer->m_Height; y++)
 		for(int x = 0; x < pSwitchLayer->m_Width; x++)
@@ -125,7 +126,7 @@ void CLayerKZFront::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
 	FlagModified(sx, sy, pSwitchLayer->m_Width, pSwitchLayer->m_Height);
 }
 
-void CLayerKZFront::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CUIRect Rect)
+void CLayerKZFront::FillSelection(bool Empty, CLayer *pBrush, CUIRect Rect)
 {
 	if(m_Readonly || (!Empty && pBrush->m_Type != LAYERTYPE_TILES))
 		return;
@@ -139,9 +140,9 @@ void CLayerKZFront::FillSelection(bool Empty, std::shared_ptr<CLayer> pBrush, CU
 	int w = ConvertX(Rect.w);
 	int h = ConvertY(Rect.h);
 
-	std::shared_ptr<CLayerKZGame> pLt = std::static_pointer_cast<CLayerKZGame>(pBrush);
+	CLayerKZGame *pLt = static_cast<CLayerKZGame *>(pBrush);
 
-	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || IsEmpty(pLt);
+	bool Destructive = m_pEditor->m_BrushDrawDestructive || Empty || pLt->IsEmpty();
 
 	for(int y = 0; y < h; y++)
 	{

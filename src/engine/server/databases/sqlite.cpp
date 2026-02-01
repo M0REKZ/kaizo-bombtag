@@ -1,9 +1,10 @@
 #include "connection.h"
 
-#include <sqlite3.h>
-
 #include <base/math.h>
+
 #include <engine/console.h>
+
+#include <sqlite3.h>
 
 #include <atomic>
 
@@ -44,7 +45,7 @@ public:
 	bool ExecuteUpdate(int *pNumUpdated, char *pError, int ErrorSize) override;
 
 	bool IsNull(int Col) override;
-	float GetFloat(int Col) override;
+	double GetFloat(int Col) override; //+KZ to double
 	int GetInt(int Col) override;
 	int64_t GetInt64(int Col) override;
 	void GetString(int Col, char *pBuffer, int BufferSize) override;
@@ -179,6 +180,15 @@ bool CSqliteConnection::ConnectImpl(char *pError, int ErrorSize)
 		FormatCreateSaves(aBuf, sizeof(aBuf), /* Backup */ true);
 		if(!Execute(aBuf, pError, ErrorSize))
 			return false;
+
+		//+KZ
+		FormatCreateKaizoSaves(aBuf, sizeof(aBuf), /* Backup */ false);
+		if(!Execute(aBuf, pError, ErrorSize))
+			return false;
+		FormatCreateKaizoSaves(aBuf, sizeof(aBuf), /* Backup */ true);
+		if(!Execute(aBuf, pError, ErrorSize))
+			return false;
+		
 		m_Setup = false;
 	}
 	return true;
@@ -319,9 +329,9 @@ bool CSqliteConnection::IsNull(int Col)
 	return sqlite3_column_type(m_pStmt, Col - 1) == SQLITE_NULL;
 }
 
-float CSqliteConnection::GetFloat(int Col)
+double CSqliteConnection::GetFloat(int Col) //+KZ to double
 {
-	return (float)sqlite3_column_double(m_pStmt, Col - 1);
+	return sqlite3_column_double(m_pStmt, Col - 1);
 }
 
 int CSqliteConnection::GetInt(int Col)

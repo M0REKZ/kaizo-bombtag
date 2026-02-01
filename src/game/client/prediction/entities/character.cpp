@@ -1,13 +1,16 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-#include <engine/shared/config.h>
-#include <game/collision.h>
-#include <game/generated/client_data.h>
-#include <game/mapitems.h>
-
 #include "character.h"
+
 #include "laser.h"
 #include "projectile.h"
+
+#include <engine/shared/config.h>
+
+#include <generated/client_data.h>
+
+#include <game/collision.h>
+#include <game/mapitems.h>
 
 // Character, "physical" player's part
 
@@ -125,7 +128,7 @@ void CCharacter::HandleNinja()
 		// Set velocity
 		m_Core.m_Vel = m_Core.m_Ninja.m_ActivationDir * g_pData->m_Weapons.m_Ninja.m_Velocity;
 		vec2 OldPos = m_Pos;
-		Collision()->MoveBox(&m_Core.m_Pos, &m_Core.m_Vel, vec2(m_ProximityRadius, m_ProximityRadius), vec2(GetTuning(GetOverriddenTuneZone())->m_GroundElasticityX, GetTuning(GetOverriddenTuneZone())->m_GroundElasticityY));
+		Collision()->MoveBox(&m_Core.m_Pos, &m_Core.m_Vel, vec2(m_ProximityRadius, m_ProximityRadius), vec2(GetTuning(GetOverriddenTuneZone())->m_GroundElasticityX, GetTuning(GetOverriddenTuneZone())->m_GroundElasticityY),nullptr,&m_Core.m_CharCoreParams); //+KZ added charcoreparams
 
 		// reset velocity so the client doesn't predict stuff
 		m_Core.m_Vel = vec2(0.f, 0.f);
@@ -245,6 +248,12 @@ void CCharacter::HandleWeaponSwitch()
 
 void CCharacter::FireWeapon()
 {
+	if(KaizoPredictFireWeapon()) //+KZ
+		return;
+
+	if(m_KaizoNetworkChar.m_Tick != -1 && m_KaizoNetworkChar.m_Tick > GameWorld()->GameTick() - GameWorld()->GameTickSpeed()/5 && m_KaizoNetworkChar.m_RealCurrentWeapon != -1)
+		return; //+KZ for now dont predict
+
 	if(m_NumInputs < 2)
 		return;
 
@@ -264,6 +273,9 @@ void CCharacter::FireWeapon()
 		FullAuto = true;
 	if(m_FrozenLastTick)
 		FullAuto = true;
+
+	if(g_Config.m_KaizoPredictPointerTWPlus && GameWorld()->m_WorldConfig.m_IsPointerTWPlus && m_Core.m_ActiveWeapon == WEAPON_GUN)
+		FullAuto = true; //+KZ try to predict Pointer auto gun
 
 	// don't fire hammer when player is deep and sv_deepfly is disabled
 	if(!g_Config.m_SvDeepfly && m_Core.m_ActiveWeapon == WEAPON_HAMMER && m_Core.m_DeepFrozen)
@@ -308,6 +320,11 @@ void CCharacter::FireWeapon()
 			auto *pTarget = static_cast<CCharacter *>(apEnts[i]);
 
 			if((pTarget == this || !CanCollide(pTarget->GetCid())))
+				continue;
+
+			//+KZ: Vanilla hammer prediction fix
+			if(g_Config.m_KaizoPredictVanillaHammerFix && GameWorld()->m_WorldConfig.m_IsPureVanilla &&
+				Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, nullptr, nullptr))
 				continue;
 
 			// set his velocity to fast upward (for now)
@@ -409,7 +426,10 @@ void CCharacter::FireWeapon()
 		{
 			float LaserReach = GetTuning(GetOverriddenTuneZone())->m_LaserReach;
 
-			new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_SHOTGUN);
+			SKZLaserParams ShotgunParams;
+			ShotgunParams.m_IsRecoverJump = m_KaizoNetworkChar.m_Flags & KAIZOCHARACTERFLAG_LASERRECOVERJUMP;
+
+			new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_SHOTGUN, &ShotgunParams);
 		}
 	}
 	break;
@@ -436,7 +456,10 @@ void CCharacter::FireWeapon()
 	{
 		float LaserReach = GetTuning(GetOverriddenTuneZone())->m_LaserReach;
 
-		new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_LASER);
+		SKZLaserParams LaserParams;
+		LaserParams.m_IsRecoverJump = m_KaizoNetworkChar.m_Flags & KAIZOCHARACTERFLAG_LASERRECOVERJUMP;
+
+		new CLaser(GameWorld(), m_Pos, Direction, LaserReach, GetCid(), WEAPON_LASER, &LaserParams);
 	}
 	break;
 
@@ -447,7 +470,9 @@ void CCharacter::FireWeapon()
 
 		m_Core.m_Ninja.m_ActivationDir = Direction;
 		m_Core.m_Ninja.m_CurrentMoveTime = g_pData->m_Weapons.m_Ninja.m_Movetime * GameWorld()->GameTickSpeed() / 1000;
-		m_Core.m_Ninja.m_OldVelAmount = length(m_Core.m_Vel);
+
+		// clamp to prevent massive MoveBox calculation lag with SG bug
+		m_Core.m_Ninja.m_OldVelAmount = std::clamp(length(m_Core.m_Vel), 0.0f, 6000.0f);
 	}
 	break;
 	}
@@ -576,6 +601,8 @@ void CCharacter::PreTick()
 
 void CCharacter::Tick()
 {
+	m_DontMixPredictedPos = false; //+KZ
+
 	if(m_pGameWorld->m_WorldConfig.m_NoWeakHookAndBounce)
 	{
 		m_Core.TickDeferred();
@@ -1061,7 +1088,9 @@ void CCharacter::DDRaceTick()
 			break;
 		}
 	}
-	m_Core.m_IsInFreeze |= (Collision()->GetCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
+
+	//+KZ modified for death effect prediction
+	m_IsInDeathTile = (Collision()->GetCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
 				Collision()->GetCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
 				Collision()->GetCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
 				Collision()->GetCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
@@ -1069,12 +1098,27 @@ void CCharacter::DDRaceTick()
 				Collision()->GetFrontCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
 				Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
 				Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH);
+	m_Core.m_IsInFreeze |= m_IsInDeathTile;
 }
 
 void CCharacter::DDRacePostCoreTick()
 {
-	if(!GameWorld()->m_WorldConfig.m_PredictDDRace)
+	if(!GameWorld()->m_WorldConfig.m_PredictDDRace) //+KZ extended this
+	{
+		int CurrentIndex = Collision()->GetMapIndex(m_Pos);
+		std::vector<int> vIndices = Collision()->GetMapIndices(m_PrevPos, m_Pos);
+		if(!vIndices.empty())
+			for(int Index : vIndices)
+			{
+				KaizoPredictNormalTiles(Index); //+KZ
+			}
+		else
+		{
+			KaizoPredictNormalTiles(CurrentIndex); //+KZ
+		}
 		return;
+	}
+		
 
 	if(m_Core.m_EndlessHook)
 		m_Core.m_HookTick = 0;
@@ -1119,10 +1163,14 @@ void CCharacter::DDRacePostCoreTick()
 	std::vector<int> vIndices = Collision()->GetMapIndices(m_PrevPos, m_Pos);
 	if(!vIndices.empty())
 		for(int Index : vIndices)
+		{
 			HandleTiles(Index);
+			KaizoPredictNormalTiles(Index); //+KZ
+		}
 	else
 	{
 		HandleTiles(CurrentIndex);
+		KaizoPredictNormalTiles(CurrentIndex); //+KZ
 	}
 }
 
@@ -1230,6 +1278,9 @@ CTeamsCore *CCharacter::TeamsCore()
 CCharacter::CCharacter(CGameWorld *pGameWorld, int Id, CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_CHARACTER, vec2(0, 0), CCharacterCore::PhysicalSize())
 {
+	//+KZ added
+	m_Core.m_pKaizoNetworkChar = &m_KaizoNetworkChar;
+
 	m_Id = Id;
 	m_IsLocal = false;
 

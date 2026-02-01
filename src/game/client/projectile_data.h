@@ -26,6 +26,9 @@ public:
 	int m_SwitchNumber;
 	// TuneZone is introduced locally
 	int m_TuneZone;
+
+	//+KZ
+	bool m_GoresTeleportGrenade = false;
 };
 
 CProjectileData ExtractProjectileInfo(int NetObjType, const void *pData, class CGameWorld *pGameWorld, const CNetObj_EntityEx *pEntEx);

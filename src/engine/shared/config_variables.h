@@ -136,7 +136,7 @@ MACRO_CONFIG_INT(ClShowWelcome, cl_show_welcome, 1, 0, 1, CFGFLAG_CLIENT | CFGFL
 MACRO_CONFIG_INT(ClMotdTime, cl_motd_time, 10, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "How long to show the server message of the day")
 
 // http map download
-MACRO_CONFIG_STR(ClMapDownloadUrl, cl_map_download_url, 100, "https://maps.ddnet.org", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL used to download maps (can start with http:// or https://)")
+MACRO_CONFIG_STR(ClMapDownloadUrl, cl_map_download_url, 100, "https://maps.ddnet.org", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL used to download maps (must start with https://)")
 MACRO_CONFIG_INT(ClMapDownloadConnectTimeoutMs, cl_map_download_connect_timeout_ms, 2000, 0, 100000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "HTTP map downloads: timeout for the connect phase in milliseconds (0 to disable)")
 MACRO_CONFIG_INT(ClMapDownloadLowSpeedLimit, cl_map_download_low_speed_limit, 4000, 0, 100000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "HTTP map downloads: Set low speed limit in bytes per second (0 to disable)")
 MACRO_CONFIG_INT(ClMapDownloadLowSpeedTime, cl_map_download_low_speed_time, 3, 0, 100000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "HTTP map downloads: Set low speed limit time period (0 to disable)")
@@ -212,8 +212,12 @@ MACRO_CONFIG_STR(ClDummy7SkinHands, dummy7_skin_hands, protocol7::MAX_SKIN_ARRAY
 MACRO_CONFIG_STR(ClDummy7SkinFeet, dummy7_skin_feet, protocol7::MAX_SKIN_ARRAY_SIZE, "standard", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_INSENSITIVE, "Dummy skin feet")
 MACRO_CONFIG_STR(ClDummy7SkinEyes, dummy7_skin_eyes, protocol7::MAX_SKIN_ARRAY_SIZE, "standard", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_INSENSITIVE, "Dummy skin eyes")
 
+// Client-side word censoring
+// MACRO_CONFIG_INT(ClCensorChat, cl_censor_chat, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Toggles chat censoring")
+// MACRO_CONFIG_STR(ClCensorUrl, cl_censor_url, 100, "https://info.ddnet.org/censor.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL used to download words to censor (must start with https://)")
+
 MACRO_CONFIG_INT(UiPage, ui_page, 6, 6, 13, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface page")
-MACRO_CONFIG_INT(UiSettingsPage, ui_settings_page, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface settings page")
+MACRO_CONFIG_INT(UiSettingsPage, ui_settings_page, 0, 0, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface settings page")
 MACRO_CONFIG_INT(UiToolboxPage, ui_toolbox_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Toolbox page")
 MACRO_CONFIG_STR(UiServerAddress, ui_server_address, 1024, "localhost:8303", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_INSENSITIVE, "Interface server address")
 MACRO_CONFIG_INT(UiMousesens, ui_mousesens, 200, 1, 100000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Mouse sensitivity for menus/editor")
@@ -349,7 +353,7 @@ MACRO_CONFIG_STR(ClAssetParticles, cl_asset_particles, 50, "default", CFGFLAG_SA
 MACRO_CONFIG_STR(ClAssetHud, cl_asset_hud, 50, "default", CFGFLAG_SAVE | CFGFLAG_CLIENT, "The asset for HUD")
 MACRO_CONFIG_STR(ClAssetExtras, cl_asset_extras, 50, "default", CFGFLAG_SAVE | CFGFLAG_CLIENT, "The asset for the game graphics that do not come from Teeworlds")
 
-MACRO_CONFIG_STR(BrFilterString, br_filter_string, 128, "Novice", CFGFLAG_SAVE | CFGFLAG_CLIENT, "Server browser filtering string")
+MACRO_CONFIG_STR(BrFilterString, br_filter_string, 128, "Kaizo;K-Gores;Cloud", CFGFLAG_SAVE | CFGFLAG_CLIENT, "Server browser filtering string")
 MACRO_CONFIG_STR(BrExcludeString, br_exclude_string, 128, "", CFGFLAG_SAVE | CFGFLAG_CLIENT, "Server browser exclusion string")
 MACRO_CONFIG_INT(BrFilterFull, br_filter_full, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Filter out full server in browser")
 MACRO_CONFIG_INT(BrFilterEmpty, br_filter_empty, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Filter out empty server in browser")
@@ -373,7 +377,7 @@ MACRO_CONFIG_INT(BrSort, br_sort, 4, 0, 256, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Sor
 MACRO_CONFIG_INT(BrSortOrder, br_sort_order, 2, 0, 2, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Sorting order in server browser")
 MACRO_CONFIG_INT(BrMaxRequests, br_max_requests, 100, 0, 1000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Number of concurrent requests to use when refreshing server browser")
 
-MACRO_CONFIG_INT(BrDemoSort, br_demo_sort, 0, 0, 2, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Sorting column in demo browser")
+MACRO_CONFIG_INT(BrDemoSort, br_demo_sort, 0, 0, 3, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Sorting column in demo browser")
 MACRO_CONFIG_INT(BrDemoSortOrder, br_demo_sort_order, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Sorting order in demo browser")
 MACRO_CONFIG_INT(BrDemoFetchInfo, br_demo_fetch_info, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Whether to auto fetch demo infos on refresh")
 
@@ -461,6 +465,8 @@ MACRO_CONFIG_STR(SvRegister, sv_register, 16, "1", CFGFLAG_SERVER, "Register ser
 MACRO_CONFIG_STR(SvRegisterExtra, sv_register_extra, 256, "", CFGFLAG_SERVER, "Extra headers to send to the register endpoint, comma-separated 'Header: Value' pairs")
 MACRO_CONFIG_STR(SvRegisterUrl, sv_register_url, 128, "https://master1.ddnet.org/ddnet/15/register", CFGFLAG_SERVER, "Masterserver URL to register to")
 MACRO_CONFIG_INT(SvRegisterPort, sv_register_port, 0, 0, 65535, CFGFLAG_SERVER, "Port for the master server to register the server with, useful if you are behind NAT, otherwise you only need sv_port")
+MACRO_CONFIG_STR(SvRegisterCommunityToken, sv_register_community_token, 128, "", CFGFLAG_SERVER, "Token to register this server to a particular community")
+MACRO_CONFIG_INT(SvFlag, sv_flag, -1, -1, 999, CFGFLAG_SERVER, "Country flag to group this community under (ISO 3166-1 numeric)")
 MACRO_CONFIG_STR(SvMapsBaseUrl, sv_maps_base_url, 128, "", CFGFLAG_SERVER, "Base path used to provide HTTPS map download URL to the clients")
 MACRO_CONFIG_STR(SvRconPassword, sv_rcon_password, 128, "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, "Remote console password (full access)")
 MACRO_CONFIG_STR(SvRconModPassword, sv_rcon_mod_password, 128, "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, "Remote console password for moderators (limited access)")
@@ -499,6 +505,9 @@ MACRO_CONFIG_INT(DbgSql, dbg_sql, 1, 0, 1, CFGFLAG_SERVER, "Debug SQL")
 MACRO_CONFIG_INT(DbgCurl, dbg_curl, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SERVER, "Debug curl")
 MACRO_CONFIG_INT(DbgGraphs, dbg_graphs, 0, 0, 1, CFGFLAG_CLIENT, "Show performance graphs")
 MACRO_CONFIG_INT(DbgGfx, dbg_gfx, 0, 0, 4, CFGFLAG_CLIENT, "Show graphic library warnings and errors, if the GPU supports it (0: none, 1: minimal, 2: affects performance, 3: verbose, 4: all)")
+MACRO_CONFIG_INT(DbgRenderGroupClips, dbg_render_group_clips, 0, 0, 1, CFGFLAG_CLIENT, "Debug group clipping")
+MACRO_CONFIG_INT(DbgRenderQuadClips, dbg_render_quad_clips, 0, 0, 1, CFGFLAG_CLIENT, "Debug quad layer clipping")
+MACRO_CONFIG_INT(DbgRenderClusterClips, dbg_render_cluster_clips, 0, 0, 1, CFGFLAG_CLIENT, "Debug quad layer cluster clipping")
 #ifdef CONF_DEBUG
 MACRO_CONFIG_INT(DbgStress, dbg_stress, 0, 0, 1, CFGFLAG_CLIENT, "Stress systems (Debug build only)")
 MACRO_CONFIG_STR(DbgStressServer, dbg_stress_server, 32, "localhost", CFGFLAG_CLIENT, "Server to stress (Debug build only)")
@@ -588,7 +597,6 @@ MACRO_CONFIG_INT(SvAnnouncementInterval, sv_announcement_interval, 120, 1, 9999,
 MACRO_CONFIG_INT(SvAnnouncementRandom, sv_announcement_random, 1, 0, 1, CFGFLAG_SERVER, "Whether announcements are sequential or random")
 
 MACRO_CONFIG_INT(SvOldLaser, sv_old_laser, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Whether lasers can hit you if you shot them and that they pull you towards the bounce origin (0 for all new maps) or lasers can't hit you if you shot them, and they pull others towards the shooter")
-MACRO_CONFIG_INT(SvSlashMe, sv_slash_me, 0, 0, 1, CFGFLAG_SERVER, "Whether /me is active on the server or not")
 MACRO_CONFIG_INT(SvRejoinTeam0, sv_rejoin_team_0, 1, 0, 1, CFGFLAG_SERVER, "Make a team automatically rejoin team 0 after finish (only if not locked)")
 
 MACRO_CONFIG_INT(SvNoWeakHook, sv_no_weak_hook, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Whether to use an alternative calculation for world ticks, that makes the hook behave like all players have strong.")
@@ -758,6 +766,8 @@ MACRO_CONFIG_STR(Gfx3DTextureAnalysisVersion, gfx_3d_texture_analysis_version, 1
 MACRO_CONFIG_STR(GfxGpuName, gfx_gpu_name, 256, "auto", CFGFLAG_SAVE | CFGFLAG_CLIENT, "The GPU's name, which will be selected by the backend. (if supported by the backend)")
 #if defined(CONF_PLATFORM_ANDROID)
 MACRO_CONFIG_STR(GfxBackend, gfx_backend, 256, "GLES", CFGFLAG_SAVE | CFGFLAG_CLIENT, "The backend to use (e.g. GLES or Vulkan)")
+#elif defined(CONF_PLATFORM_EMSCRIPTEN)
+MACRO_CONFIG_STR(GfxBackend, gfx_backend, 256, "GLES", CFGFLAG_SAVE | CFGFLAG_CLIENT, "The backend to use (e.g. GLES)")
 #elif !defined(CONF_ARCH_IA32) && !defined(CONF_PLATFORM_MACOS)
 MACRO_CONFIG_STR(GfxBackend, gfx_backend, 256, "Vulkan", CFGFLAG_SAVE | CFGFLAG_CLIENT, "The backend to use (e.g. OpenGL or Vulkan)")
 #else
@@ -774,10 +784,25 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
  */
 
 #include "bomb_config_variables.h"
+//Kaizo Network config variables by +KZ
+//Starting all configs with sv_kaizo_ to avoid conflicts with DDNet
+//The ones that does not start with sv_kaizo_ are kept for compatibility with old Kaizo Network versions
+//sv_kog_ variables are for compatibility with Gores maps
+
+//Kaizo Bomb configs
+
+MACRO_CONFIG_INT(SvAllowZoom, sv_allow_zoom, 0, 0, 1, CFGFLAG_SERVER, "Allow Zoom")
+MACRO_CONFIG_INT(SvSpecPause, sv_spec_pause, 0, 0, 1, CFGFLAG_SERVER, "Allow /spec & /pause")
+MACRO_CONFIG_INT(SvRollback, sv_rollback, 1, 0, 1, CFGFLAG_SERVER, "Allow /rollback")
+
+MACRO_CONFIG_INT(SvKZBots, sv_kzbots, 0, 0, MAX_CLIENTS, CFGFLAG_SERVER, "Add KZ Bots")
+MACRO_CONFIG_INT(SvKZBotsAI, sv_kzbots_ai, 0, 0, 99, CFGFLAG_SERVER, "KZ Bots AI (0 = +KZ AI, 1 = Pointer AI)")
+
+//Old configs
+
 MACRO_CONFIG_STR(SvChatDiscordWebhook, sv_chat_discord_webhook, 512, "", CFGFLAG_SERVER, "Where to send chat messages written by players")
 MACRO_CONFIG_STR(SvRecordsDiscordWebhook, sv_records_discord_webhook, 512, "", CFGFLAG_SERVER, "Where to send new records notifications")
-MACRO_CONFIG_INT(SvPortalMode, sv_portal_mode, 1, 0, 2, CFGFLAG_SERVER | CFGFLAG_GAME, "Portal spawning behavior (0 = on every tile, 1 = only on allow portal tile, 2 = pprace compatibility)")
-MACRO_CONFIG_INT(SvPortalProjectile, sv_portal_projectile, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Use Kaizo-Insta Portal Projectile instead of Laser")
+MACRO_CONFIG_INT(SvPortalMode, sv_portal_mode, 1, 0, 2, CFGFLAG_SERVER | CFGFLAG_GAME, "Portal spawning behavior (0 = on every tile, 1 = only on allow portal tile, 2 = PPRace compatibility)")
 MACRO_CONFIG_INT(SvPortalLaserReach, sv_portal_laser_reach, 9999, 0, 9999, CFGFLAG_SERVER | CFGFLAG_GAME, "Portal gun laser reach")
 MACRO_CONFIG_INT(SvMaxHealth, sv_max_health, 10, 1, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Max amount of life")
 MACRO_CONFIG_INT(SvDamageLaserCooldown, sv_damage_laser_cooldown, 4, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Cooldown for damage laser")
@@ -785,9 +810,45 @@ MACRO_CONFIG_INT(SvDamageLaserDmg, sv_damage_laser_dmg, 2, 0, 10000, CFGFLAG_SER
 MACRO_CONFIG_INT(SvDamageTurretDmg, sv_damage_turret_dmg, 1, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Plasma turret damage")
 MACRO_CONFIG_INT(SvDamageTurretExplosiveDmg, sv_damage_turret_explosive_dmg, 3, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Explosive plasma turret damage")
 MACRO_CONFIG_INT(SvDamageMineDmg, sv_damage_mine_dmg, 3, 0, 10000, CFGFLAG_SERVER | CFGFLAG_GAME, "Mines damage")
-MACRO_CONFIG_INT(SvAllowZoom, sv_allow_zoom, 0, 0, 1, CFGFLAG_SERVER, "Allow Zoom")
-MACRO_CONFIG_INT(SvSpecPause, sv_spec_pause, 0, 0, 1, CFGFLAG_SERVER, "Allow /spec & /pause")
-MACRO_CONFIG_INT(SvRollback, sv_rollback, 1, 0, 1, CFGFLAG_SERVER, "Allow /rollback")
 
-MACRO_CONFIG_INT(SvKZBots, sv_kzbots, 0, 0, MAX_CLIENTS, CFGFLAG_SERVER, "Add KZ Bots")
-MACRO_CONFIG_INT(SvKZBotsAI, sv_kzbots_ai, 0, 0, 99, CFGFLAG_SERVER, "KZ Bots AI (0 = +KZ AI, 1 = Pointer AI)")
+//New configs
+
+MACRO_CONFIG_STR(SvKaizoNetworkName, sv_kaizo_network_name, 32, "Kaizo Network", CFGFLAG_SERVER, "Network name for \"--- Welcome to ? ---\" message")
+MACRO_CONFIG_STR(SvKaizoSecretMap, sv_kaizo_secret_map, 16, "", CFGFLAG_SERVER, "If set, replaces map name in server browser")
+MACRO_CONFIG_INT(SvKaizoLaserRecoverJump, sv_kaizo_laser_recover_jump, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Player recovers jump when hit by laser")
+MACRO_CONFIG_INT(SvKaizoMaxVel, sv_kaizo_max_vel, 300, 0, 9999, CFGFLAG_SERVER | CFGFLAG_GAME, "Max player velocity to prevent high CPU usage (due to Kaizo tiles collision)")
+MACRO_CONFIG_INT(SvKaizoVanillaMode, sv_kaizo_vanilla_mode, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Get damaged by your own weapons like in vanilla and be able to collect health and armor")
+MACRO_CONFIG_INT(SvKaizoAntibot, sv_kaizo_antibot, 1, 0, 1, CFGFLAG_SERVER, "Enable Antibot")
+
+//Compat configs
+
+//SvPortalMode has a PPRace compatibility option
+MACRO_CONFIG_INT(SvPortalProjectile, sv_portal_projectile, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Kaizo-Insta compatibility: Use Portal Projectile instead of Laser")
+MACRO_CONFIG_INT(SvGoresQuadsEnable, sv_kog_qquads_enable, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Gores compatibility: Moving tiles")
+MACRO_CONFIG_INT(SvGoresGrenadeTele, sv_kog_grenade_tele, 0, 0, 1, CFGFLAG_SERVER | CFGFLAG_GAME, "Gores compatibility: Teleport grenade")
+
+//Client configs
+
+MACRO_CONFIG_INT(KaizoFastInput, kaizo_fast_input, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable fast input")
+MACRO_CONFIG_INT(KaizoFastInputOthers, kaizo_fast_input_others, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable fast input for other players")
+MACRO_CONFIG_INT(KaizoShowCrowns, kaizo_show_crowns, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show crowns on top of the players in Kaizo servers")
+MACRO_CONFIG_INT(KaizoPredictDDNetTeleport, kaizo_predict_ddnet_teleport, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict DDNet teleports if there is only 1 exit")
+MACRO_CONFIG_INT(KaizoInstaShieldShield, kaizo_instashield_shield, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable InstaShield Shield")
+MACRO_CONFIG_INT(KaizoPredictDeathTiles, kaizo_predict_death_tiles, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict death effect in death tiles")
+MACRO_CONFIG_INT(KaizoPingCircles, kaizo_ping_circles, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ping circles above players in Kaizo servers")
+MACRO_CONFIG_INT(KaizoSleepingInMenuPlayers, kaizo_sleeping_in_menu_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Players navigating menu appear as sleeping")
+MACRO_CONFIG_INT(KaizoKillingSpreeSparkles, kaizo_killing_spree_sparkles, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Killing spree sparkles")
+MACRO_CONFIG_INT(KaizoPredictPointerTWPlus, kaizo_predict_pointer_twplus, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Try to detect and predict Pointer's TW+")
+MACRO_CONFIG_INT(KaizoOldModsZooming, kaizo_old_mods_zooming, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Allow to zoom in old non-DDNet mods (WARNING: some communities may consider it a cheat, use at your own risk!)")
+MACRO_CONFIG_INT(KaizoSendClientType, kaizo_send_client_type, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Let know other clients that we are Kaizo Network Client")
+MACRO_CONFIG_INT(KaizoShowClientType, kaizo_show_client_type, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Try to identify and show other players clients as icons")
+MACRO_CONFIG_INT(KaizoShowRechargeBar, kaizo_show_recharge_bar, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show weapon recharge bar")
+MACRO_CONFIG_INT(KaizoRotatingHammer, kaizo_rotating_hammer, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Hammer rotates like other weapons")
+MACRO_CONFIG_INT(KaizoPredictTeleToDeath, kaizo_predict_tele_to_death, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict death effect for teleports that only lead to death tiles")
+MACRO_CONFIG_INT(KaizoPredictVanillaHammerFix, kaizo_predict_vanilla_hammer_fix, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Fix hammer prediction in vanilla when hitting other players through walls")
+MACRO_CONFIG_INT(KaizoHudRealPosition, kaizo_hud_real_position, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "If HUD player position is enabled, show the real position instead of the calculated one")
+MACRO_CONFIG_INT(KaizoHudRealVelocity, kaizo_hud_real_velocity, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "If HUD player velocity is enabled, show the real velocity instead of the calculated one")
+MACRO_CONFIG_INT(KaizoStartMenu, kaizo_start_menu, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use Kaizo Network start menu")
+MACRO_CONFIG_INT(KaizoPredictGoresGrenadeTele, kaizo_predict_grenade_gores_tele, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Predict Gores grenade teleport")
+//This one is from T-Client:
+MACRO_CONFIG_STR(KaizoCustomCommunitiesUrl, kaizo_custom_communities_url, 256, "https://raw.githubusercontent.com/SollyBunny/ddnet-custom-communities/refs/heads/main/custom-communities-ddnet-info.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL to fetch custom communities from (must be https), empty to disable")

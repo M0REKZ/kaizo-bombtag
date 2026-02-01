@@ -1,11 +1,14 @@
 /* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
+
+// modified by +KZ
+
 #include "kz_plasma.h"
 #include <game/server/entities/character.h>
 
 #include <engine/server.h>
 #include <engine/shared/config.h>
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 #include <game/teamscore.h>
 
 #include <game/server/gamecontext.h>

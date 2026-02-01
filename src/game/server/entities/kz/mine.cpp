@@ -1,12 +1,16 @@
-/* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
-/* If you are missing that file, acquire a complete release at teeworlds.com.                */
+// Copyright (C) Benjamín Gajardo (also known as +KZ)
+
+// Move() taken from DDNet and is not under +KZ copyright
+// m_Core taken from DDNet and is not under +KZ copyright
+
 #include "mine.h"
 
 #include <game/server/entities/character.h>
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 #include <game/mapitems.h>
 #include <game/teamscore.h>
+#include <game/version.h>
 
 #include <game/server/gamecontext.h>
 #include <game/server/player.h>
@@ -116,15 +120,29 @@ void CMine::Snap(int SnappingClient)
 	if(NetworkClipped(SnappingClient))
 		return;
 
-	CNetObj_Projectile *pObj = static_cast<CNetObj_Projectile *>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, GetId(), sizeof(CNetObj_Projectile)));
-	if(!pObj)
-		return;
+	if(Server()->GetKaizoNetworkVersion(SnappingClient) < KAIZO_NETWORK_VERSION_TURRETS)
+	{
+		CNetObj_Projectile *pObj = static_cast<CNetObj_Projectile *>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, GetId(), sizeof(CNetObj_Projectile)));
+		if(!pObj)
+			return;
 
-	pObj->m_X = (int)m_Pos.x;
-	pObj->m_Y = (int)m_Pos.y + 8 * sin((float)Server()->Tick() / 25.0); // do animation like a normal pickup
-	pObj->m_VelX = 1;
-	pObj->m_VelY = 1;
-	pObj->m_Type = WEAPON_LASER;
+		pObj->m_X = (int)m_Pos.x;
+		pObj->m_Y = (int)m_Pos.y + 8 * sin((float)Server()->Tick() / 25.0); // do animation like a normal pickup
+		pObj->m_VelX = 1;
+		pObj->m_VelY = 1;
+		pObj->m_Type = WEAPON_LASER;
+	}
+	else
+	{
+		CNetObj_KaizoNetworkMine *pMine = static_cast<CNetObj_KaizoNetworkMine *>(
+			Server()->SnapNewItem(NETOBJTYPE_KAIZONETWORKMINE, GetId(), sizeof(CNetObj_KaizoNetworkMine)));
+		if(!pMine)
+			return;
+
+		pMine->m_X = (int)m_Pos.x;
+		pMine->m_Y = (int)m_Pos.y; // no animation, it is done client-side
+		pMine->m_Type = 0;
+	}
 }
 
 void CMine::Reset()

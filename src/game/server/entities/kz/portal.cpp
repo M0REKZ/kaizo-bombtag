@@ -1,8 +1,8 @@
-/* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
-/* If you are missing that file, acquire a complete release at teeworlds.com.                */
+// Copyright (C) Benjamín Gajardo (also known as +KZ)
+
 #include "portal.h"
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 #include <game/mapitems.h>
 #include <game/teamscore.h>
 
@@ -116,7 +116,7 @@ void CPortalKZ::Snap(int SnappingClient)
 		Team = pChr->Team();
 	}
 
-	if(pOwner->Team() != TEAM_SUPER && pOwner->Team() != Team)
+	if(pChr && pChr->GetPlayer() && (pChr->GetPlayer()->GetTeam() == TEAM_SPECTATORS || pChr->GetPlayer()->IsPaused()) ? false : (pOwner->Team() != TEAM_SUPER && pOwner->Team() != Team))
 		return;
 
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);

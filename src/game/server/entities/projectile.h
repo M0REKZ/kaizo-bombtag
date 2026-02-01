@@ -64,6 +64,8 @@ public:
 	//+KZ
 	int GetStartTick() { return m_StartTick; }
 	int GetDDraceTeam() { return m_DDRaceTeam; }
+	bool m_GoresTeleportGrenade = false;
+	int GetType() { return m_Type; }
 
 	// Kaizo-Insta projectile rollback
 	// for rollback players the projectile will be forwarded

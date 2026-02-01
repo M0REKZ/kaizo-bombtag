@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "ui.h"
+
 #include "ui_scrollregion.h"
 
 #include <base/math.h>
@@ -47,7 +48,7 @@ void CUIElement::SUIElementRect::Reset()
 	m_Rounding = -1.0f;
 	m_Corners = -1;
 	m_Text.clear();
-	m_Cursor.Reset();
+	m_Cursor = CTextCursor();
 	m_TextColor = ColorRGBA(-1, -1, -1, -1);
 	m_TextOutlineColor = ColorRGBA(-1, -1, -1, -1);
 	m_QuadColor = ColorRGBA(-1, -1, -1, -1);
@@ -78,6 +79,12 @@ void CUIElement::SUIElementRect::Draw(const CUIRect *pRect, ColorRGBA Color, int
 	m_pParent->Ui()->Graphics()->TextureClear();
 	m_pParent->Ui()->Graphics()->RenderQuadContainerEx(m_UIRectQuadContainer,
 		0, -1, m_X, m_Y, 1, 1);
+}
+
+void SLabelProperties::SetColor(const ColorRGBA &Color)
+{
+	m_vColorSplits.clear();
+	m_vColorSplits.emplace_back(0, -1, Color);
 }
 
 /********************************************************
@@ -797,7 +804,9 @@ void CUi::DoLabel(const CUIRect *pRect, const char *pText, float Size, int Align
 	const vec2 CursorPos = CalcAlignedCursorPos(pRect, TextBounds.m_TextSize, Align, TextBounds.m_LineCount == 1 ? &TextBounds.m_BiggestCharacterHeight : nullptr);
 
 	CTextCursor Cursor;
-	TextRender()->SetCursor(&Cursor, CursorPos.x, CursorPos.y, Size, TEXTFLAG_RENDER | Flags);
+	Cursor.SetPosition(CursorPos);
+	Cursor.m_FontSize = Size;
+	Cursor.m_Flags |= Flags;
 	Cursor.m_vColorSplits = LabelProps.m_vColorSplits;
 	Cursor.m_LineWidth = (float)LabelProps.m_MaxWidth;
 	TextRender()->TextEx(&Cursor, pText, -1);
@@ -815,8 +824,9 @@ void CUi::DoLabel(CUIElement::SUIElementRect &RectEl, const CUIRect *pRect, cons
 	}
 	else
 	{
-		const vec2 CursorPos = CalcAlignedCursorPos(pRect, TextBounds.m_TextSize, Align);
-		TextRender()->SetCursor(&Cursor, CursorPos.x, CursorPos.y, Size, TEXTFLAG_RENDER | Flags);
+		Cursor.SetPosition(CalcAlignedCursorPos(pRect, TextBounds.m_TextSize, Align));
+		Cursor.m_FontSize = Size;
+		Cursor.m_Flags |= Flags;
 	}
 	Cursor.m_LineWidth = LabelProps.m_MaxWidth;
 
@@ -1570,13 +1580,11 @@ void CUi::RenderProgressSpinner(vec2 Center, float OuterRadius, const SProgressS
 	Graphics()->SetColor(Props.m_Color.WithMultipliedAlpha(0.5f));
 	for(int i = 0; i < Props.m_Segments; ++i)
 	{
-		const float Angle1 = AngleOffset + i * SegmentsAngle;
-		const float Angle2 = AngleOffset + (i + 1) * SegmentsAngle;
+		const vec2 Dir1 = direction(AngleOffset + i * SegmentsAngle);
+		const vec2 Dir2 = direction(AngleOffset + (i + 1) * SegmentsAngle);
 		IGraphics::CFreeformItem Item = IGraphics::CFreeformItem(
-			Center.x + std::cos(Angle1) * InnerRadius, Center.y + std::sin(Angle1) * InnerRadius,
-			Center.x + std::cos(Angle2) * InnerRadius, Center.y + std::sin(Angle2) * InnerRadius,
-			Center.x + std::cos(Angle1) * OuterRadius, Center.y + std::sin(Angle1) * OuterRadius,
-			Center.x + std::cos(Angle2) * OuterRadius, Center.y + std::sin(Angle2) * OuterRadius);
+			Center + Dir1 * InnerRadius, Center + Dir2 * InnerRadius,
+			Center + Dir1 * OuterRadius, Center + Dir2 * OuterRadius);
 		Graphics()->QuadsDrawFreeform(&Item, 1);
 	}
 

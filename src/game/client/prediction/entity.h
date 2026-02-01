@@ -3,11 +3,11 @@
 #ifndef GAME_CLIENT_PREDICTION_ENTITY_H
 #define GAME_CLIENT_PREDICTION_ENTITY_H
 
+#include "gameworld.h"
+
 #include <base/vmath.h>
 
 #include <game/alloc.h>
-
-#include "gameworld.h"
 
 class CEntity
 {
@@ -70,6 +70,9 @@ public:
 		m_Id = -1;
 		m_pGameWorld = nullptr;
 	}
+
+	//+KZ
+	bool GetNearestAirPos(vec2 Pos, vec2 PrevPos, vec2 *pOutPos);
 };
 
 #endif

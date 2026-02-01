@@ -3,10 +3,13 @@
 #define GAME_SERVER_TEAMS_H
 
 #include <engine/shared/protocol.h>
+
 #include <game/race_state.h>
 #include <game/server/gamecontext.h>
 #include <game/team_state.h>
 #include <game/teamscore.h>
+
+#include "classes_kz.h"
 
 class CCharacter;
 class CPlayer;
@@ -104,7 +107,7 @@ public:
 	void SwapTeamCharacters(CPlayer *pPrimaryPlayer, CPlayer *pTargetPlayer, int Team);
 	void CancelTeamSwap(CPlayer *pPlayer, int Team);
 	void ProcessSaveTeam();
-	int GetFirstEmptyTeam() const;
+	std::optional<int> GetFirstEmptyTeam() const;
 	bool TeeStarted(int ClientId) const;
 	bool TeeFinished(int ClientId) const;
 	ETeamState GetTeamState(int Team) const;
@@ -118,6 +121,10 @@ public:
 	bool GetSaving(int TeamId) const;
 	void SetPractice(int Team, bool Enabled);
 	bool IsPractice(int Team);
+
+	//+KZ
+	CKZSubTickKeep m_aKZSubTickKeep[NUM_DDRACE_TEAMS];
+	float m_aTeamTimeOverride[NUM_DDRACE_TEAMS];
 };
 
 #endif

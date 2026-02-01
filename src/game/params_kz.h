@@ -1,3 +1,5 @@
+// Copyright (C) Benjamín Gajardo (also known as +KZ)
+
 #ifndef GAME_PARAMS_KZ_H
 #define GAME_PARAMS_KZ_H
 
@@ -5,6 +7,7 @@
 
 class CCharacterCore;
 
+//Collision params
 struct SKZColGenericParams
 {
 	CCharacterCore *pCore = nullptr;
@@ -25,6 +28,8 @@ struct SKZColProjectileParams
 	vec2 *pOutCollision = nullptr;
 	vec2 *pOutBeforeCollision = nullptr;
 	int Weapon = -1;
+	bool m_IsDDraceProjectile = false;
+	bool *m_pDoResetTick = nullptr;
 };
 
 struct SKZColCharCoreParams : public SKZColGenericParams
@@ -42,6 +47,15 @@ struct SKZColIntersectLineParams : public SKZColCharCoreParams // IntersectLine
 {
 	vec2 *pProjPos = nullptr;
 	int Weapon = -1;
+	bool m_IsDDraceProjectile = false;
+	bool m_DoResetTick = false;
+};
+
+//Entities Params
+
+struct SKZLaserParams
+{
+	bool m_IsRecoverJump = false;
 };
 
 #endif

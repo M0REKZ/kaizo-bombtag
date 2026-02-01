@@ -3,10 +3,11 @@
 #include <engine/server/databases/connection_pool.h>
 
 #if defined(CONF_MYSQL)
-#include <mysql.h>
-
 #include <base/tl/threading.h>
+
 #include <engine/console.h>
+
+#include <mysql.h>
 
 #include <atomic>
 #include <memory>
@@ -96,7 +97,7 @@ public:
 	bool ExecuteUpdate(int *pNumUpdated, char *pError, int ErrorSize) override;
 
 	bool IsNull(int Col) override;
-	float GetFloat(int Col) override;
+	double GetFloat(int Col) override; //+KZ to double
 	int GetInt(int Col) override;
 	int64_t GetInt64(int Col) override;
 	void GetString(int Col, char *pBuffer, int BufferSize) override;
@@ -153,7 +154,7 @@ CMysqlConnection::CMysqlConnection(CMysqlConfig Config) :
 	g_MysqlNumConnections += 1;
 	dbg_assert(g_MysqlState == MYSQLSTATE_INITIALIZED, "MySQL library not in initialized state");
 
-	mem_zero(m_aErrorDetail, sizeof(m_aErrorDetail));
+	m_aErrorDetail[0] = '\0';
 	mem_zero(&m_Mysql, sizeof(m_Mysql));
 	mysql_init(&m_Mysql);
 }
@@ -205,10 +206,7 @@ void CMysqlConnection::ToUnixTimestamp(const char *pTimestamp, char *aBuf, unsig
 
 bool CMysqlConnection::Connect(char *pError, int ErrorSize)
 {
-	if(m_InUse.exchange(true))
-	{
-		dbg_assert(0, "Tried connecting while the connection is in use");
-	}
+	dbg_assert(!m_InUse.exchange(true), "Tried connecting while the connection is in use");
 
 	m_NewQuery = true;
 	if(!ConnectImpl())
@@ -304,12 +302,18 @@ bool CMysqlConnection::ConnectImpl()
 		FormatCreatePoints(aCreatePoints, sizeof(aCreatePoints));
 		FormatCreateStats(aCreateStats, sizeof(aCreateStats));
 
+		//+KZ
+		char aCreateKaizoSaves[1024];
+		FormatCreateKaizoSaves(aCreateKaizoSaves, sizeof(aCreateKaizoSaves), false);
+
 		if(!PrepareAndExecuteStatement(aCreateRace) ||
 			!PrepareAndExecuteStatement(aCreateTeamrace) ||
 			!PrepareAndExecuteStatement(aCreateMaps) ||
 			!PrepareAndExecuteStatement(aCreateSaves) ||
 			!PrepareAndExecuteStatement(aCreatePoints) ||
-			!PrepareAndExecuteStatement(aCreateStats))
+			!PrepareAndExecuteStatement(aCreateStats) ||
+			!PrepareAndExecuteStatement(aCreateKaizoSaves) //+KZ
+			)
 		{
 			return false;
 		}
@@ -348,7 +352,7 @@ void CMysqlConnection::BindString(int Idx, const char *pString)
 {
 	m_NewQuery = true;
 	Idx -= 1;
-	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "index out of bounds");
+	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "Error in BindString: index out of bounds: %d", Idx);
 
 	int Length = str_length(pString);
 	m_vStmtParameterExtras[Idx].ul = Length;
@@ -366,7 +370,7 @@ void CMysqlConnection::BindBlob(int Idx, unsigned char *pBlob, int Size)
 {
 	m_NewQuery = true;
 	Idx -= 1;
-	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "index out of bounds");
+	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "Error in BindBlob: index out of bounds: %d", Idx);
 
 	m_vStmtParameterExtras[Idx].ul = Size;
 	MYSQL_BIND *pParam = &m_vStmtParameters[Idx];
@@ -383,7 +387,7 @@ void CMysqlConnection::BindInt(int Idx, int Value)
 {
 	m_NewQuery = true;
 	Idx -= 1;
-	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "index out of bounds");
+	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "Error in BindInt: index out of bounds: %d", Idx);
 
 	m_vStmtParameterExtras[Idx].i = Value;
 	MYSQL_BIND *pParam = &m_vStmtParameters[Idx];
@@ -400,7 +404,7 @@ void CMysqlConnection::BindInt64(int Idx, int64_t Value)
 {
 	m_NewQuery = true;
 	Idx -= 1;
-	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "index out of bounds");
+	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "Error in BindInt64: index out of bounds: %d", Idx);
 
 	m_vStmtParameterExtras[Idx].i64 = Value;
 	MYSQL_BIND *pParam = &m_vStmtParameters[Idx];
@@ -417,7 +421,7 @@ void CMysqlConnection::BindFloat(int Idx, float Value)
 {
 	m_NewQuery = true;
 	Idx -= 1;
-	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "index out of bounds");
+	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "Error in BindFloat: index out of bounds: %d", Idx);
 
 	m_vStmtParameterExtras[Idx].f = Value;
 	MYSQL_BIND *pParam = &m_vStmtParameters[Idx];
@@ -434,7 +438,7 @@ void CMysqlConnection::BindNull(int Idx)
 {
 	m_NewQuery = true;
 	Idx -= 1;
-	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "index out of bounds");
+	dbg_assert(0 <= Idx && Idx < (int)m_vStmtParameters.size(), "Error in BindNull: index out of bounds: %d", Idx);
 
 	MYSQL_BIND *pParam = &m_vStmtParameters[Idx];
 	pParam->buffer_type = MYSQL_TYPE_NULL;
@@ -518,21 +522,25 @@ bool CMysqlConnection::IsNull(int Col)
 	if(mysql_stmt_fetch_column(m_pStmt.get(), &Bind, Col, 0))
 	{
 		StoreErrorStmt("fetch_column:null");
-		dbg_msg("mysql", "error fetching column %s", m_aErrorDetail);
-		dbg_assert(0, "error in IsNull");
+		dbg_assert(false, "Error in IsNull: error fetching column %s", m_aErrorDetail);
 	}
 	return IsNull;
 }
 
-float CMysqlConnection::GetFloat(int Col)
+double CMysqlConnection::GetFloat(int Col) //+KZ to double
 {
+	char aBuf[512] = {0};
+	GetString(Col, aBuf, sizeof(aBuf)); //get it as string first
+	double Var = atof(aBuf); //then convert to double
+	return Var;
+
 	Col -= 1;
 
 	MYSQL_BIND Bind;
-	float Value;
+	double Value;
 	my_bool IsNull;
 	mem_zero(&Bind, sizeof(Bind));
-	Bind.buffer_type = MYSQL_TYPE_FLOAT;
+	Bind.buffer_type = MYSQL_TYPE_DOUBLE;
 	Bind.buffer = &Value;
 	Bind.buffer_length = sizeof(Value);
 	Bind.length = nullptr;
@@ -542,13 +550,9 @@ float CMysqlConnection::GetFloat(int Col)
 	if(mysql_stmt_fetch_column(m_pStmt.get(), &Bind, Col, 0))
 	{
 		StoreErrorStmt("fetch_column:float");
-		dbg_msg("mysql", "error fetching column %s", m_aErrorDetail);
-		dbg_assert(0, "error in GetFloat");
+		dbg_assert(false, "Error in GetFloat: error fetching column %s", m_aErrorDetail);
 	}
-	if(IsNull)
-	{
-		dbg_assert(0, "error getting float: NULL");
-	}
+	dbg_assert(!IsNull, "Error in GetFloat: NULL");
 	return Value;
 }
 
@@ -570,13 +574,9 @@ int CMysqlConnection::GetInt(int Col)
 	if(mysql_stmt_fetch_column(m_pStmt.get(), &Bind, Col, 0))
 	{
 		StoreErrorStmt("fetch_column:int");
-		dbg_msg("mysql", "error fetching column %s", m_aErrorDetail);
-		dbg_assert(0, "error in GetInt");
+		dbg_assert(false, "Error in GetInt: error fetching column %s", m_aErrorDetail);
 	}
-	if(IsNull)
-	{
-		dbg_assert(0, "error getting int: NULL");
-	}
+	dbg_assert(!IsNull, "Error in GetInt: NULL");
 	return Value;
 }
 
@@ -598,13 +598,9 @@ int64_t CMysqlConnection::GetInt64(int Col)
 	if(mysql_stmt_fetch_column(m_pStmt.get(), &Bind, Col, 0))
 	{
 		StoreErrorStmt("fetch_column:int64");
-		dbg_msg("mysql", "error fetching column %s", m_aErrorDetail);
-		dbg_assert(0, "error in GetInt64");
+		dbg_assert(false, "Error in GetInt64: error fetching column %s", m_aErrorDetail);
 	}
-	if(IsNull)
-	{
-		dbg_assert(0, "error getting int: NULL");
-	}
+	dbg_assert(!IsNull, "Error in GetInt64: NULL");
 	return Value;
 }
 
@@ -633,17 +629,10 @@ void CMysqlConnection::GetString(int Col, char *pBuffer, int BufferSize)
 	if(mysql_stmt_fetch_column(m_pStmt.get(), &Bind, Col, 0))
 	{
 		StoreErrorStmt("fetch_column:string");
-		dbg_msg("mysql", "error fetching column %s", m_aErrorDetail);
-		dbg_assert(0, "error in GetString");
+		dbg_assert(false, "Error in GetString: error fetching column %s", m_aErrorDetail);
 	}
-	if(IsNull)
-	{
-		dbg_assert(0, "error getting string: NULL");
-	}
-	if(Error)
-	{
-		dbg_assert(0, "error getting string: truncation occurred");
-	}
+	dbg_assert(!IsNull, "Error in GetString: NULL");
+	dbg_assert(!Error, "Error in GetString: truncation occurred");
 }
 
 int CMysqlConnection::GetBlob(int Col, unsigned char *pBuffer, int BufferSize)
@@ -665,17 +654,10 @@ int CMysqlConnection::GetBlob(int Col, unsigned char *pBuffer, int BufferSize)
 	if(mysql_stmt_fetch_column(m_pStmt.get(), &Bind, Col, 0))
 	{
 		StoreErrorStmt("fetch_column:blob");
-		dbg_msg("mysql", "error fetching column %s", m_aErrorDetail);
-		dbg_assert(0, "error in GetBlob");
+		dbg_assert(false, "Error in GetBlob: error fetching column %s", m_aErrorDetail);
 	}
-	if(IsNull)
-	{
-		dbg_assert(0, "error getting blob: NULL");
-	}
-	if(Error)
-	{
-		dbg_assert(0, "error getting blob: truncation occurred");
-	}
+	dbg_assert(!IsNull, "Error in GetBlob: NULL");
+	dbg_assert(!Error, "Error in GetBlob: truncation occurred");
 	return Length;
 }
 

@@ -1,3 +1,9 @@
+// Copyright (C) Benjamín Gajardo (also known as +KZ)
+
+// SendGameMsg taken from ddnet-insta by Chillerdragon, it is not under +KZ copyright
+// SetPlayerLastAckedTick is SetPlayerLastAckedSnapshot from ICTFX
+// CheckBotPointer is from Pointer's TW+ (modified)
+
 #include "gamecontext.h"
 
 #include <vector>
@@ -24,8 +30,8 @@
 #include <game/mapitems.h>
 #include <game/version.h>
 
-#include <game/generated/protocol7.h>
-#include <game/generated/protocolglue.h>
+#include <generated/protocol7.h>
+#include <generated/protocolglue.h>
 
 #include "entities/character.h"
 #include "entities/kz/portal.h"
@@ -34,17 +40,26 @@
 #include "gamemodes/kz/kz.h" // KZ
 #include "player.h"
 #include "score.h"
+#include <base/helper_kz.h>
 
 void CGameContext::RegisterKZCommands()
 {
 	Console()->Register("rejoin_shutdown", "", CFGFLAG_SERVER, ConRejoinShutdown, this, "Make players rejoin after shutdown");
+	Console()->Register("showcrowns", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConShowCrowns, this, "Toggle crowns");
+
+	// Weapons
+
+	// Portal Gun
 	Console()->Register("portalgun", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConPortalGun, this, "Set Portal Gun as active weapon (if have it)");
 	Console()->Register("unportalgun", "?i[id]", CFGFLAG_SERVER, ConUnPortalGun, this, "Remove Portal Gun");
-	Console()->Register("getportalgun", "?i[id]", CFGFLAG_SERVER, ConGetPortalGun, this, "Get Portal Gun");
+	Console()->Register("getportalgun", "?i[id]", CFGFLAG_SERVER | CMDFLAG_PRACTICE, ConGetPortalGun, this, "Get Portal Gun");
 	Console()->Register("orangeportal", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConOrangePortal, this, "Use Orange Portal");
 	Console()->Register("blueportal", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConBluePortal, this, "Use Blue Portal");
 	Console()->Register("resetportals", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConResetPortals, this, "Reset both Portals");
-	Console()->Register("showcrowns", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConShowCrowns, this, "Toggle crowns");
+	
+	// Attractor Beam
+	Console()->Register("attractorbeam", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConAttractorBeam, this, "Set Attractor Beam as active weapon (if have it)");
+	Console()->Register("getattractorbeam", "?i[id]", CFGFLAG_SERVER | CMDFLAG_PRACTICE, ConGetAttractorBeam, this, "Get Attractor Beam");
 
 	//rollback command
 	Console()->Register("rollback", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
@@ -164,6 +179,81 @@ void CGameContext::CreateMapSoundEventForClient(vec2 Pos, int Id, int ClientId, 
 		pEvent->m_Y = (int)Pos.y;
 		pEvent->m_SoundId = Id;
 	}
+}
+
+bool CGameContext::HandleClientMessage(const char *pMsg, int ClientId)
+{
+	if(!m_apPlayers[ClientId])
+		return false;
+
+	// anti adbot +KZ POINTER
+	if(g_Config.m_SvKaizoAntibot && m_apPlayers[ClientId]->m_MsgBotCount < 5)
+	{
+		if(m_apPlayers[ClientId] && CheckBotPointer(ClientId, pMsg) && !Server()->GetAuthedState(ClientId))
+		{
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "ban %i 15 \"Bot detected. Please use the ddnet client: https://ddnet.org/\"", ClientId);
+			Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "chat/blocked", pMsg);
+			Console()->ExecuteLine(aBuf);
+			return true;
+		}
+
+		m_apPlayers[ClientId]->m_MsgBotCount++;
+	}
+
+	return false;
+}
+
+bool CGameContext::CheckBotPointer(int ClientID, const char* msg)
+{
+	int count = 0; // amount of flagged strings (some strings may count more than others)
+	// fancy alphabet detection
+	int fancy_count = 0;
+	const char* alphabet_fancy[] = {
+		"𝕢", "𝕨", "𝕖", "𝕣", "𝕥", "𝕪", "𝕦", "𝕚", "𝕠", "𝕡", "𝕒", "𝕤", "𝕕", "𝕗", "𝕘", "𝕙", "𝕛", "𝕜", "𝕝", "𝕫", "𝕩", "	", "𝕧", "𝕓", "𝕟", "𝕞",
+		"ｑ", "ｗ", "ｅ", "ｒ", "ｔ", "ｙ", "ｕ", "ｉ", "ｏ", "ｐ", "ａ", "ｓ", "ｄ", "ｆ", "ｇ", "ｈ", "ｊ", "ｋ", "ｌ", "ｚ", "ｘ", "ｃ", "ｖ", "ｂ", "ｎ", "ｍ",
+		"🆀", "🆆", "🅴", "🆁", "🆃", "🆈", "🆄", "🅸", "🅾", "🅿", "🅰", "🆂", "🅳", "🅵", "🅶", "🅷", "🅹", "🅺", "🅻", "🆉", "🆇", "🅲", "🆅", "🅱", "🅽", "🅼",
+		"🅀", "🅆", "🄴", "🅁", "🅃", "🅈", "🅄", "🄸", "🄾", "🄿", "🄰", "🅂", "🄳", "🄵", "🄶", "🄷", "🄹", "🄺", "🄻", "🅉", "🅇", "🄲", "🅅", "🄱", "🄽", "🄼",
+		"ⓠ", "ⓦ", "ⓔ", "ⓡ", "ⓣ", "ⓨ", "ⓤ", "ⓘ", "ⓞ", "ⓟ", "ⓐ", "ⓢ", "ⓓ", "ⓕ", "ⓖ", "ⓗ", "ⓙ", "ⓚ", "ⓛ", "ⓩ", "ⓧ", "ⓒ", "ⓥ", "ⓑ", "ⓝ", "ⓜ",
+	};
+
+	for (const char * Alp : alphabet_fancy)
+	{
+		if (str_find_nocase(msg, Alp))
+			fancy_count++;
+	}
+
+	if(fancy_count > 3)
+		count += 2;
+
+	
+	// general needles to disallow
+	const char* disallowedStrings[] = {
+		"krx", "discord.gg", "http", "free", "bot client", "cheat", ".xyz", "t.me", "hack",
+		"porn", "ЧИТЫ", "читы", "crack", "кряк", "@", "канал", "TAS", "КАНАЛ", "КРЯК", "tg:",
+		"СПАМИТЬ", "ТАСОМ", "КРХ", "спамить", "тасом", "крх"
+	};
+
+	for(const char * String : disallowedStrings)
+	{
+		if(str_find_nocase(msg, String))
+			count++;
+	}
+
+	//check for name too
+	for(const char * String : disallowedStrings)
+	{
+		if (str_find_nocase(Server()->ClientName(ClientID), String))
+			count++;
+	}
+	
+	// anti whisper ad bot
+	if (str_find_nocase(msg, "bro, check out this client"))
+		count += 2;
+	if (count >= 2) {
+		return true;
+	} else
+		return false;
 }
 
 void CGameContext::ConRejoinShutdown(IConsole::IResult *pResult, void *pUserData)
@@ -314,6 +404,62 @@ void CGameContext::ConBluePortal(IConsole::IResult *pResult, void *pUserData)
 	pSelf->m_apPlayers[ClientID]->GetCharacter()->m_BluePortal = true;
 }
 
+void CGameContext::ConAttractorBeam(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	int ClientID = pResult->m_ClientId;
+
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID])
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID]->GetCharacter())
+		return;
+
+	bool got = pSelf->m_apPlayers[ClientID]->GetCharacter()->GetWeaponGot(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+
+	if(got)
+		pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeapon(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+}
+
+void CGameContext::ConGetAttractorBeam(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	int ClientID;
+
+	if(pResult->NumArguments())
+	{
+		ClientID = pResult->GetInteger(0);
+	}
+	else
+	{
+		ClientID = pResult->m_ClientId;
+	}
+
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID])
+		return;
+
+	if(!pSelf->m_apPlayers[ClientID]->GetCharacter())
+		return;
+
+	bool got = pSelf->m_apPlayers[ClientID]->GetCharacter()->GetWeaponGot(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+
+	if(!got)
+	{
+		pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeaponGot(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM, true);
+		pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeaponAmmo(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM, 10);
+	}
+
+	pSelf->m_apPlayers[ClientID]->GetCharacter()->SetWeapon(KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM);
+}
+
 void CGameContext::ConResetPortals(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
@@ -329,19 +475,10 @@ void CGameContext::ConResetPortals(IConsole::IResult *pResult, void *pUserData)
 		return;
 
 
-	for(CPortalKZ* p = (CPortalKZ*)pSelf->m_World.FindFirst(CGameWorld::CUSTOM_ENTTYPE_PORTAL);p;p = (CPortalKZ*)p->TypeNext())
-	{
-		if(p->m_Owner == ClientID)
-		{
-			p->Reset();
-			CPortalKZ* p2 = p->GetOtherPortal();
-			if(p2)
-			{
-				p2->Reset();
-			}
-			return;
-		}
-	}
+	if(!pSelf->m_apPlayers[ClientID]->GetCharacter())
+		return;
+
+	pSelf->m_apPlayers[ClientID]->GetCharacter()->ResetPortals();
 }
 
 void CGameContext::ConShowCrowns(IConsole::IResult *pResult, void *pUserData)
@@ -363,20 +500,42 @@ void CGameContext::ConShowCrowns(IConsole::IResult *pResult, void *pUserData)
 
 void CGameContext::SendDiscordChatMessage(int ClientID, const char* msg)
 {
+	if(!g_Config.m_SvChatDiscordWebhook[0])
+		return;
+
 	char aPayload[4048];
 	char aStatsStr[4000];
 	char aStr[275];
 	aStr[0] = '\0';
 	if(CheckClientId(ClientID))
-		str_format(aStr, sizeof(aStr),"%s: %s",Server()->ClientName(ClientID),msg);
+		str_format(aStr, sizeof(aStr),"%s",Server()->ClientName(ClientID));
 	else
-		str_format(aStr, sizeof(aStr),"%s: %s","Server",msg);
+		str_format(aStr, sizeof(aStr),"%s","Server");
 
-	str_format(
-		aPayload,
-		sizeof(aPayload),
-		"{\"allowed_mentions\": {\"parse\": []}, \"content\": \"%s\"}",
-		EscapeJson(aStatsStr, sizeof(aStatsStr), aStr));
+	char aAvatarURL[512];
+	aAvatarURL[0] = '\0';
+	char aSkinNameEscaped[128];
+	aSkinNameEscaped[0] = '\0';
+
+	if(CheckClientId(ClientID) && m_apPlayers[ClientID])
+	{
+		EscapeUrl(aSkinNameEscaped, m_apPlayers[ClientID]->m_TeeInfos.m_aSkinName);
+		if(m_apPlayers[ClientID]->m_TeeInfos.m_UseCustomColor)
+		{
+			str_format(aAvatarURL, sizeof(aAvatarURL), "%s%s/%d/%d/", "https://render-tw-skins.deno.dev/render/", aSkinNameEscaped, m_apPlayers[ClientID]->m_TeeInfos.m_ColorBody, m_apPlayers[ClientID]->m_TeeInfos.m_ColorFeet);
+		}
+		else
+		{
+			str_format(aAvatarURL, sizeof(aAvatarURL), "%s%s", "https://render-tw-skins.deno.dev/render/", aSkinNameEscaped);
+		}
+	}
+	else
+	{
+		str_format(aAvatarURL, sizeof(aAvatarURL), "%s", "https://m0rekz.github.io/img/server.png");
+	}
+
+	str_format(aPayload, sizeof(aPayload), "{\"allowed_mentions\": {\"parse\": []}, \"content\": \"%s\", \"username\": \"%s\", \"avatar_url\": \"%s\"}",
+		EscapeJson(aStatsStr, sizeof(aStatsStr), msg), aStr, aAvatarURL);
 	const int PayloadSize = str_length(aPayload);
 	// TODO: use HttpPostJson()
 	std::shared_ptr<CHttpRequest> pDiscord = HttpPost(g_Config.m_SvChatDiscordWebhook, (const unsigned char *)aPayload, PayloadSize);
@@ -387,14 +546,20 @@ void CGameContext::SendDiscordChatMessage(int ClientID, const char* msg)
 	m_pHttp->Run(pDiscord);
 }
 
-void CGameContext::SendDiscordRecordMessage(int ClientID, float Time, float PrevTime)
+void CGameContext::SendDiscordRecordMessage(int ClientID, double Time, double PrevTime)
 {
+	if(!g_Config.m_SvRecordsDiscordWebhook[0])
+		return;
+
 	char aPayload[4048];
 	char aStatsStr[4000];
 	char aStr[500];
 	aStr[0] = '\0';
 
-	str_format(aStr, sizeof(aStr),"New record on map %s by %s: %d minute(s) %5.2f second(s)!!!", Server()->GetMapName(), Server()->ClientName(ClientID), (int)Time / 60, Time - ((int)Time / 60 * 60));
+	char kztime[512];
+	get_str_double_kz(kztime, sizeof(kztime), Time - ((int)Time / 60 * 60));
+
+	str_format(aStr, sizeof(aStr),"New record on map %s by %s: %d minute(s) %s second(s)!!!", Server()->GetMapName(), Server()->ClientName(ClientID), (int)Time / 60, kztime);
 
 	str_format(
 		aPayload,
@@ -416,7 +581,11 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 	if(!m_apPlayers[ClientId])
 		return;
 
-	char aName[StrSize];
+	char * aName = nullptr;
+    aName = new char[StrSize];
+
+    if(!aName)
+		return;
 
 	aName[0] = '\0';
 
@@ -426,7 +595,6 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		{
 			const char* pClientString = "";
 			const char* pClientName = "";
-			int Sprite = -1;
 			switch (Client)
 			{
 			case 0:
@@ -445,7 +613,7 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 
 			for(int p = 0; p < protocol7::NUM_SKINPARTS; p++)
 			{
-				if(str_startswith(m_apPlayers[ClientId]->m_TeeInfos.m_apSkinPartNames[p], pClientString)) ///seems that they put that info in the skin itself
+				if(str_startswith(m_apPlayers[ClientId]->m_TeeInfos.m_aaSkinPartNames[p], pClientString)) ///seems that they put that info in the skin itself
 				{
 					str_copy(aName, pClientName, StrSize);
 					break;
@@ -461,6 +629,8 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 	}
 	else
 	{
+		int KaizoNetwork = Server()->GetKaizoNetworkVersion(ClientId);
+
 		int InfClass = Server()->GetClientInfclassVersion(ClientId);
 		bool Tater = Server()->IsTaterClient(ClientId);
 		bool Qxd = Server()->IsQxdClient(ClientId);
@@ -468,8 +638,17 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		bool StA = Server()->IsStAClient(ClientId);
 		bool AllTheHaxx = Server()->IsAllTheHaxxClient(ClientId);
 		bool Pulse = Server()->IsPulseClient(ClientId);
+		bool Cactus = Server()->IsCactusClient(ClientId);
+		bool Aiodob = Server()->IsAiodobClient(ClientId);
+		bool FeX = Server()->IsFexClient(ClientId);
+		bool Rushie = Server()->IsRushieClient(ClientId);
+		bool SClient = Server()->IsSClientClient(ClientId);
 
-		if(InfClass)
+		if(KaizoNetwork)
+		{
+			str_copy(aName, "Kaizo Network Client (0.6)", StrSize);
+		}
+		else if(InfClass)
 		{
 			str_copy(aName, "InfClass Client (0.6)", StrSize);
 		}
@@ -497,6 +676,26 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		{
 			str_copy(aName, "Pulse Client (0.6)", StrSize);
 		}
+		else if(Cactus)
+		{
+			str_copy(aName, "Cactus Client (0.6)", StrSize);
+		}
+		else if(Aiodob)
+		{
+			str_copy(aName, "Aiodob Client (0.6)", StrSize);
+		}
+		else if(FeX)
+		{
+			str_copy(aName, "FeX Client (0.6)", StrSize);
+		}
+		else if(Rushie)
+		{
+			str_copy(aName, "RClient (0.6)", StrSize);
+		}
+		else if(SClient)
+		{
+			str_copy(aName, "S-Client (0.6)", StrSize);
+		}
 		else
 		{
 
@@ -517,4 +716,16 @@ void CGameContext::IdentifyClientName(int ClientId, char *pName, int StrSize)
 		}
 	}
 	str_copy(pName, aName, StrSize);
+	delete[] aName;
+}
+
+void CGameContext::SetPlayerLastAckedTick(int ClientId, int Tick)
+{
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return;
+
+	if(!m_apPlayers[ClientId])
+		return;
+
+	m_apPlayers[ClientId]->m_LastAckedTick = Tick;
 }

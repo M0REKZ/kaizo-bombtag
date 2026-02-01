@@ -3,12 +3,14 @@
 #ifndef GAME_SERVER_PLAYER_H
 #define GAME_SERVER_PLAYER_H
 
+#include "teeinfo.h"
+
 #include <base/vmath.h>
+
 #include <engine/shared/protocol.h>
+
 #include <game/alloc.h>
 #include <game/server/save.h>
-
-#include "teeinfo.h"
 
 #include <memory>
 #include <optional>
@@ -157,7 +159,7 @@ public:
 	enum
 	{
 		TIMERTYPE_DEFAULT = -1,
-		TIMERTYPE_GAMETIMER = 0,
+		TIMERTYPE_GAMETIMER,
 		TIMERTYPE_BROADCAST,
 		TIMERTYPE_GAMETIMER_AND_BROADCAST,
 		TIMERTYPE_SIXUP,
@@ -176,7 +178,7 @@ public:
 	bool CanSpec() const;
 
 	bool IsPlaying() const;
-	int64_t m_Last_KickVote;
+	int64_t m_LastKickVote;
 	int64_t m_LastDDRaceTeamChange;
 	int m_ShowOthers;
 	bool m_ShowAll;
@@ -240,7 +242,7 @@ public:
 	CSaveTee m_LastTeleTee;
 	std::optional<CSaveTee> m_LastDeath;
 
-	// KZ
+	// +KZ
 
 	bool m_SentKZWelcomeMsg = false;
 	bool m_SendCrowns = true;
@@ -251,8 +253,14 @@ public:
 	void HandleKZBot(CNetObj_PlayerInput &Input);
 	// Enabled rollback for this player
 	bool m_RollbackEnabled = false;
-	// Rollback LastAckedSnapshot
-	int m_LastAckedSnapshot = -1;
+
+	int m_LastAckedTick = -1; //to send ping
+
+	void OnKaizoSnap(int SnappingClient, int Id);
+	void OnKaizoTick();
+	void KaizoAntibotTick();
+
+	int m_MsgBotCount = 0;
 };
 
 #endif

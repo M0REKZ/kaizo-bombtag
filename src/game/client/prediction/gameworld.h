@@ -56,9 +56,10 @@ public:
 	CCollision *m_pCollision;
 
 	// getter for server variables
-	int GameTick() { return m_GameTick; }
-	int GameTickSpeed() { return SERVER_TICK_SPEED; }
-	CCollision *Collision() { return m_pCollision; }
+	int GameTick() const { return m_GameTick; }
+	int GameTickSpeed() const { return SERVER_TICK_SPEED; }
+	const CCollision *Collision() const { return m_pCollision; }
+	CCollision *Collision() { return m_pCollision; } // NOLINT(readability-make-member-function-const)
 	CTeamsCore *Teams() { return &m_Teams; }
 	std::vector<SSwitchers> &Switchers() { return m_Core.m_vSwitchers; }
 	CTuningParams *Tuning();
@@ -83,6 +84,10 @@ public:
 		bool m_UseTuneZones;
 		bool m_BugDDRaceInput;
 		bool m_NoWeakHookAndBounce;
+
+		//+KZ
+		bool m_IsPointerTWPlus;
+		bool m_IsPureVanilla;
 	} m_WorldConfig;
 
 	bool m_IsValidCopy;
@@ -102,7 +107,9 @@ public:
 	void Clear();
 
 	CTuningParams *m_pTuningList;
-	CTuningParams *TuningList() { return m_pTuningList; }
+	const CTuningParams *TuningList() const { return m_pTuningList; }
+	CTuningParams *TuningList() { return m_pTuningList; } // NOLINT(readability-make-member-function-const)
+	const CTuningParams *GetTuning(int i) const { return &TuningList()[i]; }
 	CTuningParams *GetTuning(int i) { return &TuningList()[i]; }
 
 	const CMapBugs *m_pMapBugs;
@@ -115,6 +122,24 @@ private:
 	CEntity *m_apFirstEntityTypes[NUM_ENTTYPES];
 
 	CCharacter *m_apCharacters[MAX_CLIENTS];
+
+	//+KZ
+	void OnCopyWorld(CGameWorld *pFrom);
+	void OnGameTile(int X, int Y, const CTile *pTile);
+
+	public:
+
+	struct SPointerTelePos
+	{
+		int m_X;
+		int m_Y;
+		bool m_Exists = false;
+	};
+	
+	SPointerTelePos m_PointerTelePositions[4]; // positions of teleports
+
+public:
+	void OnConnected();
 };
 
 class CCharOrder

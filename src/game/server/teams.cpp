@@ -1,15 +1,22 @@
 /* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
-#include <base/system.h>
-#include <engine/shared/config.h>
-#include <game/mapitems.h>
-#include <game/server/entities/character.h>
-#include <game/team_state.h>
+#include "teams.h"
 
 #include "gamecontroller.h"
 #include "player.h"
 #include "score.h"
-#include "teams.h"
 #include "teehistorian.h"
+
+#include <base/system.h>
+
+#include <engine/shared/config.h>
+
+#include <game/mapitems.h>
+#include <game/server/entities/character.h>
+#include <game/team_state.h>
+
+//+KZ
+#include <game/server/entities/kz/kz_pickup.h>
+#include <base/helper_kz.h>
 
 CGameTeams::CGameTeams(CGameContext *pGameContext) :
 	m_pGameContext(pGameContext)
@@ -38,6 +45,9 @@ void CGameTeams::Reset()
 		if(m_pGameContext->PracticeByDefault())
 			m_aPractice[i] = true;
 		ResetRoundState(i);
+
+		//+KZ
+		m_aTeamTimeOverride[i] = -1.f;
 	}
 }
 
@@ -58,6 +68,13 @@ void CGameTeams::ResetRoundState(int Team)
 			GameServer()->m_apPlayers[i]->m_SwapTargetsClientId = -1;
 			m_aLastSwap[i] = 0;
 		}
+	}
+
+	//+KZ Reset the entities that need to be reset
+	for(CEntity *pEnt = GameServer()->m_World.FindFirst(CGameWorld::CUSTOM_ENTTYPE_KZPICKUP); pEnt; pEnt = pEnt->TypeNext())
+	{
+		class CKZPickup *pPickup = (CKZPickup *)pEnt;
+		pPickup->m_SpawnTickTeam[Team] = -1;
 	}
 }
 
@@ -165,6 +182,14 @@ void CGameTeams::OnCharacterStart(int ClientId)
 					SetDDRaceState(pPlayer, ERaceState::STARTED);
 					SetStartTime(pPlayer, Tick);
 
+					//+KZ
+					/*if(pPlayer->GetCharacter())
+					{
+						pPlayer->GetCharacter()->m_StartSubTick = pStartingChar->m_StartSubTick;
+						pPlayer->GetCharacter()->m_StartedTickKZ = pStartingChar->m_StartedTickKZ;
+						pPlayer->GetCharacter()->m_StartDivisor = pStartingChar->m_StartDivisor;
+					}*/
+
 					if(First)
 						First = false;
 					else
@@ -174,6 +199,9 @@ void CGameTeams::OnCharacterStart(int ClientId)
 				}
 			}
 		}
+
+		//+KZ
+		//m_aKZSubTickKeep[m_Core.Team(ClientId)].Keep(pStartingChar);
 
 		if(g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO && g_Config.m_SvMaxTeamSize != 2 && g_Config.m_SvPauseable)
 		{
@@ -191,6 +219,18 @@ void CGameTeams::OnCharacterStart(int ClientId)
 
 void CGameTeams::OnCharacterFinish(int ClientId)
 {
+	/*if(GetPlayer(ClientId) && GetPlayer(ClientId)->GetCharacter())
+	{
+		if(GetPlayer(ClientId)->GetCharacter()->m_FinishSubTick >= 0 && GetPlayer(ClientId)->GetCharacter()->m_StartSubTick >= 0)
+		{
+			m_aKZSubTickKeep[m_Core.Team(ClientId)].KeepFinish(GetPlayer(ClientId)->GetCharacter());
+		}
+		else
+		{
+			return; //+KZ: kinda evil but otherwise we get duplicated finishes on team
+		}
+	}*/
+
 	if(((m_Core.Team(ClientId) == TEAM_FLOCK || m_aTeamFlock[m_Core.Team(ClientId)]) && g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO) || m_Core.Team(ClientId) == TEAM_SUPER)
 	{
 		CPlayer *pPlayer = GetPlayer(ClientId);
@@ -379,30 +419,32 @@ void CGameTeams::CheckTeamFinished(int Team)
 
 const char *CGameTeams::SetCharacterTeam(int ClientId, int Team)
 {
+	int CurrentTeam = m_Core.Team(ClientId);
+
 	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
 		return "Invalid client ID";
 	if(Team < 0 || Team > NUM_DDRACE_TEAMS)
 		return "Invalid team number";
 	if(Team != TEAM_SUPER && m_aTeamState[Team] > ETeamState::OPEN && !m_aPractice[Team] && !m_aTeamFlock[Team])
 		return "This team started already";
-	if(m_Core.Team(ClientId) == Team)
+	if(CurrentTeam == Team)
 		return "You are in this team already";
 	if(!Character(ClientId))
 		return "Your character is not valid";
 	if(Team == TEAM_SUPER && !Character(ClientId)->IsSuper())
 		return "You can't join super team if you don't have super rights";
-	if(Team != TEAM_SUPER && Character(ClientId)->m_DDRaceState != ERaceState::NONE)
+	if(Team != TEAM_SUPER && Character(ClientId)->m_DDRaceState != ERaceState::NONE && (m_aTeamState[CurrentTeam] < ETeamState::FINISHED || Team != 0))
 		return "You have started racing already";
 	// No cheating through noob filter with practice and then leaving team
-	if(m_aPractice[m_Core.Team(ClientId)] && !m_pGameContext->PracticeByDefault())
+	if(m_aPractice[CurrentTeam] && !m_pGameContext->PracticeByDefault())
 		return "You have used practice mode already";
 
 	// you can not join a team which is currently in the process of saving,
 	// because the save-process can fail and then the team is reset into the game
 	if(Team != TEAM_SUPER && GetSaving(Team))
-		return "Your team is currently saving";
-	if(m_Core.Team(ClientId) != TEAM_SUPER && GetSaving(m_Core.Team(ClientId)))
 		return "This team is currently saving";
+	if(CurrentTeam != TEAM_SUPER && GetSaving(CurrentTeam))
+		return "Your team is currently saving";
 
 	SetForceCharacterTeam(ClientId, Team);
 	return nullptr;
@@ -678,6 +720,69 @@ float *CGameTeams::GetCurrentTimeCp(CPlayer *Player)
 
 void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, int TimeTicks, const char *pTimestamp)
 {
+
+	//+KZ
+		double Time = (double)TimeTicks/Server()->TickSpeed();
+		//+KZ subtick time
+		/*if(m_aTeamTimeOverride[Team] >= 0)
+		{
+			Time = m_aTeamTimeOverride[Team];
+			m_aTeamTimeOverride[Team] = -1.f;
+		}
+		else if(m_aKZSubTickKeep[Team].m_FinishSubTick >= 0)
+		{
+			if(m_aKZSubTickKeep[Team].m_FinishedTickKZ >=0 && (m_aKZSubTickKeep[Team].m_FinishedTickKZ == m_aKZSubTickKeep[Team].m_StartedTickKZ)) //in the same tick
+			{
+				double IntervalTime = ((double)(m_aKZSubTickKeep[Team].m_FinishSubTick - m_aKZSubTickKeep[Team].m_StartSubTick)/m_aKZSubTickKeep[Team].m_StartDivisor);
+				IntervalTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
+				Time = IntervalTime;
+				//+KZ check for nan, if it is nan revert to normal time
+				if(std::isnan(Time))
+					Time = PrevTime;
+			}
+			else //different ticks
+			{
+				Time = (TimeTicks - 1) / (double)Server()->TickSpeed();
+
+				if(m_aKZSubTickKeep[Team].m_StartSubTick >= 0)
+				{
+					double MinusTime = 1.0f - ((double)m_aKZSubTickKeep[Team].m_StartSubTick/m_aKZSubTickKeep[Team].m_StartDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
+					Time += MinusTime;
+					//+KZ check for nan, if it is nan revert to normal time
+					if(std::isnan(Time))
+						Time = PrevTime;
+				}
+
+				if(m_aKZSubTickKeep[Team].m_FinishSubTick >= 0)
+				{
+					double MinusTime = ((double)m_aKZSubTickKeep[Team].m_FinishSubTick/m_aKZSubTickKeep[Team].m_FinishDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
+					Time += MinusTime;
+					//+KZ check for nan, if it is nan revert to normal time
+					if(std::isnan(Time))
+						Time = PrevTime;
+				}
+			}
+		}
+		for(unsigned int i = 0; i < Size; i++)
+		{
+			//reset values
+			if(!Players[i]->GetCharacter())
+				continue;
+
+			Players[i]->GetCharacter()->m_StartSubTick = -1;
+			Players[i]->GetCharacter()->m_FinishSubTick = -1;
+			Players[i]->GetCharacter()->m_StartDivisor = 1;
+			Players[i]->GetCharacter()->m_FinishDivisor = 1;
+			Players[i]->GetCharacter()->m_StartedTickKZ = -1;
+			Players[i]->GetCharacter()->m_FinishedTickKZ = -1;
+		}
+		m_aKZSubTickKeep[Team].Reset();*/
+
 	int aPlayerCids[MAX_CLIENTS];
 
 	for(unsigned int i = 0; i < Size; i++)
@@ -695,7 +800,7 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 	}
 
 	if(Size >= (unsigned int)g_Config.m_SvMinTeamSize)
-		GameServer()->Score()->SaveTeamScore(Team, aPlayerCids, Size, TimeTicks, pTimestamp);
+		GameServer()->Score()->SaveTeamScoreFloat(Team, aPlayerCids, Size, Time, pTimestamp);
 }
 
 void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp)
@@ -703,7 +808,104 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	if(!Player || !Player->IsPlaying())
 		return;
 
-	float Time = TimeTicks / (float)Server()->TickSpeed();
+	double Time = TimeTicks / (float)Server()->TickSpeed();
+
+	//+KZ subtick time
+	/*if(m_Core.Team(Player->GetCid()))
+	{
+		int Team = m_Core.Team(Player->GetCid());
+		//Time = m_aTeamTimeOverride[m_Core.Team(Player->GetCid())];
+		if(m_aKZSubTickKeep[Team].m_FinishSubTick >= 0)
+		{
+			if(m_aKZSubTickKeep[Team].m_FinishedTickKZ >=0 && (m_aKZSubTickKeep[Team].m_FinishedTickKZ == m_aKZSubTickKeep[Team].m_StartedTickKZ)) //in the same tick
+			{
+				double IntervalTime = ((double)(m_aKZSubTickKeep[Team].m_FinishSubTick - m_aKZSubTickKeep[Team].m_StartSubTick)/m_aKZSubTickKeep[Team].m_StartDivisor);
+				IntervalTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
+				Time = IntervalTime;
+				//+KZ check for nan, if it is nan revert to normal time
+				if(std::isnan(Time))
+					Time = PrevTime;
+			}
+			else //different ticks
+			{
+				Time = (TimeTicks - 1) / (double)Server()->TickSpeed();
+
+				if(m_aKZSubTickKeep[Team].m_StartSubTick >= 0)
+				{
+					double MinusTime = 1.0f - ((double)m_aKZSubTickKeep[Team].m_StartSubTick/m_aKZSubTickKeep[Team].m_StartDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
+					Time += MinusTime;
+					//+KZ check for nan, if it is nan revert to normal time
+					if(std::isnan(Time))
+						Time = PrevTime;
+				}
+
+				if(m_aKZSubTickKeep[Team].m_FinishSubTick >= 0)
+				{
+					double MinusTime = ((double)m_aKZSubTickKeep[Team].m_FinishSubTick/m_aKZSubTickKeep[Team].m_FinishDivisor);
+					MinusTime /= (double)Server()->TickSpeed();
+					double PrevTime = Time;
+					Time += MinusTime;
+					//+KZ check for nan, if it is nan revert to normal time
+					if(std::isnan(Time))
+						Time = PrevTime;
+				}
+			}
+		}
+	}
+	else if(Player->GetCharacter() && Player->GetCharacter()->m_FinishSubTick >= 0)
+	{
+		if(Player->GetCharacter()->m_FinishedTickKZ >=0 && (Player->GetCharacter()->m_FinishedTickKZ == Player->GetCharacter()->m_StartedTickKZ)) //in the same tick
+		{
+			double IntervalTime = ((double)(Player->GetCharacter()->m_FinishSubTick - Player->GetCharacter()->m_StartSubTick)/Player->GetCharacter()->m_StartDivisor);
+			IntervalTime /= (double)Server()->TickSpeed();
+			double PrevTime = Time;
+			Time = IntervalTime;
+			//+KZ check for nan, if it is nan revert to normal time
+			if(std::isnan(Time))
+				Time = PrevTime;
+
+			if(m_Core.Team(Player->GetCid()))
+			{
+				m_aTeamTimeOverride[m_Core.Team(Player->GetCid())] = IntervalTime;
+			}
+		}
+		else //different ticks
+		{
+			Time = (TimeTicks - 1) / (double)Server()->TickSpeed();
+
+			if(Player->GetCharacter()->m_StartSubTick >= 0)
+			{
+				double MinusTime = 1.0f - ((double)Player->GetCharacter()->m_StartSubTick/Player->GetCharacter()->m_StartDivisor);
+				MinusTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
+				Time += MinusTime;
+				//+KZ check for nan, if it is nan revert to normal time
+				if(std::isnan(Time))
+					Time = PrevTime;
+			}
+
+			if(Player->GetCharacter()->m_FinishSubTick >= 0)
+			{
+				double MinusTime = ((double)Player->GetCharacter()->m_FinishSubTick/Player->GetCharacter()->m_FinishDivisor);
+				MinusTime /= (double)Server()->TickSpeed();
+				double PrevTime = Time;
+				Time += MinusTime;
+				//+KZ check for nan, if it is nan revert to normal time
+				if(std::isnan(Time))
+					Time = PrevTime;
+			}
+		}
+		//reset values
+		Player->GetCharacter()->m_StartSubTick = -1;
+		Player->GetCharacter()->m_FinishSubTick = -1;
+		Player->GetCharacter()->m_StartDivisor = 1;
+		Player->GetCharacter()->m_FinishDivisor = 1;
+		Player->GetCharacter()->m_StartedTickKZ = -1;
+		Player->GetCharacter()->m_FinishedTickKZ = -1;
+	}*/
 
 	// TODO:DDRace:btd: this ugly
 	const int ClientId = Player->GetCid();
@@ -712,10 +914,12 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	char aBuf[128];
 	SetLastTimeCp(Player, -1);
 	// Note that the "finished in" message is parsed by the client
+	char kztime[512];
+	get_str_double_kz(kztime, sizeof(kztime), Time - ((int)Time / 60 * 60));
 	str_format(aBuf, sizeof(aBuf),
-		"%s finished in: %d minute(s) %5.2f second(s)",
+		"%s finished in: %d minute(s) %s second(s)",
 		Server()->ClientName(ClientId), (int)Time / 60,
-		Time - ((int)Time / 60 * 60));
+		kztime);
 	if(g_Config.m_SvHideScore)
 		GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
 	else
@@ -730,11 +934,17 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		pData->m_RecordFinishTime = Time;
 
 		if(Diff >= 60)
-			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %5.2f second(s) better.",
-				(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
+		{
+			get_str_double_kz(kztime, sizeof(kztime), Diff - ((int)Diff / 60 * 60));
+			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %s second(s) better.",
+				(int)Diff / 60, kztime);
+		}
 		else
-			str_format(aBuf, sizeof(aBuf), "New record: %5.2f second(s) better.",
-				Diff);
+		{
+			get_str_double_kz(kztime, sizeof(kztime), Diff);
+			str_format(aBuf, sizeof(aBuf), "New record: %s second(s) better.",
+				kztime);
+		}
 		if(g_Config.m_SvHideScore)
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
 		else
@@ -744,7 +954,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	{
 		Server()->StopRecord(ClientId);
 
-		if(Diff <= 0.005f)
+		if(Diff <= 0.000005) //+KZ modified
 		{
 			GameServer()->SendChatTarget(ClientId,
 				"You finished with your best time.");
@@ -752,12 +962,18 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		else
 		{
 			if(Diff >= 60)
-				str_format(aBuf, sizeof(aBuf), "%d minute(s) %5.2f second(s) worse, better luck next time.",
-					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
+			{
+				get_str_double_kz(kztime, sizeof(kztime), Diff - ((int)Diff / 60 * 60));
+				str_format(aBuf, sizeof(aBuf), "%d minute(s) %s second(s) worse, better luck next time.",
+					(int)Diff / 60, kztime);
+			}
 			else
+			{
+				get_str_double_kz(kztime, sizeof(kztime), Diff);
 				str_format(aBuf, sizeof(aBuf),
-					"%5.2f second(s) worse, better luck next time.",
-					Diff);
+					"%s second(s) worse, better luck next time.",
+					kztime);
+			}
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX); // this is private, sent only to the tee
 		}
 	}
@@ -780,7 +996,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 
 	if(CallSaveScore)
 		if(g_Config.m_SvNamelessScore || !str_startswith(Server()->ClientName(ClientId), "nameless tee"))
-			GameServer()->Score()->SaveScore(ClientId, TimeTicks, pTimestamp,
+			GameServer()->Score()->SaveScoreFloat(ClientId, Time, pTimestamp,
 				GetCurrentTimeCp(Player), Player->m_NotEligibleForFinish);
 
 	if(CallSaveScore) //+KZ only call if save score is called
@@ -936,8 +1152,8 @@ void CGameTeams::SwapTeamCharacters(CPlayer *pPrimaryPlayer, CPlayer *pTargetPla
 	CSaveTee SecondarySavedTee;
 	SecondarySavedTee.Save(pTargetPlayer->GetCharacter());
 
-	PrimarySavedTee.Load(pTargetPlayer->GetCharacter(), Team, true);
-	SecondarySavedTee.Load(pPrimaryPlayer->GetCharacter(), Team, true);
+	PrimarySavedTee.Load(pTargetPlayer->GetCharacter());
+	SecondarySavedTee.Load(pPrimaryPlayer->GetCharacter());
 
 	if(Team >= 1 && !m_aTeamFlock[Team])
 	{
@@ -1011,12 +1227,50 @@ void CGameTeams::ProcessSaveTeam()
 	{
 		if(m_apSaveTeamResult[Team] == nullptr || !m_apSaveTeamResult[Team]->m_Completed)
 			continue;
-		if(m_apSaveTeamResult[Team]->m_aBroadcast[0] != '\0')
-			GameServer()->SendBroadcast(m_apSaveTeamResult[Team]->m_aBroadcast, -1);
-		if(m_apSaveTeamResult[Team]->m_aMessage[0] != '\0' && m_apSaveTeamResult[Team]->m_Status != CScoreSaveResult::LOAD_FAILED)
-			GameServer()->SendChatTeam(Team, m_apSaveTeamResult[Team]->m_aMessage);
+
+		int TeamSize = m_apSaveTeamResult[Team]->m_SavedTeam.GetMembersCount();
+		int State = -1;
+
 		switch(m_apSaveTeamResult[Team]->m_Status)
 		{
+		case CScoreSaveResult::SAVE_FALLBACKFILE:
+			State = SAVESTATE_FALLBACKFILE;
+			break;
+		case CScoreSaveResult::SAVE_WARNING:
+			State = SAVESTATE_WARNING;
+			break;
+		case CScoreSaveResult::SAVE_SUCCESS:
+			State = SAVESTATE_DONE;
+			break;
+		case CScoreSaveResult::SAVE_FAILED:
+			State = SAVESTATE_ERROR;
+			break;
+		case CScoreSaveResult::LOAD_FAILED:
+		case CScoreSaveResult::LOAD_SUCCESS:
+			State = -1;
+			break;
+		}
+
+		if(State != -1)
+		{
+			GameServer()->SendSaveCode(
+				Team,
+				TeamSize,
+				State,
+				(State == SAVESTATE_DONE) ? "" : m_apSaveTeamResult[Team]->m_aMessage,
+				m_apSaveTeamResult[Team]->m_aRequestingPlayer,
+				m_apSaveTeamResult[Team]->m_aServer,
+				m_apSaveTeamResult[Team]->m_aGeneratedCode,
+				m_apSaveTeamResult[Team]->m_aCode);
+		}
+
+		if(m_apSaveTeamResult[Team]->m_aBroadcast[0] != '\0')
+			GameServer()->SendBroadcast(m_apSaveTeamResult[Team]->m_aBroadcast, -1);
+
+		switch(m_apSaveTeamResult[Team]->m_Status)
+		{
+		case CScoreSaveResult::SAVE_FALLBACKFILE:
+		case CScoreSaveResult::SAVE_WARNING:
 		case CScoreSaveResult::SAVE_SUCCESS:
 		{
 			if(GameServer()->TeeHistorianActive())
@@ -1026,7 +1280,7 @@ void CGameTeams::ProcessSaveTeam()
 					m_apSaveTeamResult[Team]->m_SaveId,
 					m_apSaveTeamResult[Team]->m_SavedTeam.GetString());
 			}
-			for(int i = 0; i < m_apSaveTeamResult[Team]->m_SavedTeam.GetMembersCount(); i++)
+			for(int i = 0; i < TeamSize; i++)
 			{
 				if(m_apSaveTeamResult[Team]->m_SavedTeam.m_pSavedTees->IsHooking())
 				{
@@ -1244,12 +1498,12 @@ void CGameTeams::ResetSavedTeam(int ClientId, int Team)
 	}
 }
 
-int CGameTeams::GetFirstEmptyTeam() const
+std::optional<int> CGameTeams::GetFirstEmptyTeam() const
 {
 	for(int i = 1; i < TEAM_SUPER; i++)
 		if(m_aTeamState[i] == ETeamState::EMPTY)
 			return i;
-	return -1;
+	return std::nullopt;
 }
 
 bool CGameTeams::TeeStarted(int ClientId) const
@@ -1323,7 +1577,11 @@ void CGameTeams::SetPractice(int Team, bool Enabled)
 	if(Team < TEAM_FLOCK || Team >= TEAM_SUPER)
 		return;
 	if(g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO && Team == TEAM_FLOCK)
-		return;
+	{
+		// allow to enable practice in team 0, for practice by default
+		if(!g_Config.m_SvTestingCommands)
+			return;
+	}
 
 	m_aPractice[Team] = Enabled;
 }

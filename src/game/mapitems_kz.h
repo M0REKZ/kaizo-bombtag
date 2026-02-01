@@ -1,12 +1,17 @@
-// (c) +KZ
+// Copyright (C) Benjamín Gajardo (also known as +KZ)
+
 #ifndef GAME_MAPITEMS_KZ_H
 #define GAME_MAPITEMS_KZ_H
 
 #include <game/mapitems.h>
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
+#include <engine/external/ddnet-custom-clients/custom_clients_ids.h>
 
 const char KZ_GAME_LAYER_NAME[9] = {'+','K', 'Z', 'G', 'a', 'm', 'e', (char)27, '\0'};
 const char KZ_FRONT_LAYER_NAME[10] = {'+','K', 'Z', 'F', 'r', 'o', 'n', 't', (char)27, '\0'};
+
+class CQuad;
+class CMapItemLayerQuads;
 
 enum
 {
@@ -40,6 +45,10 @@ enum
 	KZ_FRONTTILE_TUNE_SWITCHABLE = 18,
 	KZ_FRONTTILE_TUNE_LOCK,
 	KZ_FRONTTILE_POS_SHIFTER,
+
+	KZ_TILE_LASER_RECOVER_JUMP_ON,
+	KZ_TILE_LASER_RECOVER_JUMP_OFF,
+	KZ_TILE_ATTRACTOR_BEAM,
 };
 
 enum //KZ Tiles flags
@@ -62,7 +71,27 @@ enum
 {
 	KZ_CUSTOM_WEAPONS_START = NUM_WEAPONS,
 	KZ_CUSTOM_WEAPON_PORTAL_GUN = NUM_WEAPONS,
-	KZ_NUM_CUSTOM_WEAPONS,
+	KZ_CUSTOM_WEAPON_ATTRACTOR_BEAM,
+	KZ_CUSTOM_WEAPONS_END,
+	KZ_NUM_CUSTOM_WEAPONS = KZ_CUSTOM_WEAPONS_END - KZ_CUSTOM_WEAPONS_START,
+};
+
+//Pointer TW+ Tiles from Pointer's TW+
+enum
+{
+	POINTER_TILE_TELEONE=35,
+	POINTER_TILE_TELETWO,
+	POINTER_TILE_TELETHREE,
+	POINTER_TILE_TELEFOUR,
+
+	POINTER_TILE_SLOWDEATH=88,
+
+	POINTER_TILE_NOFLAG=4,
+
+	POINTER_TILE_HEALTHZONE=13,
+	POINTER_TILE_ARMORZONE=145,
+
+	POINTER_TILE_SPEEDUPFAST=65,
 };
 
 class CKZTile
@@ -74,6 +103,28 @@ public:
 	int64_t m_Value1;
     int64_t m_Value2;
     int64_t m_Value3;
+};
+
+enum KZQuadType
+{
+	KZQUADTYPE_AIR = 0,
+	KZQUADTYPE_FREEZE,
+	KZQUADTYPE_UNFREEZE,
+	KZQUADTYPE_HOOK,
+	KZQUADTYPE_UNHOOK,
+	KZQUADTYPE_STOPA,
+	KZQUADTYPE_DEATH,
+	KZQUADTYPE_CFRM,
+	KZQUADTYPE_KAIZOINSTA,
+};
+
+struct SKZQuadData
+{
+	CQuad *m_pQuad = nullptr;
+	CMapItemLayerQuads *m_pLayer = nullptr;
+	int m_Type = KZQuadType::KZQUADTYPE_AIR;
+	vec2 m_CachedPos[5];
+	float m_CachedAngle;
 };
 
 inline int64_t BitWiseAndInt64(int64_t a, int64_t b)

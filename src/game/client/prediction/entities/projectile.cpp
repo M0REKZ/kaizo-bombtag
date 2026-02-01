@@ -1,14 +1,16 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include "projectile.h"
+
+#include "character.h"
+
 #include <engine/shared/config.h>
+
+#include <generated/protocol.h>
 
 #include <game/client/projectile_data.h>
 #include <game/collision.h>
-#include <game/generated/protocol.h>
 #include <game/mapitems.h>
-
-#include "character.h"
-#include "projectile.h"
 
 CProjectile::CProjectile(
 	CGameWorld *pGameWorld,
@@ -77,8 +79,26 @@ void CProjectile::Tick()
 	vec2 CurPos = GetPos(Ct);
 	vec2 ColPos;
 	vec2 NewPos;
-	int Collide = Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos);
 	CCharacter *pOwnerChar = GameWorld()->GetCharacterById(m_Owner);
+
+	//+KZ
+	CCharacterCore *pOwnerCore = nullptr;
+
+	if(pOwnerChar)
+	{
+		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
+	}
+
+	SKZColIntersectLineParams ParamsKZ;
+	ParamsKZ.pCore = pOwnerCore;
+	ParamsKZ.IsHook = false;
+	ParamsKZ.IsWeapon = true;
+	ParamsKZ.pProjPos = &m_Pos;
+	ParamsKZ.Weapon = m_Type;
+	ParamsKZ.m_IsDDraceProjectile = m_Freeze;
+	//+KZ end
+
+	int Collide = Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos, ParamsKZ.m_IsDDraceProjectile ? nullptr : &ParamsKZ); //+KZ added ParamsKZ, also added a check for ddrace projectile to not break explosive bullet prediction
 
 	CCharacter *pTargetChr = GameWorld()->IntersectCharacter(PrevPos, ColPos, m_Freeze ? 1.0f : 6.0f, ColPos, pOwnerChar, m_Owner);
 
@@ -193,6 +213,9 @@ CProjectile::CProjectile(CGameWorld *pGameWorld, int Id, const CProjectileData *
 	m_Id = Id;
 	m_Number = pProj->m_SwitchNumber;
 	m_Layer = m_Number > 0 ? LAYER_SWITCH : LAYER_GAME;
+
+	//+KZ
+	m_GoresTeleportGrenade = g_Config.m_KaizoPredictGoresGrenadeTele && g_Config.m_SvGoresGrenadeTele && pProj->m_Type == WEAPON_GRENADE;
 }
 
 CProjectileData CProjectile::GetData() const
@@ -209,6 +232,9 @@ CProjectileData CProjectile::GetData() const
 	Result.m_Freeze = m_Freeze;
 	Result.m_TuneZone = m_TuneZone;
 	Result.m_SwitchNumber = m_Number;
+
+	//+KZ
+	Result.m_GoresTeleportGrenade = m_GoresTeleportGrenade;
 	return Result;
 }
 

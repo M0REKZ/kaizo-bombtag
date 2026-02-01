@@ -34,9 +34,9 @@ public:
 	bool Match(CProjectile *pProj);
 	void SetBouncing(int Value);
 
-	const vec2 &GetDirection() { return m_Direction; }
-	const int &GetOwner() { return m_Owner; }
-	const int &GetStartTick() { return m_StartTick; }
+	const vec2 &GetDirection() const { return m_Direction; }
+	const int &GetOwner() const { return m_Owner; }
+	const int &GetStartTick() const { return m_StartTick; }
 	CProjectile(CGameWorld *pGameWorld, int Id, const CProjectileData *pProj);
 
 private:
@@ -54,6 +54,14 @@ private:
 	int m_Bouncing;
 	bool m_Freeze;
 	int m_TuneZone;
+
+	//+KZ
+	public:
+	bool m_GoresTeleportGrenade = false;
+	int GetOwnerId() const { return m_Owner; }
+	int GetStartTick() { return m_StartTick; }
+	int GetType() { return m_Type; }
+	void Reset() { m_MarkedForDestroy = true; }
 };
 
 #endif

@@ -1,15 +1,18 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "laser.h"
+
 #include "character.h"
-#include <game/client/laser_data.h>
-#include <game/collision.h>
-#include <game/generated/protocol.h>
-#include <game/mapitems.h>
 
 #include <engine/shared/config.h>
 
-CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type) :
+#include <generated/protocol.h>
+
+#include <game/client/laser_data.h>
+#include <game/collision.h>
+#include <game/mapitems.h>
+
+CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner, int Type, SKZLaserParams *pParams) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_LASER)
 {
 	m_Pos = Pos;
@@ -23,6 +26,13 @@ CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEner
 	m_Type = Type;
 	m_ZeroEnergyBounceInLastTick = false;
 	m_TuneZone = GameWorld()->m_WorldConfig.m_UseTuneZones ? Collision()->IsTune(Collision()->GetMapIndex(m_Pos)) : 0;
+
+	//+KZ
+	if(pParams)
+	{
+		m_IsRecoverJump = pParams->m_IsRecoverJump;
+	}
+
 	GameWorld()->InsertEntity(this);
 	DoBounce();
 }
@@ -86,11 +96,30 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 	{
 		pHit->UnFreeze();
 	}
+
+	//+KZ Recover jump
+
+	if(m_IsRecoverJump)
+	{
+		pHit->GetCoreKZ().m_Jumped = 0;
+		pHit->GetCoreKZ().m_JumpedTotal = 0;
+	}
+
 	return true;
 }
 
 void CLaser::DoBounce()
 {
+	// KZ
+	CCharacter *pOwnerChar = GameWorld()->GetCharacterById(m_Owner); 
+	CCharacterCore *pOwnerCore = nullptr;
+
+	if(pOwnerChar)
+	{
+		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
+	}
+	// End KZ
+
 	m_EvalTick = GameWorld()->GameTick();
 
 	if(m_Energy < 0)
@@ -104,7 +133,18 @@ void CLaser::DoBounce()
 	int Res;
 	vec2 To = m_Pos + m_Dir * m_Energy;
 
-	Res = Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To);
+	//+KZ
+	SKZColTeleWeaponParams ParamsKZ;
+	ParamsKZ.From = m_Pos;
+	ParamsKZ.To = To;
+	ParamsKZ.Type = m_Type;
+	ParamsKZ.OwnerId = m_Owner;
+	ParamsKZ.BounceNum = m_Bounces;
+	SKZColCharCoreParams ParamsKZ2;
+	ParamsKZ.pCharCoreParams = &ParamsKZ2;
+	ParamsKZ2.pCore = pOwnerCore;
+
+	Res = Collision()->IntersectLineTeleWeapon(m_Pos, To, &Coltile, &To, nullptr, &ParamsKZ); //+KZ added ParamsKZ
 
 	if(Res)
 	{

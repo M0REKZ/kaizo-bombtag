@@ -2,13 +2,18 @@
 #define GAME_SERVER_SAVE_H
 
 #include <base/vmath.h>
+
 #include <engine/shared/protocol.h>
-#include <game/generated/protocol.h>
+
+#include <generated/protocol.h>
+
 #include <game/team_state.h>
 
 #include <optional>
 
 #include <game/mapitems.h>
+
+#include "classes_kz.h"
 
 class IGameController;
 class CGameContext;
@@ -40,7 +45,7 @@ public:
 	CSaveTee();
 	~CSaveTee() = default;
 	void Save(CCharacter *pchr, bool AddPenalty = true);
-	bool Load(CCharacter *pchr, int Team, bool IsSwap = false);
+	bool Load(CCharacter *pchr, std::optional<int> Team = std::nullopt);
 	char *GetString(const CSaveTeam *pTeam);
 	int FromString(const char *pString);
 	void LoadHookedPlayer(const CSaveTeam *pTeam);
@@ -156,18 +161,26 @@ private:
 	//+KZ
 
 	void SaveKZ(CCharacter *pchr, bool AddPenalty = true);
-	bool LoadKZ(CCharacter *pchr, int Team, bool IsSwap = false);
+	bool LoadKZ(CCharacter *pchr, std::optional<int> Team);
 
 	int m_Health = 10;
 	int m_CustomWeapon = 0;
 	bool m_BluePortal = true;
 	int m_TuneZoneOverrideKZ = -1; //+KZ
+	bool m_NODAMAGE = false; //+KZ
+	bool m_HasRecoverJumpLaser = false; //+KZ
 	struct
 	{
 		bool m_Got = false;
 		//int m_Snap = 0; not needed for save
 		int m_Ammo = -1;
-	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS - KZ_CUSTOM_WEAPONS_START];
+	} m_aCustomWeapons[KZ_NUM_CUSTOM_WEAPONS];
+
+	CKZSubTickKeep m_SavedSubtick;
+
+public:
+	char *GetKaizoString(const CSaveTeam *pTeam);
+	int FromKaizoString(const char *pString);
 };
 
 class CSaveHotReloadTee
@@ -176,7 +189,7 @@ public:
 	CSaveHotReloadTee() = default;
 	~CSaveHotReloadTee() = default;
 	void Save(CCharacter *pChr, bool AddPenalty = true);
-	bool Load(CCharacter *pChr, int Team, bool IsSwap = false);
+	bool Load(CCharacter *pChr, int Team);
 
 private:
 	CSaveTee m_SaveTee;
@@ -223,6 +236,11 @@ private:
 	int m_HighestSwitchNumber = 0;
 	int m_TeamLocked = 0;
 	int m_Practice = 0;
+
+	//+KZ
+	public:
+	char *GetKaizoString();
+	int FromKaizoString(const char *pString);
 };
 
 #endif // GAME_SERVER_SAVE_H

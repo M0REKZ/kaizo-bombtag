@@ -1,13 +1,14 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "projectile.h"
+
 #include "character.h"
 
 #include <engine/shared/config.h>
 
-#include <game/generated/protocol.h>
-#include <game/mapitems.h>
+#include <generated/protocol.h>
 
+#include <game/mapitems.h>
 #include <game/server/gamecontext.h>
 #include <game/server/gamemodes/DDRace.h>
 
@@ -161,17 +162,65 @@ void CProjectile::Tick()
 		pOwnerCore = (CCharacterCore *)pOwnerChar->Core();
 	}
 
+	//This is merged with rollback the bad way....
 	SKZColIntersectLineParams ParamsKZ;
 	ParamsKZ.pCore = pOwnerCore;
 	ParamsKZ.IsHook = false;
 	ParamsKZ.IsWeapon = true;
 	ParamsKZ.pProjPos = &CurPos;
 	ParamsKZ.Weapon = m_Type;
+	ParamsKZ.m_IsDDraceProjectile = m_Freeze;
+
+	SKZQuadData * pQuadData = nullptr;
+	vec2 QuadColPos;
+
+	if(g_Config.m_SvGoresQuadsEnable)
+		pQuadData = Collision()->IntersectQuadTeleWeapon(PrevPos, CurPos, &QuadColPos);
+	Collide = GameServer()->Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos, &ParamsKZ); // KZ
+
+	int z = 0; // for teleporting +KZ
+
+	if(ParamsKZ.m_DoResetTick)
+		m_StartTick = Server()->Tick();
+
+	bool handlequad = false;
+
+	//+KZ Quads:
+	if(pQuadData && Collide)
+	{
+		if(distance(PrevPos, QuadColPos) < distance(PrevPos, ColPos))
+		{
+			handlequad = true;
+		}
+	}
+	else if(pQuadData)
+	{
+		handlequad = true;
+	}
+
+	if(handlequad)
+	{
+		int Index = GameServer()->Collision()->QuadTypeToTileId(pQuadData);
+
+		if(Index == -1) //Kaizo-Insta Quad
+		{
+			Index = pQuadData->m_pQuad->m_ColorEnvOffset;
+		}
+
+		if(pQuadData->m_pQuad && (g_Config.m_SvOldTeleportWeapons ? (Index == TILE_TELEIN) : (Index == TILE_TELEINWEAPON)))
+		{
+			z = pQuadData->m_pQuad->m_aColors[0].r;
+		}
+		else
+		{
+			Collide = TILE_NOHOOK;
+			ColPos = NewPos = QuadColPos;
+		}
+	}
 
 	if(m_FirstTick && m_Owner >= 0 && m_Owner < MAX_CLIENTS && GameServer()->m_apPlayers[m_Owner] && GameServer()->m_apPlayers[m_Owner]->m_RollbackEnabled && GameServer()->m_apPlayers[m_Owner]->GetCharacter())
 	{
-		m_StartTick = GameServer()->m_apPlayers[m_Owner]->m_LastAckedSnapshot - 1;
-
+		m_StartTick = GameServer()->m_apPlayers[m_Owner]->m_LastAckedTick - 1;
 		//Collide with wall and tee
 		int CollideTick;
 		for(CollideTick = m_StartTick + 1; CollideTick <= m_OrigStartTick; CollideTick++)
@@ -375,11 +424,13 @@ void CProjectile::Tick()
 	}
 
 	int x = GameServer()->Collision()->GetIndex(PrevPos, CurPos);
-	int z;
-	if(g_Config.m_SvOldTeleportWeapons)
-		z = GameServer()->Collision()->IsTeleport(x);
-	else
-		z = GameServer()->Collision()->IsTeleportWeapon(x);
+	if(!z) //+KZ added if(!z)
+	{
+		if(g_Config.m_SvOldTeleportWeapons)
+			z = GameServer()->Collision()->IsTeleport(x);
+		else
+			z = GameServer()->Collision()->IsTeleportWeapon(x);
+	}
 	if(z && !GameServer()->Collision()->TeleOuts(z - 1).empty())
 	{
 		int TeleOut = GameServer()->m_World.m_Core.RandomOr0(GameServer()->Collision()->TeleOuts(z - 1).size());
