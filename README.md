@@ -57,7 +57,7 @@ This mod is based on DDRaceNetwork. You can use their instructions to learn how 
 
 This is the source code for Kaizo Network by +KZ, based on DDNet
 
-Make sure to follow the terms of the new license if you use Kaizo Network specific code.
+Make sure to follow the terms of the new license (found at license-kaizo.txt) if you use Kaizo Client specific code.
 
 I tried to separate Kaizo Network code from DDNet code but that is not possible in some cases.
 
