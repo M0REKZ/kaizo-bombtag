@@ -1,3 +1,11 @@
+# Bombtag! (Kaizo Network based)
+
+This is the bombtag mod i hosted while Kaizo Network was still alive, it was updated until a old Kaizo Network version, today i updated to the latest version available in [https://github.com/M0REKZ/kaizo-client/tree/discontinued-server](https://github.com/M0REKZ/kaizo-client/tree/discontinued-server), i didnt test this last merge though so use at your own risk... for the original furo's bombtag check this branch [https://github.com/M0REKZ/kaizo-bombtag/tree/original](https://github.com/M0REKZ/kaizo-bombtag/tree/original)
+
+***BIG NOTE: Kaizo Network has a different license than the original bombtag, if you use Kaizo Network code you must follow the terms of the Kaizo Network license.***
+
+below you can read the DDNet-Bombtag and Kaizo Network READMEs.
+
 # Bombtag!
 Bombtag is a Teeworlds mod where one or more players are bombs. The goal is to be the last man standing. It's basically a combination of survival, hammer party and a little bit of suicidal tee spirit.
 
