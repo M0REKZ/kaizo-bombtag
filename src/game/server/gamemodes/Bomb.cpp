@@ -20,7 +20,7 @@
 // Exchange this to a string that identifies your game mode.
 // DM, TDM and CTF are reserved for teeworlds original modes.
 // DDraceNetwork and TestDDraceNetwork are used by DDNet.
-#define GAME_TYPE_NAME "BOMB++"
+#define GAME_TYPE_NAME "K-BOMB"
 
 CGameControllerBomb::CGameControllerBomb(class CGameContext *pGameServer) :
 	IGameController(pGameServer), m_Teams(pGameServer)
