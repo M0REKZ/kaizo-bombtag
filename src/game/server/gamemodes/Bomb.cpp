@@ -6,7 +6,7 @@
 #include <engine/shared/protocol.h>
 #include <engine/server/server.h>
 #include <game/gamecore.h>
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 #include <game/server/entities/character.h>
 #include <game/server/player.h>
 #include <game/server/score.h>
@@ -308,33 +308,33 @@ void CGameControllerBomb::SetSkin(CPlayer *pPlayer)
 
 			if(p==0)
 			{
-				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "fox", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(pPlayer->m_TeeInfos.m_aaSkinPartNames[p], "fox", sizeof(pPlayer->m_TeeInfos.m_aaSkinPartNames[p]));
 				pPlayer->m_TeeInfos.m_aSkinPartColors[p] = 1769560;
 				continue;
 			}
 
 			if(p==1)
 			{
-				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "warpaint", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(pPlayer->m_TeeInfos.m_aaSkinPartNames[p], "warpaint", sizeof(pPlayer->m_TeeInfos.m_aaSkinPartNames[p]));
 				pPlayer->m_TeeInfos.m_aSkinPartColors[p] = 4278190080;
 				continue;
 			}
 			
 			if(p==2)
 			{
-				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "hair", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(pPlayer->m_TeeInfos.m_aaSkinPartNames[p], "hair", sizeof(pPlayer->m_TeeInfos.m_aaSkinPartNames[p]));
 				continue;
 			}
 
 			if(p==5)
 			{
-				str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "negative", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+				str_copy(pPlayer->m_TeeInfos.m_aaSkinPartNames[p], "negative", sizeof(pPlayer->m_TeeInfos.m_aaSkinPartNames[p]));
 				pPlayer->m_TeeInfos.m_aSkinPartColors[p] = 65408;
 				continue;
 			}
 			
 
-			str_copy(pPlayer->m_TeeInfos.m_apSkinPartNames[p], "standard", sizeof(pPlayer->m_TeeInfos.m_apSkinPartNames[p]));
+			str_copy(pPlayer->m_TeeInfos.m_aaSkinPartNames[p], "standard", sizeof(pPlayer->m_TeeInfos.m_aaSkinPartNames[p]));
         }
 	}
 }
