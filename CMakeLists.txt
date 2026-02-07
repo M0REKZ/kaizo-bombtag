@@ -2881,8 +2881,6 @@ if(SERVER)
     gamemodes/kz/kz.h
     gameworld.cpp
     gameworld.h
-    kz/rollback.cpp
-    kz/rollback.h
     mutes.cpp
     player_kz.cpp
     player.cpp

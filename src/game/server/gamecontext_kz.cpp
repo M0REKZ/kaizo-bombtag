@@ -61,13 +61,6 @@ void CGameContext::RegisterKZCommands()
 	Console()->Register("attractorbeam", "", CFGFLAG_CHAT |  CFGFLAG_SERVER, ConAttractorBeam, this, "Set Attractor Beam as active weapon (if have it)");
 	Console()->Register("getattractorbeam", "?i[id]", CFGFLAG_SERVER | CMDFLAG_PRACTICE, ConGetAttractorBeam, this, "Get Attractor Beam");
 
-	//rollback command
-	Console()->Register("rollback", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
-	Console()->Register("antilag", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
-	Console()->Register("nolag", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRollback, this, "Enable rollback");
-
-	Console()->Chain("sv_rollback", ConchainRollback, this);
-
 	Console()->Register("move_kzbot", "s[blue/red]", CFGFLAG_SERVER, ConMoveKZBot, this, "Move KZBot to blue or red team");
 }
 

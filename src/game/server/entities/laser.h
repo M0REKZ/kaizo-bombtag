@@ -19,9 +19,6 @@ public:
 
 	int GetOwnerId() const override { return m_Owner; }
 
-	int m_FireAckedTick = -1; //rollback
-	bool m_Rollback = false; //rollback
-
 protected:
 	bool HitCharacter(vec2 From, vec2 To);
 	void DoBounce();

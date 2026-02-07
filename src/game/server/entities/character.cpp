@@ -616,8 +616,8 @@ void CCharacter::FireWeapon()
 
 		CEntity *apEnts[MAX_CLIENTS];
 		int Hits = 0;
-		int Num = GameServer()->m_Rollback.FindCharactersOnTick(ProjStartPos, GetProximityRadius() * 0.5f, apEnts,
-			MAX_CLIENTS, m_pPlayer->m_LastAckedTick);
+		int Num = GameServer()->m_World.FindEntities(ProjStartPos, GetProximityRadius() * 0.5f, apEnts,
+			MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
 
 		for(int i = 0; i < Num; ++i)
 		{
@@ -1105,8 +1105,6 @@ void CCharacter::TickDeferred()
 	m_Core.Quantize();
 	bool StuckAfterQuant = Collision()->TestBox(m_Core.m_Pos, CCharacterCore::PhysicalSizeVec2());
 	m_Pos = m_Core.m_Pos;
-	m_Positions[Server()->Tick() % ROLLBACK_POSITION_HISTORY].m_Position = m_Pos; //+KZ rollback
-	m_Positions[Server()->Tick() % ROLLBACK_POSITION_HISTORY].m_Valid = true; //+KZ rollback
 
 	if(m_Core.m_ServerResetPrevPos)
 	{
